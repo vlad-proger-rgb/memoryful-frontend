@@ -11,3 +11,5 @@ export const citiesApi = {
     return axios.get(`/api/cities/${id}`)
   },
 }
+
+export default citiesApi

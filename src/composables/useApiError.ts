@@ -47,6 +47,8 @@ export function useApiError() {
     isLoading,
     handleApiError,
     resetError,
-    withLoading
+    withLoading,
   }
 }
+
+export default useApiError

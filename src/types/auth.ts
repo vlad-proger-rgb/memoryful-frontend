@@ -1,10 +1,10 @@
 export interface Token {
-  access_token: string
-  token_type: string
+  accessToken: string
+  tokenType: string
 }
 
 export interface AuthResponse {
   tokens: Token
-  is_new_user: boolean
-  user_id: string
+  isNewUser: boolean
+  userId: string
 }

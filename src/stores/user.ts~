@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import authApi from '@/api/auth'
+import { authApi } from '@/api/auth'
 import { setAuthToken } from '@/api/client'
 import useApiError from '@/composables/useApiError'
 import type { User, Token } from '@/types'

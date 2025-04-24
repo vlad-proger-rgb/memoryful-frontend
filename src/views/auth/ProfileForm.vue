@@ -3,15 +3,14 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthUtils } from '@/composables/useAuthUtils.ts'
-import { countriesApi } from '@/api/countries.ts'
-import { citiesApi } from '@/api/cities.ts'
+import countriesApi from '@/api/countries.ts'
+import citiesApi from '@/api/cities.ts'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
 import LocationAutocomplete from '@/components/auth/LocationAutocomplete.vue'
 import type { Country } from '@/types'
 import type { City } from '@/types'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -20,8 +19,8 @@ const { shakeElement } = useAuthUtils()
 
 const countries = ref<Country[]>([])
 const cities = ref<City[]>([])
-const country_name = ref('')
-const city_name = ref('')
+const countryName = ref('')
+const cityName = ref('')
 const loadingCountries = ref(false)
 const loadingCities = ref(false)
 
@@ -41,7 +40,7 @@ onMounted(() => {
 })
 
 const handleCountryInput = async (value: string) => {
-  country_name.value = value
+  countryName.value = value
   if (value.length > 0) {
     await fetchCountries()
   } else {
@@ -50,8 +49,8 @@ const handleCountryInput = async (value: string) => {
 }
 
 const handleCityInput = async (value: string) => {
-  city_name.value = value
-  if (value.length > 0 && userStore.user.country_id) {
+  cityName.value = value
+  if (value.length > 0 && userStore.user.countryId) {
     await fetchCities()
   } else {
     cities.value = []
@@ -61,7 +60,7 @@ const handleCityInput = async (value: string) => {
 const fetchCountries = async () => {
   loadingCountries.value = true
   try {
-    const result = (await countriesApi.getCountries(country_name.value)).data
+    const result = (await countriesApi.getCountries(countryName.value)).data
     if (result) countries.value = result
   } catch (error) {
     console.error('Failed to fetch countries:', error)
@@ -72,10 +71,10 @@ const fetchCountries = async () => {
 }
 
 const fetchCities = async () => {
-  if (userStore.user.country_id) {
+  if (userStore.user.countryId) {
     loadingCities.value = true
     try {
-      const result = (await citiesApi.getCities(userStore.user.country_id, city_name.value)).data
+      const result = (await citiesApi.getCities(userStore.user.countryId, cityName.value)).data
       if (result) cities.value = result
     } catch (error) {
       console.error('Failed to fetch cities:', error)
@@ -86,42 +85,42 @@ const fetchCities = async () => {
   }
 }
 
-const handleCountrySelect = (countryId: string, countryName: string) => {
-  userStore.user.country_id = countryId
-  country_name.value = countryName
+const handleCountrySelect = (countryId: string, selectedCountryName: string) => {
+  userStore.user.countryId = countryId
+  countryName.value = selectedCountryName
   countries.value = []
-  userStore.user.city_id = ''
-  city_name.value = ''
+  userStore.user.cityId = ''
+  cityName.value = ''
   userStore.errorMessage = ''
 }
 
-const handleCitySelect = (cityId: string, cityName: string) => {
-  userStore.user.city_id = cityId
-  city_name.value = cityName
+const handleCitySelect = (cityId: string, selectedCityName: string) => {
+  userStore.user.cityId = cityId
+  cityName.value = selectedCityName
   cities.value = []
   userStore.errorMessage = ''
 }
 
 const handleUpdateProfile = async () => {
-  if (!userStore.user.first_name) {
+  if (!userStore.user.firstName) {
     userStore.errorMessage = 'Please enter your name'
     shakeElement(nameInputId.value)
     return
   }
 
-  if (!userStore.user.country_id) {
+  if (!userStore.user.countryId) {
     userStore.errorMessage = 'Please enter your country'
     shakeElement(countryInputId.value)
     return
   }
 
-  if (!userStore.user.city_id) {
+  if (!userStore.user.cityId) {
     userStore.errorMessage = 'Please enter your city'
     shakeElement(cityInputId.value)
     return
   }
 
-  if (!userStore.user.job_title) {
+  if (!userStore.user.jobTitle) {
     userStore.errorMessage = 'Please enter your job title'
     shakeElement(jobTitleInputId.value)
     return
@@ -147,7 +146,7 @@ const handleLogout = async () => {
   >
     <div class="w-full flex justify-center flex-col gap-4">
       <AuthInput
-        v-model="userStore.user.first_name"
+        v-model="userStore.user.firstName"
         type="text"
         placeholder="Name"
         icon="user"
@@ -158,7 +157,7 @@ const handleLogout = async () => {
       <div class="flex flex-col md:flex-row md:justify-between gap-2">
         <div class="w-full md:w-1/2">
           <LocationAutocomplete
-            v-model="country_name"
+            v-model="countryName"
             :items="countries"
             placeholder="Country"
             icon="flag"
@@ -171,7 +170,7 @@ const handleLogout = async () => {
 
         <div class="w-full md:w-1/2">
           <LocationAutocomplete
-            v-model="city_name"
+            v-model="cityName"
             :items="cities"
             placeholder="City"
             icon="city"
@@ -184,7 +183,7 @@ const handleLogout = async () => {
       </div>
 
       <AuthInput
-        v-model="userStore.user.job_title"
+        v-model="userStore.user.jobTitle"
         type="text"
         placeholder="Job Title"
         icon="address-card"

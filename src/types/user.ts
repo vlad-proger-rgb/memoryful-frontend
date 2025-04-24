@@ -2,13 +2,13 @@ import type { Token } from '@/types/auth.ts'
 
 export interface User {
   id?: string
-  country_id?: string
-  city_id?: string
+  countryId?: string
+  cityId?: string
   email: string
-  first_name?: string
-  last_name?: string
+  firstName?: string
+  lastName?: string
   age?: number
-  job_title?: string
+  jobTitle?: string
   photo?: string
 }
 

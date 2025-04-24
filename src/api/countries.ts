@@ -11,3 +11,5 @@ export const countriesApi = {
     return axios.get(`/api/countries/${id}`)
   },
 }
+
+export default countriesApi

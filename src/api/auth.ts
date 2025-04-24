@@ -22,3 +22,5 @@ export const authApi = {
     return axios.get('/api/auth/logout')
   },
 }
+
+export default authApi
