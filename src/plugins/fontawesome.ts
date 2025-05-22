@@ -20,9 +20,21 @@ import {
   faCircleNotch,
   faPlus,
   faX,
+  faPersonWalking,
+  faCode,
+  faStar,
+  faFontAwesome,
 } from '@fortawesome/free-solid-svg-icons'
 
-import { faGoogle, faMicrosoft, faApple } from '@fortawesome/free-brands-svg-icons'
+import {
+  faGoogle,
+  faMicrosoft,
+  faApple,
+  faPython,
+  faVuejs,
+  faFigma,
+  faJs,
+} from '@fortawesome/free-brands-svg-icons'
 
 import { faFlagUsa } from '@fortawesome/free-solid-svg-icons'
 
@@ -45,11 +57,18 @@ library.add(
   faCircleNotch,
   faPlus,
   faX,
+  faPersonWalking,
+  faCode,
+  faStar,
 
+  faFontAwesome,
+  faPython,
+  faVuejs,
   faGoogle,
   faMicrosoft,
   faApple,
-
+  faFigma,
+  faJs,
   faFlagUsa,
 )
 
