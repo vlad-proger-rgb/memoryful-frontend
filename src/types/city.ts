@@ -1,5 +1,10 @@
+import type { Country } from './country'
+
 export interface City {
   id: string
-  countryId: string
   name: string
+}
+
+export interface CityDetail extends City {
+  country: Country
 }

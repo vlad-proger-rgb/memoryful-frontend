@@ -1,17 +1,29 @@
 import axios from 'axios'
-import type { DayListItem, DayDetail, ApiResponse, DayCreate, DayUpdate } from '@/types'
+import type { DayListItem, DayDetail, ApiResponse, DayCreate, DayUpdate, DayFilters } from '@/types'
 
 export const daysApi = {
   getDays(params: {
     limit?: number
     offset?: number
-    sortBy?: string
+    sortField?: 'timestamp' | 'steps' | 'created_at' | 'updated_at'
+    sortOrder?: 'asc' | 'desc'
     view?: 'list' | 'detail'
-    filters?: Record<string, string>
+    tagNames?: string[]
+    filters?: DayFilters
   }): Promise<ApiResponse<DayListItem[]>> {
-    const { limit = 10, offset = 0, sortBy, view = 'list', filters } = params
+    const {
+      limit = 10,
+      offset = 0,
+      sortField,
+      sortOrder,
+      view = 'list',
+      tagNames,
+      filters,
+    } = params
     const query: Record<string, string | number> = { limit, offset, view }
-    if (sortBy) query.sortBy = sortBy
+    if (sortField) query.sortField = sortField
+    if (sortOrder) query.sortOrder = sortOrder
+    if (tagNames) query.tagNames = JSON.stringify(tagNames)
     if (filters) query.filters = JSON.stringify(filters)
 
     const cleanedQuery = Object.fromEntries(

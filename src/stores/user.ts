@@ -9,8 +9,20 @@ export const useUserStore = defineStore('user', () => {
   const { errorMessage, isLoading, withLoading } = useApiError()
 
   const user = ref<User>({
-    countryId: '',
-    cityId: '',
+    city: {
+      id: '',
+      name: '',
+      country: {
+        id: '',
+        name: '',
+        code: '',
+      },
+    },
+    country: {
+      id: '',
+      name: '',
+      code: '',
+    },
     email: '',
     firstName: '',
     jobTitle: '',
@@ -30,8 +42,20 @@ export const useUserStore = defineStore('user', () => {
 
   function clearUser() {
     user.value = {
-      countryId: '',
-      cityId: '',
+      city: {
+        id: '',
+        name: '',
+        country: {
+          id: '',
+          name: '',
+          code: '',
+        },
+      },
+      country: {
+        id: '',
+        name: '',
+        code: '',
+      },
       email: '',
       firstName: '',
       jobTitle: '',
@@ -98,8 +122,7 @@ export const useUserStore = defineStore('user', () => {
     return await withLoading(async () => {
       const userData = {
         firstName: user.value.firstName,
-        countryId: user.value.countryId,
-        cityId: user.value.cityId,
+        city: user.value.city,
         jobTitle: user.value.jobTitle,
       }
 
@@ -137,7 +160,7 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!token.value)
   const isProfileComplete = computed(
-    () => !!user.value.firstName && !!user.value.countryId && !!user.value.cityId && !!user.value.jobTitle,
+    () => !!user.value.firstName && !!user.value.city && !!user.value.jobTitle,
   )
 
   return {

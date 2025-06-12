@@ -1,5 +1,6 @@
-import type { City } from './city'
-import type { LearningProgress } from './learning-items'
+import type { City, CityDetail } from './city'
+import type { DayTrackableProgress, DayTrackableTypeWithProgress } from './day-trackable-progress'
+import type { Tag } from './tag'
 
 export interface DayListItem {
   timestamp: number
@@ -8,14 +9,14 @@ export interface DayListItem {
   starred: boolean
   mainImage?: string
   city: City
-  learningProgresses?: LearningProgress[]
+  trackableProgresses?: DayTrackableProgress[]
   exists: boolean
 }
 
 export interface DayDetail {
   timestamp: number
   content: string
-  city: City
+  city: CityDetail
   description?: string
   steps: number
   starred: boolean
@@ -23,7 +24,8 @@ export interface DayDetail {
   createdAt: string
   updatedAt: string
   images?: string[]
-  learningProgresses?: LearningProgress[]
+  tags?: Tag[]
+  trackableProgresses?: DayTrackableTypeWithProgress[]
 }
 
 export interface DayCreate {
@@ -33,7 +35,8 @@ export interface DayCreate {
   steps?: number
   mainImage?: string
   images?: string[]
-  learningProgresses?: LearningProgress[]
+  tags?: Tag[]
+  trackableProgresses?: DayTrackableTypeWithProgress[]
 }
 
 export interface DayUpdate {
@@ -44,5 +47,52 @@ export interface DayUpdate {
   starred?: boolean
   mainImage?: string
   images?: string[]
-  learningProgresses?: LearningProgress[]
+  tags?: Tag[]
+  trackableProgresses?: DayTrackableTypeWithProgress[]
+}
+
+/**
+ * Advanced filters for days querying.
+ */
+export interface DayFilters {
+  /**
+   * Filter by steps. Operators: gt, lt, gte, lte, eq, ne. Example: {gt: 5000}
+   */
+  steps?: {
+    gt?: number
+    lt?: number
+    gte?: number
+    lte?: number
+    eq?: number
+    ne?: number
+  }
+
+  /**
+   * Filter by description. Operators: like, eq, ne. Example: {like: 'park'}
+   */
+  description?: {
+    like?: string
+    eq?: string
+    ne?: string
+  }
+
+  /**
+   * Filter by starred status
+   */
+  starred?: boolean
+
+  /**
+   * Filter by city ID
+   */
+  cityId?: string
+
+  /**
+   * Filter by creation timestamp (after)
+   */
+  createdAfter?: number
+
+  /**
+   * Filter by creation timestamp (before)
+   */
+  createdBefore?: number
 }

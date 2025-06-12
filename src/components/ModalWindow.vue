@@ -5,24 +5,24 @@ import { useEventListener, useFocus, useScrollLock } from '@vueuse/core'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   title: {
     type: String,
-    default: ''
+    default: '',
   },
   closeOnEsc: {
     type: Boolean,
-    default: true
+    default: true,
   },
   closeOnClickOutside: {
     type: Boolean,
-    default: true
+    default: true,
   },
   maxWidth: {
     type: String,
-    default: 'md'
-  }
+    default: 'md',
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])
@@ -38,29 +38,36 @@ const closeModal = () => {
   emit('close')
 }
 
-watch(() => props.modelValue, (newVal) => {
-  isOpen.value = newVal
-  if (newVal) {
-    nextTick(() => {
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    isOpen.value = newVal
+    if (newVal) {
+      nextTick(() => {
+        if (focused) {
+          focused.value = true
+        }
+        if (scrollLock) {
+          scrollLock.value = true
+        }
+      })
+    } else {
       if (focused) {
-        focused.value = true
+        focused.value = false
       }
       if (scrollLock) {
-        scrollLock.value = true
+        scrollLock.value = false
       }
-    })
-  } else {
-    if (focused) {
-      focused.value = false
     }
-    if (scrollLock) {
-      scrollLock.value = false
-    }
-  }
-})
+  },
+)
 
 const handleOutsideClick = (event: MouseEvent) => {
-  if (props.closeOnClickOutside && modalRef.value && !modalRef.value.contains(event.target as Node)) {
+  if (
+    props.closeOnClickOutside &&
+    modalRef.value &&
+    !modalRef.value.contains(event.target as Node)
+  ) {
     closeModal()
   }
 }
@@ -91,14 +98,16 @@ onBeforeUnmount(() => {
   }
 })
 
-const maxWidthClass = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  full: 'max-w-full'
-}[props.maxWidth] || 'max-w-md'
+const maxWidthClass =
+  {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    full: 'max-w-full',
+  }[props.maxWidth] || 'max-w-md'
+console.log(maxWidthClass)
 </script>
 
 <template>
@@ -120,17 +129,33 @@ const maxWidthClass = {
 
         <div
           ref="modalRef"
-          :class="['relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/20 dark:border-gray-700/30 rounded-xl shadow-xl transform transition-all overflow-hidden', maxWidthClass]"
+          :class="[
+            'relative w-full mx-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/20 dark:border-gray-700/30 rounded-xl shadow-xl transform transition-all overflow-hidden',
+            maxWidthClass,
+          ]"
         >
-          <div class="px-6 py-4 border-b border-gray-200/30 dark:border-gray-700/30 flex items-center justify-between">
+          <div
+            class="px-6 py-4 border-b border-gray-200/30 dark:border-gray-700/30 flex items-center justify-between"
+          >
             <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ title }}</h3>
             <button
               @click="closeModal"
               class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
             >
               <span class="sr-only">Close</span>
-              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                class="h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -139,7 +164,10 @@ const maxWidthClass = {
             <slot></slot>
           </div>
 
-          <div v-if="$slots.footer" class="px-6 py-4 border-t border-gray-200/30 dark:border-gray-700/30">
+          <div
+            v-if="$slots.footer"
+            class="px-6 py-4 border-t border-gray-200/30 dark:border-gray-700/30"
+          >
             <slot name="footer"></slot>
           </div>
         </div>
@@ -147,4 +175,3 @@ const maxWidthClass = {
     </transition>
   </Teleport>
 </template>
-

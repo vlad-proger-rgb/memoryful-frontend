@@ -24,6 +24,10 @@ import {
   faCode,
   faStar,
   faFontAwesome,
+  faPen,
+  faImage,
+  faBook,
+  faBagShopping,
 } from '@fortawesome/free-solid-svg-icons'
 
 import {
@@ -60,7 +64,10 @@ library.add(
   faPersonWalking,
   faCode,
   faStar,
-
+  faPen,
+  faImage,
+  faBook,
+  faBagShopping,
   faFontAwesome,
   faPython,
   faVuejs,

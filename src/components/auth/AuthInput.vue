@@ -3,37 +3,37 @@ import { computed } from 'vue'
 
 const props = defineProps({
   modelValue: {
-    type: String,
-    default: ''
+    type: [String, Number],
+    default: '',
   },
   placeholder: {
     type: String,
-    required: true
+    required: true,
   },
   type: {
     type: String,
-    default: 'text'
+    default: 'text',
   },
   icon: {
     type: String,
-    required: true
+    required: true,
   },
   hasError: {
     type: Boolean,
-    default: false
+    default: false,
   },
   inputMode: {
     type: String,
-    default: undefined
+    default: undefined,
   },
   pattern: {
     type: String,
-    default: undefined
+    default: undefined,
   },
   fullWidth: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -50,7 +50,8 @@ const updateValue = (event: Event) => {
 }
 
 const containerClass = computed(() => {
-  const baseClasses = 'flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl focus-within:ring-1 transition'
+  const baseClasses =
+    'flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl focus-within:ring-1 transition'
   const widthClasses = props.fullWidth ? 'w-full max-w-[320px]' : 'max-w-[160px]'
   const errorClasses = props.hasError ? 'border border-red-500' : 'focus-within:ring-white'
 

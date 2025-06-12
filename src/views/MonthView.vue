@@ -21,7 +21,11 @@ function getDaysInMonth(year: number, month: number) {
 
 const DEFAULT_CITY = {
   id: '0',
-  countryId: '0',
+  country: {
+    id: '0',
+    name: 'Not specified',
+    code: 'N/A',
+  },
   name: 'Not specified',
 }
 
@@ -32,15 +36,15 @@ async function fetchDaysForMonth() {
   const year = Number(route.params.year) || new Date().getFullYear()
   const month = Number(route.params.month) || new Date().getMonth() + 1
 
-  // const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0).getTime() / 1000 // seconds
-  // const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime() / 1000 // seconds
-  // const filters = {
-  //   timestamp_gte: String(startOfMonth),
-  //   timestamp_lte: String(endOfMonth),
-  // }
+  const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0).getTime() / 1000 // seconds
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime() / 1000 // seconds
+  console.log(startOfMonth, endOfMonth)
   const response = await daysApi.getDays({
     limit: 10,
-    // filters,
+    filters: {
+      createdAfter: parseInt(String(startOfMonth)),
+      createdBefore: parseInt(String(endOfMonth)),
+    },
   })
   console.log(response)
   const fetchedDays: DayListItem[] = response.data || []
@@ -67,7 +71,7 @@ async function fetchDaysForMonth() {
         starred: false,
         mainImage: undefined,
         city: DEFAULT_CITY,
-        learningProgresses: [],
+        trackableProgresses: [],
         exists: false,
       })
     }
@@ -104,7 +108,7 @@ const toggleStarred = async (date: string | number) => {
       <div v-for="(day, idx) in days" :key="idx" class="w-full">
         <DayCard>
           <template #image>
-            <DayImage :src="day.mainImage" :alt="day.mainImage" />
+            <DayImage :src="day.mainImage" :alt="day.mainImage" size="small" />
           </template>
           <template #info>
             <DayInfo
@@ -120,8 +124,8 @@ const toggleStarred = async (date: string | number) => {
           </template>
           <template #learning-items>
             <DayLearnings
-              v-if="day.learningProgresses && day.learningProgresses.length > 0"
-              :learning-progresses="day.learningProgresses"
+              v-if="day.trackableProgresses && day.trackableProgresses.length > 0"
+              :trackable-progresses="day.trackableProgresses"
             />
             <div v-else>No learning items</div>
           </template>

@@ -17,6 +17,9 @@ const router = useRouter()
 
 const { shakeElement } = useAuthUtils()
 
+const countryId = ref('')
+const cityId = ref('')
+
 const countries = ref<Country[]>([])
 const cities = ref<City[]>([])
 const countryName = ref('')
@@ -50,7 +53,7 @@ const handleCountryInput = async (value: string) => {
 
 const handleCityInput = async (value: string) => {
   cityName.value = value
-  if (value.length > 0 && userStore.user.countryId) {
+  if (value.length > 0 && countryId.value) {
     await fetchCities()
   } else {
     cities.value = []
@@ -71,10 +74,10 @@ const fetchCountries = async () => {
 }
 
 const fetchCities = async () => {
-  if (userStore.user.countryId) {
+  if (countryId.value) {
     loadingCities.value = true
     try {
-      const result = (await citiesApi.getCities(userStore.user.countryId, cityName.value)).data
+      const result = (await citiesApi.getCities(countryId.value, cityName.value)).data
       if (result) cities.value = result
     } catch (error) {
       console.error('Failed to fetch cities:', error)
@@ -85,17 +88,17 @@ const fetchCities = async () => {
   }
 }
 
-const handleCountrySelect = (countryId: string, selectedCountryName: string) => {
-  userStore.user.countryId = countryId
+const handleCountrySelect = (newCountryId: string, selectedCountryName: string) => {
+  countryId.value = newCountryId
   countryName.value = selectedCountryName
   countries.value = []
-  userStore.user.cityId = ''
+  cityId.value = ''
   cityName.value = ''
   userStore.errorMessage = ''
 }
 
-const handleCitySelect = (cityId: string, selectedCityName: string) => {
-  userStore.user.cityId = cityId
+const handleCitySelect = (newCityId: string, selectedCityName: string) => {
+  cityId.value = newCityId
   cityName.value = selectedCityName
   cities.value = []
   userStore.errorMessage = ''
@@ -108,13 +111,13 @@ const handleUpdateProfile = async () => {
     return
   }
 
-  if (!userStore.user.countryId) {
+  if (!countryId.value) {
     userStore.errorMessage = 'Please enter your country'
     shakeElement(countryInputId.value)
     return
   }
 
-  if (!userStore.user.cityId) {
+  if (!cityId.value) {
     userStore.errorMessage = 'Please enter your city'
     shakeElement(cityInputId.value)
     return
@@ -140,10 +143,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <AuthCard
-    title="Profile Details"
-    subtitle="Complete your profile to continue"
-  >
+  <AuthCard title="Profile Details" subtitle="Complete your profile to continue">
     <div class="w-full flex justify-center flex-col gap-4">
       <AuthInput
         v-model="userStore.user.firstName"
@@ -212,12 +212,7 @@ const handleLogout = async () => {
     </AuthButton>
 
     <div class="flex w-full">
-      <AuthButton
-        variant="link"
-        @click="handleLogout"
-      >
-        Cancel & Log Out
-      </AuthButton>
+      <AuthButton variant="link" @click="handleLogout"> Cancel & Log Out </AuthButton>
     </div>
   </AuthCard>
 </template>
