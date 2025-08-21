@@ -33,11 +33,15 @@ const isSaving = ref(false)
 
 // Form state
 const editForm = reactive<{
+  mainImage: string
+  images: string[]
   description: string
   content: string
   steps: number
   starred: boolean
 }>({
+  mainImage: '',
+  images: [],
   description: '',
   content: '',
   steps: 0,
@@ -49,6 +53,8 @@ watch(
   () => day.value,
   (newVal) => {
     if (newVal) {
+      editForm.mainImage = newVal.mainImage || ''
+      editForm.images = newVal.images || []
       editForm.description = newVal.description || ''
       editForm.content = newVal.content
       editForm.steps = newVal.steps || 0
@@ -62,7 +68,7 @@ const date = computed(() => {
   if (!day.value) return ''
 
   const newDate = new Date(day.value.timestamp * 1000)
-  newDate.setDate(newDate.getDate() + 1)
+  newDate.setDate(newDate.getDate())
 
   return newDate.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -95,6 +101,8 @@ const saveDay = async () => {
 
   try {
     const updateData: DayUpdate = {
+      mainImage: editForm.mainImage,
+      images: editForm.images,
       description: editForm.description,
       content: editForm.content,
       steps: editForm.steps,
@@ -127,7 +135,7 @@ onMounted(async () => {
   const [year_, month_, dayDate] = route.path.split('/').slice(2)
   console.log(year_, month_, dayDate)
 
-  const timestamp = new Date(Number(year_), Number(month_) - 1, Number(dayDate)).setUTCHours(
+  const timestamp = new Date(Number(year_), Number(month_) - 1, Number(dayDate) + 1).setUTCHours(
     0,
     0,
     0,
@@ -409,7 +417,7 @@ onMounted(async () => {
               <MainButton type="button" variant="secondary" @click="handleModalClose">
                 Cancel
               </MainButton>
-              <MainButton type="button" @click="saveDay" :loading="isSaving">
+              <MainButton type="button" @click="saveDay" :loading="isSaving" class="bg-blue-600">
                 Save Changes
               </MainButton>
             </div>

@@ -32,6 +32,7 @@ const DEFAULT_CITY = {
 const days = ref<DayListItem[]>([])
 const route = useRoute()
 const router = useRouter()
+
 async function fetchDaysForMonth() {
   const year = Number(route.params.year) || new Date().getFullYear()
   const month = Number(route.params.month) || new Date().getMonth() + 1
@@ -40,7 +41,7 @@ async function fetchDaysForMonth() {
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime() / 1000 // seconds
   console.log(startOfMonth, endOfMonth)
   const response = await daysApi.getDays({
-    limit: 10,
+    limit: 30,
     filters: {
       createdAfter: parseInt(String(startOfMonth)),
       createdBefore: parseInt(String(endOfMonth)),
