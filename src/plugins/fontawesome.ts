@@ -1,82 +1,9 @@
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { fas } from '@fortawesome/free-solid-svg-icons' // All solid icons
+import { far } from '@fortawesome/free-regular-svg-icons' // All regular icons
+import { fab } from '@fortawesome/free-brands-svg-icons' // All brand icons
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import {
-  faSearch,
-  faCalendar,
-  faGear,
-  faUser,
-  faEnvelope,
-  faAngleDoubleRight,
-  faAngleLeft,
-  faAngleRight,
-  faArrowRightLong,
-  faSave,
-  faAddressBook,
-  faAddressCard,
-  faFlag,
-  faCity,
-  faLock,
-  faCircleNotch,
-  faPlus,
-  faX,
-  faPersonWalking,
-  faCode,
-  faStar,
-  faFontAwesome,
-  faPen,
-  faImage,
-  faBook,
-  faBagShopping,
-} from '@fortawesome/free-solid-svg-icons'
-
-import {
-  faGoogle,
-  faMicrosoft,
-  faApple,
-  faPython,
-  faVuejs,
-  faFigma,
-  faJs,
-} from '@fortawesome/free-brands-svg-icons'
-
-import { faFlagUsa } from '@fortawesome/free-solid-svg-icons'
-
-library.add(
-  faSearch,
-  faCalendar,
-  faGear,
-  faUser,
-  faEnvelope,
-  faAngleDoubleRight,
-  faAngleLeft,
-  faAngleRight,
-  faArrowRightLong,
-  faSave,
-  faAddressBook,
-  faAddressCard,
-  faFlag,
-  faCity,
-  faLock,
-  faCircleNotch,
-  faPlus,
-  faX,
-  faPersonWalking,
-  faCode,
-  faStar,
-  faPen,
-  faImage,
-  faBook,
-  faBagShopping,
-  faFontAwesome,
-  faPython,
-  faVuejs,
-  faGoogle,
-  faMicrosoft,
-  faApple,
-  faFigma,
-  faJs,
-  faFlagUsa,
-)
+library.add(fas, far, fab)
 
 export { FontAwesomeIcon }

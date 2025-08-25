@@ -11,16 +11,11 @@ export const daysApi = {
     tagNames?: string[]
     filters?: DayFilters
   }): Promise<ApiResponse<DayListItem[]>> {
-    const {
-      limit = 10,
-      offset = 0,
-      sortField,
-      sortOrder,
-      view = 'list',
-      tagNames,
-      filters,
-    } = params
-    const query: Record<string, string | number> = { limit, offset, view }
+    const { sortField, sortOrder, view = 'list', tagNames, filters } = params
+    const query: Record<string, string | number> = { view }
+
+    if (params.limit) query.limit = params.limit
+    if (params.offset) query.offset = params.offset
     if (sortField) query.sortField = sortField
     if (sortOrder) query.sortOrder = sortOrder
     if (tagNames) query.tagNames = JSON.stringify(tagNames)

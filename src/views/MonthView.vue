@@ -10,13 +10,16 @@ import DayCard from '@/components/day/DayCard.vue'
 import DayImage from '@/components/day/DayImage.vue'
 import DayInfo from '@/components/day/DayInfo.vue'
 import DayStats from '@/components/day/DayStats.vue'
-import DayLearnings from '@/components/day/DayLearnings.vue'
+import DayTrackables from '@/components/day/DayTrackables.vue'
 import MainButton from '@/components/MainButton.vue'
 
 const uiStore = useUiStore()
 
 function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate()
+  // Note: month is 0-indexed (0 = January, 11 = December)
+  // Passing 0 as the day parameter gets the last day of the previous month
+  // So we use month + 1 to get the last day of the current month
+  return new Date(year, month + 1, 0).getDate()
 }
 
 const DEFAULT_CITY = {
@@ -34,28 +37,43 @@ const route = useRoute()
 const router = useRouter()
 
 async function fetchDaysForMonth() {
+  // Get year and month from route params or use current date
   const year = Number(route.params.year) || new Date().getFullYear()
-  const month = Number(route.params.month) || new Date().getMonth() + 1
+  const month = Number(route.params.month) - 1 || new Date().getMonth()
 
-  const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0).getTime() / 1000 // seconds
-  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999).getTime() / 1000 // seconds
-  console.log(startOfMonth, endOfMonth)
+  // Create dates in local timezone
+  const startOfMonth = new Date(year, month, 1)
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999)
+
+  // Convert to UTC timestamps (in seconds) for the API
+  const startTimestamp = Math.floor(startOfMonth.getTime() / 1000)
+  const endTimestamp = Math.floor(endOfMonth.getTime() / 1000)
+
+  console.log('Fetching days from', startOfMonth.toISOString(), 'to', endOfMonth.toISOString())
+
   const response = await daysApi.getDays({
-    limit: 30,
     filters: {
-      createdAfter: parseInt(String(startOfMonth)),
-      createdBefore: parseInt(String(endOfMonth)),
+      createdAfter: startTimestamp,
+      createdBefore: endTimestamp,
     },
   })
-  console.log(response)
-  const fetchedDays: DayListItem[] = response.data || []
 
+  const fetchedDays: DayListItem[] = response.data || []
+  console.log('Fetched days:', fetchedDays)
+
+  // Create a map of day numbers to day items
   const dayMap = new Map<number, DayListItem>()
   for (const day of fetchedDays) {
-    day.timestamp = day.timestamp * 1000
-    day.exists = true
-    const date = new Date(day.timestamp)
-    dayMap.set(date.getDate(), day)
+    // Convert API timestamp (seconds) to milliseconds for frontend
+    const timestampMs = day.timestamp * 1000
+    const date = new Date(timestampMs)
+
+    // Create a new object to avoid mutating the original
+    dayMap.set(date.getDate(), {
+      ...day,
+      timestamp: timestampMs,
+      exists: true,
+    })
   }
 
   const daysInMonth = getDaysInMonth(year, month)
@@ -64,7 +82,7 @@ async function fetchDaysForMonth() {
     if (dayMap.has(d)) {
       result.push(dayMap.get(d)!)
     } else {
-      const date = new Date(year, month - 1, d)
+      const date = new Date(year, month, d)
       result.push({
         timestamp: date.getTime(),
         description: undefined,
@@ -124,11 +142,11 @@ const toggleStarred = async (date: string | number) => {
             <DayStats :steps="day.steps" :city="day.city.name" />
           </template>
           <template #learning-items>
-            <DayLearnings
+            <DayTrackables
               v-if="day.trackableProgresses && day.trackableProgresses.length > 0"
               :trackable-progresses="day.trackableProgresses"
             />
-            <div v-else>No learning items</div>
+            <div v-else>No trackable items</div>
           </template>
           <template #open>
             <MainButton

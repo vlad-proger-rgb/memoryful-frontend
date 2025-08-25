@@ -1,7 +1,9 @@
+import type { FAIcon } from '@/types/fontawesome'
+
 export interface TrackableBase {
   title: string
   description?: string
-  icon?: string
+  icon?: FAIcon
 }
 
 export interface TrackableInDB extends TrackableBase {
@@ -20,6 +22,6 @@ export interface TrackableCreate extends TrackableBase {
 export interface TrackableUpdate {
   title?: string
   description?: string
-  icon?: string
+  icon?: FAIcon
   meta?: Record<string, unknown>
 }
