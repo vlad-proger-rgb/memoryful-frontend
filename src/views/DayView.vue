@@ -6,6 +6,8 @@ import { useUserStore } from '@/stores/user'
 import daysApi from '@/api/days'
 import type { DayDetail, DayUpdate } from '@/types'
 
+import { getIcon } from '@/plugins/fontawesome'
+
 import DayLabledEntry from '@/components/day/DayLabledEntry.vue'
 import ModalWindow from '@/components/ModalWindow.vue'
 import MainButton from '@/components/MainButton.vue'
@@ -198,7 +200,7 @@ onMounted(async () => {
         >
           <img
             v-if="day.mainImage"
-            :src="day.mainImage"
+            :src="'/src/assets/img/' + day.mainImage"
             class="w-full h-full object-cover"
             :alt="day.city?.name || 'Day image'"
           />
@@ -220,7 +222,7 @@ onMounted(async () => {
               border: '1px solid rgba(255,255,255,0.2)',
             }"
           >
-            <font-awesome-icon :icon="['fas', tag.icon]" />
+            <font-awesome-icon v-if="tag.icon" :icon="getIcon(tag.icon)" />
             {{ tag.name }}
           </span>
         </div>
@@ -256,10 +258,7 @@ onMounted(async () => {
             class="bg-white/5 hover:bg-white/10 transition-colors rounded-2xl p-4"
           >
             <div class="flex items-center space-x-3 mb-3">
-              <font-awesome-icon
-                :icon="['fas', progress.type.icon || 'chart-line']"
-                class="text-blue-400 text-lg"
-              />
+              <font-awesome-icon v-if="progress.type.icon" :icon="getIcon(progress.type.icon)" />
               <h4 class="text-white font-medium">{{ progress.type.name }}</h4>
             </div>
 

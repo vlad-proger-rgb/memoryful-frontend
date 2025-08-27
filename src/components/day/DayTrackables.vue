@@ -19,13 +19,9 @@
 <script setup lang="ts">
 import type { DayTrackableProgress } from '@/types/day-trackable-progress'
 import { defineProps } from 'vue'
-import type { FAIcon } from '@/types/fontawesome'
+import { getIcon } from '@/plugins/fontawesome'
 
 defineProps<{
   trackableProgresses: DayTrackableProgress[]
 }>()
-
-const getIcon = (icon: FAIcon) => {
-  return [icon.style || 'fas', icon.name]
-}
 </script>
