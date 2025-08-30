@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
+import ImageGallery from '@/components/ui/ImageGallery.vue'
 import daysApi from '@/api/days'
 import type { DayDetail, DayUpdate } from '@/types'
 
@@ -258,7 +259,11 @@ onMounted(async () => {
             class="bg-white/5 hover:bg-white/10 transition-colors rounded-2xl p-4"
           >
             <div class="flex items-center space-x-3 mb-3">
-              <font-awesome-icon v-if="progress.type.icon" :icon="getIcon(progress.type.icon)" />
+              <font-awesome-icon
+                v-if="progress.type.icon"
+                :icon="getIcon(progress.type.icon)"
+                class="text-white/70"
+              />
               <h4 class="text-white font-medium">{{ progress.type.name }}</h4>
             </div>
 
@@ -308,24 +313,13 @@ onMounted(async () => {
         </div>
 
         <!-- Images -->
-        <div
-          v-if="day?.images?.length"
-          class="flex items-center justify-between space-x-4 bg-white/10 backdrop-blur-lg rounded-2xl p-4"
-        >
-          <h3 class="text-white/70 text-sm font-medium">Images</h3>
-          <div class="space-y-2">
-            <div
-              v-for="image in day.images"
-              :key="image"
-              class="bg-white/10 backdrop-blur-lg rounded-2xl p-4"
-            >
-              <img
-                :src="image"
-                class="w-full h-48 object-cover"
-                :alt="day.city?.name || 'Day image'"
-              />
-            </div>
-          </div>
+        <h3 class="text-white/70 text-sm font-medium">Images</h3>
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+          <ImageGallery
+            :images="day?.images || []"
+            :alt="day.city?.name || 'Day image'"
+            basePath="/src/assets/img/"
+          />
         </div>
 
         <!-- Edit button to open modal window -->

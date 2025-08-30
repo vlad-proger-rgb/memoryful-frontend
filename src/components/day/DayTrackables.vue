@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
 import type { DayTrackableProgress } from '@/types/day-trackable-progress'
-import { defineProps } from 'vue'
 import { getIcon } from '@/plugins/fontawesome'
 
 defineProps<{
