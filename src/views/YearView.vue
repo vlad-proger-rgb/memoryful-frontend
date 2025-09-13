@@ -10,10 +10,9 @@ import ModalWindow from '@/components/ModalWindow.vue'
 import YearSlider from '@/components/YearSlider.vue'
 import MainButton from '@/components/MainButton.vue'
 import MonthSlider from '@/components/MonthSlider.vue'
-import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
 
-import { useAuthUtils } from '@/composables/useAuthUtils'
+import { useAuthUtils } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,9 +22,10 @@ const uiStore = useUiStore()
 const { shakeElement } = useAuthUtils()
 
 const isModalOpen = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 const isNewMonth = ref(true)
 
-const topDayNumber = ref("")
+const topDayNumber = ref('')
 const currentYearNumber = ref(new Date().getFullYear())
 const currentMonthNumber = ref(new Date().getMonth() + 1)
 const currentMonthRecord = ref<Month>({
@@ -36,7 +36,6 @@ const currentMonthRecord = ref<Month>({
   topDayTimestamp: 0,
 })
 
-
 const monthDescriptionInputId = ref('month-description-input')
 const topDayInputId = ref('top-day-input')
 
@@ -46,18 +45,18 @@ const isScrolling = ref(false)
 
 const backgroundGradient = (monthNumber: number) => {
   return {
-    1: "from-blue-100 to-blue-700",
-    2: "from-indigo-200 to-purple-700",
-    3: "from-green-200 to-yellow-700",
-    4: "from-pink-200 to-green-500",
-    5: "from-green-300 to-yellow-500",
-    6: "from-yellow-300 to-green-600",
-    7: "from-yellow-400 to-orange-600",
-    8: "from-orange-300 to-red-600",
-    9: "from-red-300 to-yellow-600",
-    10: "from-orange-400 to-amber-800",
-    11: "from-amber-700 to-gray-600",
-    12: "from-purple-300 to-blue-600",
+    1: 'from-blue-100 to-blue-700',
+    2: 'from-indigo-200 to-purple-700',
+    3: 'from-green-200 to-yellow-700',
+    4: 'from-pink-200 to-green-500',
+    5: 'from-green-300 to-yellow-500',
+    6: 'from-yellow-300 to-green-600',
+    7: 'from-yellow-400 to-orange-600',
+    8: 'from-orange-300 to-red-600',
+    9: 'from-red-300 to-yellow-600',
+    10: 'from-orange-400 to-amber-800',
+    11: 'from-amber-700 to-gray-600',
+    12: 'from-purple-300 to-blue-600',
   }[monthNumber]
 }
 
@@ -73,7 +72,7 @@ onMounted(async () => {
   }
 
   const response = await yearsStore.getYear(currentYearNumber.value)
-  console.log("response: ", response)
+  console.log('response: ', response)
   if (response) {
     for (const month of response) {
       if (month.month === currentMonthNumber.value) {
@@ -90,7 +89,6 @@ onMounted(async () => {
   window.addEventListener('wheel', handleWheel, { passive: false })
 })
 
-
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', handleWheel)
 
@@ -98,7 +96,6 @@ onBeforeUnmount(() => {
     clearTimeout(scrollTimeout)
   }
 })
-
 
 const handleWheel = (e: WheelEvent) => {
   if (isScrolling.value || isModalOpen.value) return
@@ -140,7 +137,6 @@ const changeMonth = async (direction: number) => {
   }, 500) as unknown as number
 }
 
-
 const openModal = () => {
   isModalOpen.value = true
 }
@@ -164,7 +160,7 @@ async function handleMonthSelect(monthNumber: number) {
   })
 
   const response = await yearsStore.getMonth(currentYearNumber.value, monthNumber)
-  console.log("response: ", response)
+  console.log('response: ', response)
   if (response) {
     currentMonthRecord.value = response
     isNewMonth.value = false
@@ -182,7 +178,6 @@ async function handleMonthSelect(monthNumber: number) {
   }
 }
 
-
 const submitMonth = async () => {
   if (!currentMonthRecord.value.description) {
     yearsStore.errorMessage = 'Please enter month description'
@@ -190,10 +185,11 @@ const submitMonth = async () => {
     return
   }
 
-  if (!topDayNumber.value
-      || !Number.isInteger(+topDayNumber.value)
-      || +topDayNumber.value < 1
-      || +topDayNumber.value > 31
+  if (
+    !topDayNumber.value ||
+    !Number.isInteger(+topDayNumber.value) ||
+    +topDayNumber.value < 1 ||
+    +topDayNumber.value > 31
   ) {
     yearsStore.errorMessage = 'Please enter a valid day number'
     shakeElement(topDayInputId.value)
@@ -201,7 +197,8 @@ const submitMonth = async () => {
   }
 
   currentMonthRecord.value.topDayTimestamp =
-    new Date(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value).getTime() / 1000
+    new Date(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value).getTime() /
+    1000
 
   // TODO: upload photo file to cloud in future
 
@@ -267,7 +264,11 @@ const submitMonth = async () => {
           </MainButton>
         </div>
         <div>
-          <MainButton @click="router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}/${topDayNumber}`)">
+          <MainButton
+            @click="
+              router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}/${topDayNumber}`)
+            "
+          >
             <template #default>Top Day</template>
             <template #icon-right>
               <font-awesome-icon icon="arrow-right-long" />
@@ -278,64 +279,94 @@ const submitMonth = async () => {
     </div>
   </div>
 
-  <ModalWindow v-model="isModalOpen" title="Month Settings" maxWidth="xl" @close="closeModal">
-    <form @submit.prevent="submitMonth">
-      <label for="month-description" class="block text-sm font-medium text-white/80 mb-2"
-        >Month Description</label
-      >
-      <AuthInput
-        v-model="currentMonthRecord.description"
-        icon="address-card"
-        placeholder="Description"
-        :id="monthDescriptionInputId"
-        @update:model-value="yearsStore.errorMessage = ''"
-      />
-
-      <label for="top-day" class="block text-sm font-medium text-white/80 mb-2 mt-4">Top Day</label>
-      <AuthInput
-        v-model="topDayNumber"
-        icon="calendar"
-        inputmode="numeric"
-        placeholder="Day Number"
-        :id="topDayInputId"
-        @update:model-value="yearsStore.errorMessage = ''"
-      />
-
-      <label for="month-photo" class="block text-sm font-medium text-white/80 mb-2 mt-4"
-        >Background Photo</label
-      >
-      <input
-        ref="fileInput"
-        type="file"
-        name="month-photo"
-        accept="image/jpeg"
-        class="hidden"
-      />
-      <div
-        @click="$refs.fileInput.click()"
-        class="w-full h-40 bg-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-500 transition"
-      >
-        <font-awesome-icon icon="plus" class="text-white/80 text-2xl" />
+  <ModalWindow v-model="isModalOpen" maxWidth="xl" @close="closeModal">
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-white">
+          Month Settings - {{ getMonthName(currentMonthNumber - 1) }}
+        </h3>
+        <button
+          @click="closeModal"
+          class="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
+          aria-label="Close modal"
+        >
+          <font-awesome-icon icon="times" class="w-5 h-5" />
+        </button>
       </div>
+    </template>
 
-      <p v-if="yearsStore.errorMessage" class="text-red-400 text-sm ml-2 mt-4">
-        {{ yearsStore.errorMessage }}
-      </p>
-    </form>
+    <div class="p-3 overflow-y-auto max-h-[60vh] bg-gray-800/30">
+      <form @submit.prevent="submitMonth" class="space-y-6">
+        <div class="space-y-4">
+          <div>
+            <label for="month-description" class="block text-sm font-medium text-white/70 mb-1.5">
+              Month Description
+            </label>
+            <input
+              v-model="currentMonthRecord.description"
+              type="text"
+              class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Add a short description"
+            />
+          </div>
+
+          <div>
+            <label for="top-day" class="block text-sm font-medium text-white/70 mb-1.5">
+              Top Day
+            </label>
+            <input
+              v-model="topDayNumber"
+              type="text"
+              class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter day number (1-31)"
+            />
+          </div>
+
+          <div>
+            <label for="month-photo" class="block text-sm font-medium text-white/70 mb-1.5">
+              Background Photo
+            </label>
+            <input
+              ref="fileInput"
+              type="file"
+              name="month-photo"
+              accept="image/jpeg"
+              class="hidden"
+            />
+            <div
+              @click="fileInput?.click()"
+              class="w-full h-40 bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/70 transition-all duration-200 group"
+            >
+              <font-awesome-icon
+                icon="cloud-upload-alt"
+                class="text-gray-400 text-3xl mb-2 group-hover:text-white transition-colors"
+              />
+              <p class="text-gray-400 text-sm group-hover:text-white transition-colors">
+                Click to upload or drag and drop
+              </p>
+              <p class="text-gray-500 text-xs mt-1">JPG (max. 5MB)</p>
+            </div>
+          </div>
+
+          <p v-if="yearsStore.errorMessage" class="text-red-400 text-sm mt-1">
+            {{ yearsStore.errorMessage }}
+          </p>
+        </div>
+      </form>
+    </div>
 
     <template #footer>
-      <div class="flex justify-between gap-2">
-        <AuthButton @click="submitMonth">
-          <template #default>Save</template>
+      <div class="flex space-x-3">
+        <MainButton type="button" variant="secondary" @click="closeModal" class="px-4">
+          Cancel
+        </MainButton>
+        <AuthButton @click="submitMonth" class="px-6 min-w-[120px]" :loading="yearsStore.isLoading">
+          <template #default>Save Changes</template>
           <template #icon-right v-if="!yearsStore.isLoading">
             <font-awesome-icon icon="save" />
-          </template>
-          <template #icon-right v-else>
-            <font-awesome-icon icon="circle-notch" class="animate-spin" />
           </template>
         </AuthButton>
       </div>
     </template>
   </ModalWindow>
-
 </template>

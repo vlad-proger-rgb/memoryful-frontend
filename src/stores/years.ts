@@ -4,7 +4,7 @@ import yearApi from '@/api/years.ts'
 import type { Month } from '@/types'
 import storage from '@/utils/storage.ts'
 import STORAGE_KEYS from '@/constants/storageKeys'
-import useApiError from '@/composables/useApiError'
+import { useApiError } from '@/composables'
 
 export const useYearsStore = defineStore('years', () => {
   const { errorMessage, isLoading, withLoading } = useApiError()
@@ -18,7 +18,7 @@ export const useYearsStore = defineStore('years', () => {
 
       if (!months) {
         const response = await yearApi.getYear(yearNumber)
-        console.log("response: ", response)
+        console.log('response: ', response)
         months = response.data ?? []
         years.value = { ...years.value, [yearNumber]: months }
         storage.set(key, months)
@@ -28,10 +28,13 @@ export const useYearsStore = defineStore('years', () => {
     })
   }
 
-  async function getMonth(yearNumber: number, monthNumber: number): Promise<Month | false | undefined> {
+  async function getMonth(
+    yearNumber: number,
+    monthNumber: number,
+  ): Promise<Month | false | undefined> {
     // Check if we already have the month in our store
     if (years.value?.[yearNumber]) {
-      const month = years.value[yearNumber].find(m => m.month === monthNumber)
+      const month = years.value[yearNumber].find((m) => m.month === monthNumber)
       if (month) {
         return month
       }
@@ -40,7 +43,7 @@ export const useYearsStore = defineStore('years', () => {
     // If not found in store, attempt to fetch the year data first
     const monthsInYear = await getYear(yearNumber)
     if (monthsInYear && Array.isArray(monthsInYear)) {
-      const month = monthsInYear.find(m => m.month === monthNumber)
+      const month = monthsInYear.find((m) => m.month === monthNumber)
       if (month) {
         return month
       }
@@ -55,7 +58,7 @@ export const useYearsStore = defineStore('years', () => {
           years.value[yearNumber] = []
         }
 
-        const existingIndex = years.value[yearNumber].findIndex(m => m.month === monthNumber)
+        const existingIndex = years.value[yearNumber].findIndex((m) => m.month === monthNumber)
         if (existingIndex >= 0) {
           years.value[yearNumber][existingIndex] = response.data
         } else {
@@ -93,7 +96,7 @@ export const useYearsStore = defineStore('years', () => {
       if (existingMonth) {
         await yearApi.updateMonth(month)
 
-        const monthIndex = years.value[month.year].findIndex(m => m.month === month.month)
+        const monthIndex = years.value[month.year].findIndex((m) => m.month === month.month)
         if (monthIndex >= 0) {
           years.value[month.year][monthIndex] = month
 

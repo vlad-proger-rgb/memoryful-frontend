@@ -1,48 +1,53 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
+import type { Country, City } from '@/types'
 
 const props = defineProps({
   modelValue: {
     type: String,
-    default: ''
+    default: '',
   },
   items: {
-    type: Array,
-    default: () => []
+    type: Array<Country | City>,
+    default: () => [],
   },
   placeholder: {
     type: String,
-    required: true
+    required: true,
   },
   icon: {
     type: String,
-    required: true
+    required: true,
   },
   inputId: {
     type: String,
-    required: true
+    required: true,
   },
   loading: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'item-select', 'input'])
 
 const showDropdown = ref(false)
 
-watch(() => props.items, (newItems) => {
-  showDropdown.value = newItems.length > 0
-}, { deep: true })
+watch(
+  () => props.items,
+  (newItems) => {
+    showDropdown.value = newItems.length > 0
+  },
+  { deep: true },
+)
 
-const handleItemSelect = (item) => {
+const handleItemSelect = (item: { id: string; name: string }) => {
   emit('item-select', item.id, item.name)
   showDropdown.value = false
 }
 
-const handleInput = (value) => {
+const handleInput = (value: string) => {
   emit('update:modelValue', value)
   emit('input', value)
 }
@@ -66,10 +71,7 @@ const handleInput = (value) => {
         <font-awesome-icon icon="circle-notch" class="animate-spin mr-2" />
         Loading...
       </div>
-      <div
-        v-else-if="items.length === 0"
-        class="p-3 text-center text-white/80"
-      >
+      <div v-else-if="items.length === 0" class="p-3 text-center text-white/80">
         No results found
       </div>
       <div

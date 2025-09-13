@@ -47,7 +47,7 @@ export interface DayUpdate {
   starred?: boolean
   mainImage?: string
   images?: string[]
-  tags?: Tag[]
+  tags?: string[] // Array of tag IDs
   trackableProgresses?: DayTrackableTypeWithProgress[]
 }
 

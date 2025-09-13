@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PropType } from 'vue'
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useEventListener, useFocus, useScrollLock } from '@vueuse/core'
 
@@ -20,8 +21,12 @@ const props = defineProps({
     default: true,
   },
   maxWidth: {
-    type: String,
+    type: String as PropType<
+      'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full'
+    >,
     default: 'md',
+    validator: (value: string) =>
+      ['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full'].includes(value),
   },
 })
 
@@ -97,81 +102,91 @@ onBeforeUnmount(() => {
     scrollLock.value = false
   }
 })
-
-const maxWidthClass =
-  {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
-    full: 'max-w-full',
-  }[props.maxWidth] || 'max-w-md'
-console.log(maxWidthClass)
 </script>
 
 <template>
   <Teleport to="#modal">
-    <transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
+    <Transition name="modal">
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8"
-        @click="handleOutsideClick"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
       >
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
-
         <div
-          ref="modalRef"
-          :class="[
-            'relative w-full mx-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-white/20 dark:border-gray-700/30 rounded-xl shadow-xl transform transition-all overflow-hidden',
-            maxWidthClass,
-          ]"
+          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
         >
-          <div
-            class="px-6 py-4 border-b border-gray-200/30 dark:border-gray-700/30 flex items-center justify-between"
+          <Transition
+            enter-active-class="ease-out duration-300"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="ease-in duration-200"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
           >
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ title }}</h3>
-            <button
-              @click="closeModal"
-              class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
+            <div
+              v-if="isOpen"
+              class="fixed inset-0 bg-black/50 transition-opacity"
+              aria-hidden="true"
+              @click="handleOutsideClick"
+            />
+          </Transition>
+
+          <Transition
+            enter-active-class="ease-out duration-300"
+            enter-from-class="opacity-0 translate-y-4 sm:scale-95"
+            enter-to-class="opacity-100 translate-y-0 sm:scale-100"
+            leave-active-class="ease-in duration-200"
+            leave-from-class="opacity-100 translate-y-0 sm:scale-100"
+            leave-to-class="opacity-0 translate-y-4 sm:scale-95"
+          >
+            <div
+              v-if="isOpen"
+              ref="modalRef"
+              class="relative bg-gray-800 text-left shadow-xl transform transition-all flex flex-col sm:my-8 max-h-[90vh]"
+              :class="{
+                'mx-auto w-full max-w-sm': maxWidth === 'sm',
+                'mx-auto w-full max-w-md': maxWidth === 'md',
+                'mx-auto w-full max-w-lg': maxWidth === 'lg',
+                'mx-auto w-full max-w-xl': maxWidth === 'xl',
+                'mx-auto w-full max-w-2xl': maxWidth === '2xl' || !maxWidth,
+                'mx-auto w-full max-w-3xl': maxWidth === '3xl',
+                'mx-auto w-full max-w-4xl': maxWidth === '4xl',
+                'mx-auto w-full max-w-5xl': maxWidth === '5xl',
+                'mx-auto w-full max-w-6xl': maxWidth === '6xl',
+                'mx-auto w-full max-w-7xl': maxWidth === '7xl',
+                'w-full max-w-full h-full max-h-full m-0 rounded-none': maxWidth === 'full',
+              }"
+              tabindex="-1"
             >
-              <span class="sr-only">Close</span>
-              <svg
-                class="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              <!-- Header -->
+              <div
+                v-if="$slots.header"
+                class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+                <slot name="header" />
+              </div>
+              <div v-else class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0">
+                <h3 class="text-lg font-medium text-white">{{ title }}</h3>
+              </div>
 
-          <div class="px-6 py-4">
-            <slot></slot>
-          </div>
+              <!-- Content -->
+              <div class="px-6 py-4 flex-1 overflow-y-auto">
+                <slot />
+              </div>
 
-          <div
-            v-if="$slots.footer"
-            class="px-6 py-4 border-t border-gray-200/30 dark:border-gray-700/30"
-          >
-            <slot name="footer"></slot>
-          </div>
+              <!-- Footer -->
+              <div
+                v-if="$slots.footer"
+                class="px-6 py-4 border-t border-white/10 bg-gray-900/50 flex-shrink-0"
+              >
+                <slot name="footer" />
+              </div>
+            </div>
+          </Transition>
         </div>
       </div>
-    </transition>
+    </Transition>
   </Teleport>
 </template>

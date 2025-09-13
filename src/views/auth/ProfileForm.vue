@@ -2,36 +2,33 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useAuthUtils } from '@/composables/useAuthUtils.ts'
-import countriesApi from '@/api/countries.ts'
-import citiesApi from '@/api/cities.ts'
+import { useAuthUtils, useLocation } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
-import LocationAutocomplete from '@/components/auth/LocationAutocomplete.vue'
-import type { Country } from '@/types'
-import type { City } from '@/types'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
+import type { CityDetail, Country } from '@/types'
 
 const userStore = useUserStore()
 const router = useRouter()
 
+const {
+  selectedCountry,
+  selectedCity,
+  fetchCountries,
+  fetchCities,
+  setSelectedCountry,
+  setSelectedCity,
+} = useLocation()
+
 const { shakeElement } = useAuthUtils()
-
-const countryId = ref('')
-const cityId = ref('')
-
-const countries = ref<Country[]>([])
-const cities = ref<City[]>([])
-const countryName = ref('')
-const cityName = ref('')
-const loadingCountries = ref(false)
-const loadingCities = ref(false)
 
 const nameInputId = ref('profile-name-input')
 const countryInputId = ref('profile-country-input')
 const cityInputId = ref('profile-city-input')
 const jobTitleInputId = ref('profile-job-title-input')
 
+// Initialize form with user data if available
 onMounted(() => {
   if (!userStore.isAuthenticated) {
     router.push('/login')
@@ -40,98 +37,54 @@ onMounted(() => {
   if (userStore.isProfileComplete) {
     router.push('/dashboard')
   }
-})
 
-const handleCountryInput = async (value: string) => {
-  countryName.value = value
-  if (value.length > 0) {
-    await fetchCountries()
-  } else {
-    countries.value = []
-  }
-}
-
-const handleCityInput = async (value: string) => {
-  cityName.value = value
-  if (value.length > 0 && countryId.value) {
-    await fetchCities()
-  } else {
-    cities.value = []
-  }
-}
-
-const fetchCountries = async () => {
-  loadingCountries.value = true
-  try {
-    const result = (await countriesApi.getCountries(countryName.value)).data
-    if (result) countries.value = result
-  } catch (error) {
-    console.error('Failed to fetch countries:', error)
-    countries.value = []
-  } finally {
-    loadingCountries.value = false
-  }
-}
-
-const fetchCities = async () => {
-  if (countryId.value) {
-    loadingCities.value = true
-    try {
-      const result = (await citiesApi.getCities(countryId.value, cityName.value)).data
-      if (result) cities.value = result
-    } catch (error) {
-      console.error('Failed to fetch cities:', error)
-      cities.value = []
-    } finally {
-      loadingCities.value = false
+  // Initialize with user's current location if available
+  if (userStore.user.city) {
+    setSelectedCity(userStore.user.city)
+    if (userStore.user.city.country) {
+      setSelectedCountry(userStore.user.city.country)
     }
   }
+})
+
+const handleCountrySelect = (item: Country | CityDetail) => {
+  if ('code' in item) {
+    setSelectedCountry(item)
+    setSelectedCity(null)
+    userStore.errorMessage = ''
+  }
 }
 
-const handleCountrySelect = (newCountryId: string, selectedCountryName: string) => {
-  countryId.value = newCountryId
-  countryName.value = selectedCountryName
-  countries.value = []
-  cityId.value = ''
-  cityName.value = ''
-  userStore.errorMessage = ''
-}
-
-const handleCitySelect = (newCityId: string, selectedCityName: string) => {
-  cityId.value = newCityId
-  cityName.value = selectedCityName
-  cities.value = []
-  userStore.errorMessage = ''
+const handleCitySelect = (item: Country | CityDetail) => {
+  if ('country' in item) {
+    setSelectedCity(item)
+    userStore.errorMessage = ''
+  }
 }
 
 const handleUpdateProfile = async () => {
-  if (!userStore.user.firstName) {
-    userStore.errorMessage = 'Please enter your name'
-    shakeElement(nameInputId.value)
-    return
-  }
+  try {
+    userStore.isLoading = true
+    userStore.errorMessage = ''
 
-  if (!countryId.value) {
-    userStore.errorMessage = 'Please enter your country'
-    shakeElement(countryInputId.value)
-    return
-  }
+    // Update user data
+    userStore.user = {
+      ...userStore.user,
+      firstName: userStore.user.firstName,
+      lastName: userStore.user.lastName,
+      jobTitle: userStore.user.jobTitle,
+    }
 
-  if (!cityId.value) {
-    userStore.errorMessage = 'Please enter your city'
-    shakeElement(cityInputId.value)
-    return
-  }
-
-  if (!userStore.user.jobTitle) {
-    userStore.errorMessage = 'Please enter your job title'
-    shakeElement(jobTitleInputId.value)
-    return
-  }
-
-  const success = await userStore.updateUserProfile()
-  if (success) {
-    await router.push('/dashboard')
+    await userStore.updateUserProfile()
+    router.push('/dashboard')
+  } catch (error) {
+    userStore.errorMessage = error instanceof Error ? error.message : 'Failed to update profile'
+    const formElement = document.getElementById('profile-form')
+    if (formElement) {
+      shakeElement('profile-form')
+    }
+  } finally {
+    userStore.isLoading = false
   }
 }
 
@@ -148,36 +101,49 @@ const handleLogout = async () => {
       <AuthInput
         v-model="userStore.user.firstName"
         type="text"
-        placeholder="Name"
+        placeholder="First Name"
         icon="user"
         :id="nameInputId"
         @update:model-value="userStore.errorMessage = ''"
       />
 
-      <div class="flex flex-col md:flex-row md:justify-between gap-2">
-        <div class="w-full md:w-1/2">
+      <div class="flex flex-col md:flex-row md:justify-between gap-4">
+        <div class="w-full md:w-1/2 relative">
           <LocationAutocomplete
-            v-model="countryName"
-            :items="countries"
-            placeholder="Country"
-            icon="flag"
+            :model-value="selectedCountry?.name || ''"
+            :placeholder="'Search country...'"
+            icon="globe"
             :input-id="countryInputId"
-            :loading="loadingCountries"
-            @input="handleCountryInput"
-            @item-select="handleCountrySelect"
+            :show-country-code="true"
+            :full-width="true"
+            :fetch-items="(query: string) => fetchCountries(query)"
+            class="relative z-10"
+            @select="handleCountrySelect"
+            @update:model-value="
+              (val: string) => {
+                /* handle input if needed */
+              }
+            "
           />
         </div>
 
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/2 relative">
           <LocationAutocomplete
-            v-model="cityName"
-            :items="cities"
-            placeholder="City"
-            icon="city"
+            :model-value="selectedCity?.name || ''"
+            :placeholder="selectedCountry ? 'Search city...' : 'Select country first'"
+            icon="map-marker-alt"
             :input-id="cityInputId"
-            :loading="loadingCities"
-            @input="handleCityInput"
-            @item-select="handleCitySelect"
+            :disabled="!selectedCountry"
+            :country-id="selectedCountry?.id || ''"
+            :full-width="true"
+            :fetch-items="(query: string) => fetchCities(query, selectedCountry?.id || '')"
+            class="relative z-10"
+            @select="handleCitySelect"
+            @update:model-value="
+              (val: string) => {
+                /* handle input if needed */
+              }
+            "
           />
         </div>
       </div>
@@ -186,7 +152,7 @@ const handleLogout = async () => {
         v-model="userStore.user.jobTitle"
         type="text"
         placeholder="Job Title"
-        icon="address-card"
+        icon="briefcase"
         :id="jobTitleInputId"
         @update:model-value="userStore.errorMessage = ''"
       />

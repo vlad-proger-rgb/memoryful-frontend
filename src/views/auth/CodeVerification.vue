@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useAuthUtils } from '@/composables/useAuthUtils'
+import { useAuthUtils } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
@@ -93,9 +93,7 @@ const handleConfirm = async () => {
       </AuthButton>
 
       <div class="flex justify-between w-full mt-2">
-        <AuthButton variant="link" @click="router.push('/login')">
-          Back
-        </AuthButton>
+        <AuthButton variant="link" @click="router.push('/login')"> Back </AuthButton>
 
         <AuthButton
           variant="link"

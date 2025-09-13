@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import authApi from '@/api/auth'
 import { setAuthToken } from '@/api/client'
-import useApiError from '@/composables/useApiError'
+import { useApiError } from '@/composables'
 import type { User, Token } from '@/types'
 
 export const useUserStore = defineStore('user', () => {

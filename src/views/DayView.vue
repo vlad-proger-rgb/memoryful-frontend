@@ -1,18 +1,54 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive, watch } from 'vue'
+import { ref, onMounted, reactive, watch, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { marked } from 'marked'
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
+import { daysApi, tagsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
-import ImageGallery from '@/components/ui/ImageGallery.vue'
-import daysApi from '@/api/days'
-import type { DayDetail, DayUpdate } from '@/types'
-
+import type { DayDetail, DayUpdate, Tag, ApiResponse } from '@/types'
 import { getIcon } from '@/plugins/fontawesome'
+import { useLocation } from '@/composables'
 
-import DayLabledEntry from '@/components/day/DayLabledEntry.vue'
+import BaseBox from '@/components/ui/BaseBox.vue'
+import ImageGallery from '@/components/ui/ImageGallery.vue'
 import ModalWindow from '@/components/ModalWindow.vue'
 import MainButton from '@/components/MainButton.vue'
-import AuthInput from '@/components/auth/AuthInput.vue'
+import TagSelector from '@/components/day/TagSelector.vue'
+import TrackableProgress from '@/components/day/TrackableProgress.vue'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
+
+const { fetchCountries, fetchCities } = useLocation()
+
+// Configure marked
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+})
+
+// Tags state
+const tags = ref<Tag[]>([])
+const isLoadingTags = ref(false)
+const tagsError = ref<string | null>(null)
+
+// Fetch tags from API
+const fetchTags = async () => {
+  isLoadingTags.value = true
+  tagsError.value = null
+  try {
+    const response = await tagsApi.getTags()
+    console.log('response: ', response)
+    if (response.data) {
+      tags.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch tags:', error)
+    tagsError.value = 'Failed to load tags. Please try again later.'
+  } finally {
+    isLoadingTags.value = false
+  }
+}
 
 const userStore = useUserStore()
 
@@ -20,7 +56,15 @@ const day = ref<DayDetail>({
   timestamp: 0,
   description: '',
   mainImage: '',
-  city: userStore.user.city,
+  city: userStore.user.city || {
+    id: '',
+    name: '',
+    country: {
+      id: '',
+      name: '',
+      code: '',
+    },
+  },
   tags: [],
   content: '',
   steps: 0,
@@ -33,34 +77,51 @@ const day = ref<DayDetail>({
 
 const showModal = ref(false)
 const isSaving = ref(false)
+const imageInput = ref<HTMLInputElement | null>(null)
 
 // Form state
-const editForm = reactive<{
+interface EditForm {
   mainImage: string
   images: string[]
   description: string
   content: string
-  steps: number
+  tags: Tag[]
+  city: string
+  country: string
   starred: boolean
-}>({
+  steps?: number
+  // Store IDs for proper city search
+  cityId?: string
+  countryId?: string
+}
+
+const editForm = reactive<EditForm>({
   mainImage: '',
   images: [],
   description: '',
   content: '',
-  steps: 0,
+  tags: [],
+  city: '',
+  country: '',
   starred: false,
+  cityId: '',
+  countryId: '',
 })
 
 // Reset form when day data changes
 watch(
   () => day.value,
-  (newVal) => {
+  (newVal: DayDetail | null) => {
     if (newVal) {
       editForm.mainImage = newVal.mainImage || ''
       editForm.images = newVal.images || []
       editForm.description = newVal.description || ''
       editForm.content = newVal.content
-      editForm.steps = newVal.steps || 0
+      editForm.tags = newVal.tags || []
+      editForm.city = newVal.city?.name || ''
+      editForm.country = newVal.city?.country?.name || ''
+      editForm.cityId = newVal.city?.id || ''
+      editForm.countryId = newVal.city?.country?.id || ''
       editForm.starred = newVal.starred || false
     }
   },
@@ -68,11 +129,9 @@ watch(
 )
 
 const date = computed(() => {
-  if (!day.value) return ''
+  if (!day.value?.timestamp) return ''
 
   const newDate = new Date(day.value.timestamp * 1000)
-  newDate.setDate(newDate.getDate())
-
   return newDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -97,6 +156,11 @@ const handleModalClose = () => {
   showModal.value = false
 }
 
+const handleModalOpen = () => {
+  showModal.value = true
+  onModalOpen()
+}
+
 const saveDay = async () => {
   if (!day.value) return
 
@@ -106,18 +170,28 @@ const saveDay = async () => {
     const updateData: DayUpdate = {
       mainImage: editForm.mainImage,
       images: editForm.images,
-      description: editForm.description,
+      description: editForm.description || undefined,
       content: editForm.content,
-      steps: editForm.steps,
+      tags: editForm.tags.map((tag) => tag.id), // Only send tag IDs
+      cityId: editForm.cityId,
       starred: editForm.starred,
     }
 
-    const updatedDay = await daysApi.updateDay(day.value.timestamp, updateData)
+    try {
+      await daysApi.updateDay(day.value.timestamp, updateData)
 
-    // Update local state
-    Object.assign(day.value, updatedDay)
+      const response = await daysApi.getDayDetail(day.value.timestamp)
+      const dayData = (response as unknown as ApiResponse<DayDetail>).data
+      if (dayData) {
+        Object.assign(day.value, dayData)
+      }
 
-    showModal.value = false
+      await fetchTags()
+
+      showModal.value = false
+    } catch (error) {
+      console.error('Error updating day:', error)
+    }
   } catch (error) {
     console.error('Error updating day:', error)
   } finally {
@@ -125,18 +199,67 @@ const saveDay = async () => {
   }
 }
 
-const adjustTextareaHeight = (event: Event) => {
-  const textarea = event.target as HTMLTextAreaElement
+const adjustTextareaHeight = (eventOrElement: Event | HTMLTextAreaElement) => {
+  const textarea =
+    eventOrElement instanceof Event
+      ? (eventOrElement.target as HTMLTextAreaElement)
+      : eventOrElement
   textarea.style.height = 'auto'
-  textarea.style.height = textarea.scrollHeight + 'px'
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
 }
 
-onMounted(async () => {
-  const route = useRoute()
-  console.log(route.path)
+// Initialize textarea height when modal opens
+const onModalOpen = () => {
+  nextTick(() => {
+    const textarea = document.querySelector('.content-textarea') as HTMLTextAreaElement
+    if (textarea) {
+      adjustTextareaHeight(textarea)
+    }
+  })
+}
 
+const triggerImageUpload = () => {
+  imageInput.value?.click()
+}
+
+const handleMainImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    const file = input.files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        editForm.mainImage = e.target.result as string
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const handleImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files) {
+    const files = Array.from(input.files)
+    files.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          editForm.images = [...editForm.images, e.target.result as string]
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+}
+
+const removeImage = (index: number) => {
+  editForm.images.splice(index, 1)
+}
+
+// Load day data
+const loadDay = async () => {
+  const route = useRoute()
   const [year_, month_, dayDate] = route.path.split('/').slice(2)
-  console.log(year_, month_, dayDate)
 
   const timestamp = new Date(Number(year_), Number(month_) - 1, Number(dayDate) + 1).setUTCHours(
     0,
@@ -144,21 +267,56 @@ onMounted(async () => {
     0,
     0,
   )
-  console.log(timestamp)
 
   const result = await daysApi.getDayDetail(timestamp / 1000)
-  console.log(result)
 
   if (result.data) {
     day.value = result.data
-  }
 
-  if (!day.value) {
+    // Update form with day data
+    editForm.mainImage = day.value.mainImage || ''
+    editForm.images = [...(day.value.images || [])]
+    editForm.description = day.value.description || ''
+    editForm.content = day.value.content || ''
+    editForm.tags = [...(day.value.tags || [])]
+
+    // Set city and country data
+    if (day.value.city) {
+      editForm.city = day.value.city.name
+      editForm.cityId = day.value.city.id
+
+      if (day.value.city.country) {
+        editForm.country = day.value.city.country.name
+        editForm.countryId = day.value.city.country.id
+      } else {
+        editForm.country = ''
+        editForm.countryId = ''
+      }
+    } else {
+      editForm.city = ''
+      editForm.cityId = ''
+      editForm.country = ''
+      editForm.countryId = ''
+    }
+
+    editForm.starred = day.value.starred || false
+    editForm.steps = day.value.steps || 0
+  } else {
+    const defaultCity = userStore.user.city || {
+      id: '',
+      name: '',
+      country: {
+        id: '',
+        name: '',
+        code: '',
+      },
+    }
+
     day.value = {
-      timestamp: 0,
+      timestamp: timestamp / 1000,
       description: '',
       mainImage: '',
-      city: userStore.user.city,
+      city: defaultCity,
       tags: [],
       content: '',
       steps: 0,
@@ -168,47 +326,73 @@ onMounted(async () => {
       trackableProgresses: [],
       starred: false,
     }
+
+    // Initialize form with default values
+    editForm.city = defaultCity.name
+    editForm.cityId = defaultCity.id
+    editForm.country = defaultCity.country?.name || ''
+    editForm.countryId = defaultCity.country?.id || ''
+
     showModal.value = true
   }
+}
+
+onMounted(async () => {
+  await Promise.all([fetchTags(), loadDay()])
 })
 </script>
 
 <template>
   <div class="relative min-h-screen w-full overflow-x-hidden">
+    <!-- Background image -->
     <img
       src="/src/assets/img/day_bg.jpg"
       class="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
       alt="background"
     />
+
+    <!-- Main content -->
     <div class="relative z-10 pt-24 pb-8 px-4 max-w-2xl mx-auto w-full space-y-6">
-      <!-- Header with date and star button -->
+      <!-- Header with date and actions -->
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white">{{ day.timestamp ? date : 'Loading...' }}</h1>
-        <button
-          @click="toggleStarred"
-          class="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          :class="{ 'text-yellow-400': day.starred, 'text-white/60': !day.starred }"
-        >
-          <font-awesome-icon icon="star" class="text-xl" />
-        </button>
+        <div class="flex items-center space-x-3">
+          <button
+            @click="toggleStarred"
+            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            :class="{ 'text-yellow-400': day.starred, 'text-white/60': !day.starred }"
+            :title="day.starred ? 'Remove from favorites' : 'Add to favorites'"
+          >
+            <font-awesome-icon :icon="day.starred ? 'star' : ['far', 'star']" class="text-xl" />
+          </button>
+          <MainButton
+            type="button"
+            variant="primary"
+            size="sm"
+            @click="handleModalOpen"
+            class="!px-4 !py-2.5 bg-blue-600"
+          >
+            <font-awesome-icon icon="pen" class="mr-2" />
+            Edit Day
+          </MainButton>
+        </div>
       </div>
 
-      <!-- Main content -->
       <div class="space-y-6">
         <!-- Main image -->
-        <div
-          class="relative w-full aspect-video rounded-2xl overflow-hidden bg-white/5 backdrop-blur-lg"
-        >
-          <img
-            v-if="day.mainImage"
-            :src="'/src/assets/img/' + day.mainImage"
-            class="w-full h-full object-cover"
-            :alt="day.city?.name || 'Day image'"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center text-white/30">
-            <font-awesome-icon icon="image" class="text-4xl" />
+        <BaseBox class="p-0 overflow-hidden">
+          <div class="relative w-full aspect-video">
+            <img
+              v-if="day.mainImage"
+              :src="'/src/assets/img/' + day.mainImage"
+              class="w-full h-full object-cover"
+              :alt="day.city?.name || 'Day image'"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-white/30">
+              <font-awesome-icon icon="image" class="text-4xl" />
+            </div>
           </div>
-        </div>
+        </BaseBox>
 
         <!-- Tags -->
         <div v-if="day.tags?.length" class="flex flex-wrap justify-center gap-4">
@@ -229,87 +413,66 @@ onMounted(async () => {
         </div>
 
         <!-- Location -->
-        <div class="grid grid-cols-2 gap-3">
-          <DayLabledEntry
-            label="Country"
-            :text="day.city?.country?.name || 'No country'"
-            :iconLeft="['fas', 'flag']"
-            small
-          />
-          <DayLabledEntry
-            label="City"
-            :text="day.city?.name || 'No city'"
-            :iconLeft="['fas', 'city']"
-            small
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div
+            class="backdrop-blur-lg bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
+          >
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-white/10 rounded-lg">
+                <font-awesome-icon icon="flag" class="text-white/80 text-lg" />
+              </div>
+              <div>
+                <h3 class="text-white/60 text-xs font-medium uppercase tracking-wider mb-1">
+                  Country
+                </h3>
+                <p class="text-white/90 font-medium text-lg">
+                  {{ day.city?.country?.name || 'Not specified' }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="backdrop-blur-lg bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
+          >
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-white/10 rounded-lg">
+                <font-awesome-icon icon="city" class="text-white/80 text-lg" />
+              </div>
+              <div>
+                <h3 class="text-white/60 text-xs font-medium uppercase tracking-wider mb-1">
+                  City
+                </h3>
+                <p class="text-white/90 font-medium text-lg">
+                  {{ day.city?.name || 'Not specified' }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Description -->
-        <DayLabledEntry label="Description" :text="day.description || 'No description'" />
+        <BaseBox>
+          <h3 class="text-white/70 text-sm font-medium mb-3">Description</h3>
+          <p class="text-white/50">{{ day.description || 'No description' }}</p>
+        </BaseBox>
 
         <!-- Content -->
-        <DayLabledEntry label="Content" :text="day.content || 'No content'" :markdown="true" />
-
-        <!-- Trackable Progresses -->
-        <h3 class="text-white/70 text-sm font-medium mb-3">Trackable Progress</h3>
-        <div class="space-y-3">
-          <div
-            v-for="progress in day.trackableProgresses"
-            :key="progress.id"
-            class="bg-white/5 hover:bg-white/10 transition-colors rounded-2xl p-4"
-          >
-            <div class="flex items-center space-x-3 mb-3">
-              <font-awesome-icon
-                v-if="progress.type.icon"
-                :icon="getIcon(progress.type.icon)"
-                class="text-white/70"
-              />
-              <h4 class="text-white font-medium">{{ progress.type.name }}</h4>
-            </div>
-
-            <div class="space-y-3">
-              <div
-                v-for="progressItem in progress.progresses"
-                :key="progressItem.trackableItem.id"
-                class="space-y-1"
-              >
-                <div class="flex justify-between text-xs text-white/70">
-                  <span class="truncate max-w-[70%]">
-                    {{ progressItem.trackableItem.title || 'Untitled' }}
-                    <span v-if="progressItem.description" class="text-white/50">
-                      • {{ progressItem.description }}
-                    </span>
-                  </span>
-                  <span class="font-medium">
-                    {{ progressItem.value }}
-                    {{ progress.type.valueType }}
-                  </span>
-                </div>
-                <div class="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
-                    :style="{
-                      width:
-                        progress.type.valueType === 'percentage'
-                          ? `${Math.min(100, progressItem.value)}%`
-                          : '100%',
-                    }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="!progress.progresses?.length" class="text-center py-4 text-white/50 text-sm">
-              No progress recorded yet
-            </div>
+        <BaseBox>
+          <h3 class="text-white/70 text-sm font-medium mb-3">Content</h3>
+          <div class="prose prose-invert max-w-none">
+            <div v-if="day.content" v-html="marked(day.content)"></div>
+            <p v-else class="text-white/50">No content</p>
           </div>
+        </BaseBox>
 
-          <div
-            v-if="!day.trackableProgresses?.length"
-            class="text-center py-6 text-white/50 text-sm bg-white/5 rounded-2xl"
-          >
+        <!-- Trackable Progress -->
+        <div class="mt-8 mb-8 space-y-4">
+          <div v-for="progress in day.trackableProgresses" :key="progress.type.id">
+            <TrackableProgress :progress="progress" />
+          </div>
+          <BaseBox v-if="!day.trackableProgresses?.length" class="text-white/50">
             No trackable progress for this day
-          </div>
+          </BaseBox>
         </div>
 
         <!-- Images -->
@@ -322,70 +485,36 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Edit button to open modal window -->
-        <MainButton class="ml-4 whitespace-nowrap" @click="showModal = true">Edit</MainButton>
-
         <!-- Modal window -->
-        <ModalWindow v-model="showModal" title="Edit Day" maxWidth="2xl" @close="handleModalClose">
+        <ModalWindow
+          v-model="showModal"
+          maxWidth="2xl"
+          @close="handleModalClose"
+          class="max-h-[90vh] overflow-y-auto"
+        >
           <template #header>
-            <h2 class="text-xl font-semibold text-white">Edit Day - {{ date }}</h2>
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Edit Day - {{ date }}</h2>
+              <button
+                @click="showModal = false"
+                class="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
+                aria-label="Close modal"
+              >
+                <font-awesome-icon icon="times" class="w-5 h-5" />
+              </button>
+            </div>
           </template>
+
           <template #default>
             <form @submit.prevent="saveDay" class="space-y-4">
-              <!-- Description -->
-              <AuthInput
-                v-model="editForm.description"
-                label="Description"
-                type="text"
-                placeholder="What made this day special?"
-                icon="pencil"
-                class="w-full"
-              />
-
-              <!-- Content -->
-              <div>
-                <label class="block text-sm font-medium text-white/70 mb-1">Content</label>
-                <textarea
-                  v-model="editForm.content"
-                  class="w-full p-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/30 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                  placeholder="Write about your day..."
-                  :style="{ height: 'auto', minHeight: '8em' }"
-                  @input="adjustTextareaHeight"
-                  rows="4"
-                ></textarea>
-              </div>
-
-              <!-- Steps -->
-              <AuthInput
-                v-model.number="editForm.steps"
-                label="Steps"
-                type="number"
-                min="0"
-                placeholder="Enter number of steps"
-                icon="footsteps"
-                class="w-full"
-              />
-
               <!-- Starred Toggle -->
               <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                 <div class="flex items-center space-x-2">
-                  <svg
+                  <font-awesome-icon
+                    :icon="editForm.starred ? ['fas', 'star'] : ['far', 'star']"
+                    :class="editForm.starred ? 'text-yellow-400' : 'text-white/40'"
                     class="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      :class="
-                        editForm.starred ? 'text-yellow-400 fill-yellow-400' : 'text-white/40'
-                      "
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                    ></path>
-                  </svg>
+                  />
                   <span class="text-white/90">Mark as important</span>
                 </div>
                 <button
@@ -394,7 +523,7 @@ onMounted(async () => {
                   class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   :class="editForm.starred ? 'bg-blue-600' : 'bg-white/10'"
                   role="switch"
-                  aria-checked="false"
+                  :aria-checked="editForm.starred"
                 >
                   <span
                     aria-hidden="true"
@@ -403,8 +532,192 @@ onMounted(async () => {
                   ></span>
                 </button>
               </div>
+
+              <!-- Description -->
+              <div>
+                <label for="description-input" class="block text-sm font-medium text-white/70 mb-1"
+                  >Description</label
+                >
+                <input
+                  v-model="editForm.description"
+                  type="text"
+                  class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Add a short description"
+                />
+              </div>
+
+              <!-- City and Country -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="country-input" class="block text-sm font-medium text-white/70 mb-1"
+                    >Country</label
+                  >
+                  <LocationAutocomplete
+                    v-model="editForm.country"
+                    input-id="country-input"
+                    placeholder="Search country..."
+                    :icon="'globe'"
+                    :show-country-code="true"
+                    :full-width="true"
+                    :fetch-items="fetchCountries"
+                    @select="
+                      (item) => {
+                        editForm.country = item.name
+                        editForm.countryId = item.id
+                        // Clear city when country changes
+                        editForm.city = ''
+                        editForm.cityId = ''
+                      }
+                    "
+                  />
+                </div>
+                <div>
+                  <label for="city-input" class="block text-sm font-medium text-white/70 mb-1"
+                    >City</label
+                  >
+                  <LocationAutocomplete
+                    v-model="editForm.city"
+                    input-id="city-input"
+                    :placeholder="editForm.country ? 'Search city...' : 'Select country first'"
+                    :icon="'map-marker-alt'"
+                    :country-id="editForm.countryId || ''"
+                    :disabled="!editForm.country"
+                    :full-width="true"
+                    :fetch-items="
+                      (query: string, countryId?: string) => fetchCities(query, countryId || '')
+                    "
+                    @select="
+                      (item) => {
+                        editForm.city = item.name
+                        editForm.cityId = item.id
+                      }
+                    "
+                  />
+                </div>
+              </div>
+
+              <!-- Content -->
+              <div>
+                <label for="content-input" class="block text-sm font-medium text-white/70 mb-1"
+                  >Content</label
+                >
+                <QuillEditor
+                  id="content"
+                  v-model:content="editForm.content"
+                  contentType="html"
+                  theme="snow"
+                  :toolbar="[
+                    ['bold', 'italic', 'underline', 'strike'],
+                    ['blockquote', 'code-block'],
+                    [{ header: 1 }, { header: 2 }],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    [{ script: 'sub' }, { script: 'super' }],
+                    [{ indent: '-1' }, { indent: '+1' }],
+                    [{ direction: 'rtl' }],
+                    [{ size: ['small', false, 'large', 'huge'] }],
+                    [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                    [{ color: [] }, { background: [] }],
+                    [{ font: [] }],
+                    [{ align: [] }],
+                    ['clean'],
+                    ['link', 'image', 'video'],
+                  ]"
+                  class="quill-editor text-white bg-white/5 border border-white/10 rounded-lg overflow-hidden"
+                  placeholder="Write your day's story here..."
+                />
+              </div>
+
+              <!-- Tags -->
+              <div>
+                <label for="tags-input" class="block text-sm font-medium text-white/70 mb-1"
+                  >Tags</label
+                >
+                <TagSelector
+                  v-model="editForm.tags"
+                  :available-tags="tags"
+                  :loading="isLoadingTags"
+                  :error="tagsError"
+                  placeholder="Add tags..."
+                />
+              </div>
+
+              <!-- Main Image -->
+              <div>
+                <label for="main-image-input" class="block text-sm font-medium text-white/70 mb-1"
+                  >Main Image</label
+                >
+                <div class="flex items-center space-x-4">
+                  <div
+                    class="relative w-24 h-24 rounded-lg overflow-hidden bg-white/5 border border-dashed border-white/20 flex items-center justify-center"
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      @change="handleMainImageUpload"
+                    />
+                    <template v-if="editForm.mainImage">
+                      <img
+                        :src="`/src/assets/img/${editForm.mainImage}`"
+                        class="w-full h-full object-cover"
+                        alt="Main"
+                      />
+                    </template>
+                    <template v-else>
+                      <span class="text-white/40 text-sm">Upload</span>
+                    </template>
+                  </div>
+                  <div class="text-sm text-white/60">
+                    <p>Upload a main image for this day</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Additional Images -->
+              <div>
+                <label
+                  for="additional-images-input"
+                  class="block text-sm font-medium text-white/70 mb-1"
+                  >Additional Images</label
+                >
+                <div class="grid grid-cols-4 gap-3">
+                  <div
+                    v-for="(image, index) in editForm.images"
+                    :key="index"
+                    class="relative group aspect-square rounded-lg overflow-hidden bg-white/5"
+                  >
+                    <img
+                      :src="`/src/assets/img/${image}`"
+                      class="w-full h-full object-cover"
+                      :alt="`Image ${index + 1}`"
+                    />
+                    <button
+                      type="button"
+                      @click="removeImage(index)"
+                      class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <font-awesome-icon icon="times" class="text-white" />
+                    </button>
+                  </div>
+                  <div
+                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+                    @click="triggerImageUpload"
+                  >
+                    <span class="text-white/40">+ Add Image</span>
+                    <input
+                      type="file"
+                      ref="imageInput"
+                      multiple
+                      accept="image/*"
+                      class="hidden"
+                      @change="handleImageUpload"
+                    />
+                  </div>
+                </div>
+              </div>
             </form>
           </template>
+
           <template #footer>
             <div class="flex justify-between w-full">
               <MainButton type="button" variant="secondary" @click="handleModalClose">
