@@ -35,41 +35,55 @@
       </template>
 
       <template #default>
-        <div class="relative w-full h-full flex items-center justify-center p-4">
-          <div class="relative max-w-full max-h-full">
-            <Transition name="fade" mode="out-in">
-              <div v-if="!isTransitioning" class="relative" :key="currentImage">
-                <img
-                  :src="currentImage"
-                  :alt="alt"
-                  class="max-h-[70vh] max-w-[90vw] w-auto h-auto object-contain"
-                  @click.stop
-                />
-              </div>
-              <div
-                v-else
-                class="max-h-[70vh] max-w-[90vw] w-auto h-auto flex items-center justify-center"
-              >
-                <div class="animate-pulse text-white/50">Loading...</div>
-              </div>
-            </Transition>
+        <div class="relative w-full h-full flex items-center justify-center">
+          <div class="relative w-full h-full flex items-center justify-center group">
+            <div class="relative max-w-full max-h-full">
+              <Transition name="fade" mode="out-in">
+                <div v-if="!isTransitioning" class="relative" :key="currentImage">
+                  <img
+                    :src="currentImage"
+                    :alt="alt"
+                    class="max-h-[70vh] max-w-[90vw] w-auto h-auto object-contain"
+                    @click.stop
+                  />
+                </div>
+                <div
+                  v-else
+                  class="max-h-[70vh] max-w-[90vw] w-auto h-auto flex items-center justify-center"
+                >
+                  <div class="animate-pulse text-white/50">Loading...</div>
+                </div>
+              </Transition>
+            </div>
 
+            <!-- Left side navigation button -->
             <button
               v-if="images.length > 1"
               @click.stop="previousImage"
-              class="absolute left-0 sm:-left-12 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+              class="absolute left-0 top-0 h-full w-24 flex items-center justify-start pl-4 bg-gradient-to-r from-black/30 to-transparent hover:from-black/40 z-20"
+              style="transform: translateX(-16px)"
               aria-label="Previous image"
             >
-              <font-awesome-icon icon="chevron-left" class="h-5 w-5" />
+              <div
+                class="h-24 w-10 flex items-center justify-center rounded-r-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-110 group-hover:scale-110"
+              >
+                <font-awesome-icon icon="chevron-left" class="h-7 w-7 text-white" />
+              </div>
             </button>
 
+            <!-- Right side navigation button -->
             <button
               v-if="images.length > 1"
               @click.stop="nextImage"
-              class="absolute right-0 sm:-right-12 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+              class="absolute right-0 top-0 h-full w-24 flex items-center justify-end pr-4 bg-gradient-to-l from-black/30 to-transparent hover:from-black/40 z-20"
+              style="transform: translateX(16px)"
               aria-label="Next image"
             >
-              <font-awesome-icon icon="chevron-right" class="h-5 w-5" />
+              <div
+                class="h-24 w-10 flex items-center justify-center rounded-l-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-110 group-hover:scale-110"
+              >
+                <font-awesome-icon icon="chevron-right" class="h-7 w-7 text-white" />
+              </div>
             </button>
           </div>
         </div>
