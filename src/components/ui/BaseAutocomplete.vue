@@ -28,10 +28,9 @@ const emit = defineEmits<{
 }>()
 
 const dropdownRef = ref<HTMLElement | null>(null)
+const containerRef = ref<HTMLElement | null>(null)
 const selectedIndex = ref(-1)
-const position = ref({
-  '--tw-translate-y': '0.25rem',
-})
+const dropdownStyle = ref<Record<string, string>>({})
 
 const filteredItems = computed(() => props.items)
 
@@ -85,7 +84,19 @@ const onMouseEnterItem = (index: number) => {
 }
 
 const updatePosition = () => {
-  // No need for manual positioning, handled by CSS
+  const target = props.attachTo instanceof HTMLElement
+    ? props.attachTo
+    : containerRef.value
+
+  if (!target) return
+
+  const rect = target.getBoundingClientRect()
+  dropdownStyle.value = {
+    position: 'fixed',
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+  }
 }
 
 // Close dropdown when clicking outside
@@ -109,21 +120,15 @@ watch(
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('click', onClickOutside, { capture: true })
-
-  if (props.attachTo) {
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-  }
+  window.addEventListener('resize', updatePosition)
+  window.addEventListener('scroll', updatePosition, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeyDown)
   document.removeEventListener('click', onClickOutside, { capture: true })
-
-  if (props.attachTo) {
-    window.removeEventListener('resize', updatePosition)
-    window.removeEventListener('scroll', updatePosition, true)
-  }
+  window.removeEventListener('resize', updatePosition)
+  window.removeEventListener('scroll', updatePosition, true)
 })
 
 defineExpose({
@@ -133,40 +138,37 @@ defineExpose({
 </script>
 
 <template>
-  <div class="relative w-full">
-    <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="position">
-      <div v-if="loading" class="autocomplete-menu" :style="{ maxHeight }">
-        <div class="p-2 text-center text-gray-400">Loading...</div>
-      </div>
-      <div v-else-if="filteredItems.length > 0" class="autocomplete-menu" :style="{ maxHeight }">
-        <div
-          v-for="(item, index) in filteredItems"
-          :key="String((item as ItemWithId)[itemKey] || index)"
-          class="autocomplete-item"
-          :class="{ 'bg-white/10': selectedIndex === index }"
-          @mousedown.prevent="selectItem(item)"
-          @mouseenter="onMouseEnterItem(index)"
-        >
-          <slot name="item" :item="item" :index="index">
-            {{ item[itemLabel as keyof typeof item] }}
-          </slot>
+  <div ref="containerRef" class="relative w-full">
+    <Teleport to="body">
+      <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="dropdownStyle">
+        <div v-if="loading" class="autocomplete-menu" :style="{ maxHeight }">
+          <div class="p-2 text-center text-gray-400">Loading...</div>
+        </div>
+        <div v-else-if="filteredItems.length > 0" class="autocomplete-menu" :style="{ maxHeight }">
+          <div
+            v-for="(item, index) in filteredItems"
+            :key="String((item as ItemWithId)[itemKey] || index)"
+            class="autocomplete-item"
+            :class="{ 'bg-white/10': selectedIndex === index }"
+            @mousedown.prevent="selectItem(item)"
+            @mouseenter="onMouseEnterItem(index)"
+          >
+            <slot name="item" :item="item" :index="index">
+              {{ item[itemLabel as keyof typeof item] }}
+            </slot>
+          </div>
+        </div>
+        <div v-else-if="$slots.empty" class="autocomplete-menu" :style="{ maxHeight }">
+          <slot name="empty"></slot>
         </div>
       </div>
-      <div v-else-if="$slots.empty" class="autocomplete-menu" :style="{ maxHeight }">
-        <slot name="empty"></slot>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
-<style scoped>
+<style>
 .autocomplete-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  z-index: 50;
-  transform: translateY(var(--tw-translate-y));
+  z-index: 9999;
   background: rgb(31 41 55);
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);

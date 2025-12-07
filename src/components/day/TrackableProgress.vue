@@ -42,7 +42,12 @@ const getProgressWidth = (value: number, type: string) => {
         >
           <div class="flex justify-between items-center">
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-white/90 truncate">
+              <div class="text-sm font-medium text-white/90 truncate flex items-center">
+                <font-awesome-icon
+                  v-if="progressItem.trackableItem.icon"
+                  :icon="getIcon(progressItem.trackableItem.icon)"
+                  class="mr-1"
+                />
                 {{ progressItem.trackableItem.title || 'Untitled' }}
               </div>
               <div v-if="progressItem.description" class="text-xs text-white/50 truncate">

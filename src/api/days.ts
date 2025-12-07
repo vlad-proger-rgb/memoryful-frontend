@@ -18,7 +18,7 @@ export const daysApi = {
     if (params.offset) query.offset = params.offset
     if (sortField) query.sortField = sortField
     if (sortOrder) query.sortOrder = sortOrder
-    if (tagNames) query.tagNames = JSON.stringify(tagNames)
+    if (tagNames && tagNames.length) query.tagNames = tagNames.join(',')
     if (filters) query.filters = JSON.stringify(filters)
 
     const cleanedQuery = Object.fromEntries(
