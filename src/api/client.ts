@@ -1,7 +1,25 @@
 import axios from 'axios'
+import type { AxiosRequestHeaders } from 'axios'
 import type { ApiResponse } from '@/types'
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || ''
+
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken')
+  if (token) {
+    const value = `Bearer ${token}`
+    const headers = config.headers
+
+    if (headers && typeof headers === 'object' && 'set' in headers && typeof headers.set === 'function') {
+      headers.set('Authorization', value)
+    } else {
+      const base = headers && typeof headers === 'object' ? (headers as Record<string, unknown>) : {}
+      const nextHeaders: Record<string, unknown> = { ...base, Authorization: value }
+      config.headers = nextHeaders as unknown as AxiosRequestHeaders
+    }
+  }
+  return config
+})
 
 axios.interceptors.response.use(
   (response) => response.data,

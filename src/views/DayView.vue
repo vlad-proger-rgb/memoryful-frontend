@@ -7,6 +7,7 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
 import { daysApi, tagsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { useUiStore } from '@/stores/ui'
 import type { DayDetail, DayUpdate, Tag, ApiResponse } from '@/types'
 import { getIcon } from '@/plugins/fontawesome'
 import { useLocation } from '@/composables'
@@ -51,6 +52,7 @@ const fetchTags = async () => {
 }
 
 const userStore = useUserStore()
+const uiStore = useUiStore()
 
 const day = ref<DayDetail>({
   timestamp: 0,
@@ -78,6 +80,7 @@ const day = ref<DayDetail>({
 const showModal = ref(false)
 const isSaving = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
+const dayExists = ref(false)
 
 // Form state
 interface EditForm {
@@ -147,6 +150,7 @@ const toggleStarred = async () => {
     const updatedDay = { ...day.value, starred: !day.value.starred }
     await daysApi.toggleStarred(day.value.timestamp)
     day.value.starred = updatedDay.starred
+    uiStore.showToast(updatedDay.starred ? 'Starred' : 'Unstarred', 'success')
   } catch (error) {
     console.error('Error toggling star:', error)
   }
@@ -167,18 +171,33 @@ const saveDay = async () => {
   isSaving.value = true
 
   try {
-    const updateData: DayUpdate = {
+    const dayPayload = {
       mainImage: editForm.mainImage,
       images: editForm.images,
       description: editForm.description || undefined,
       content: editForm.content,
-      tags: editForm.tags.map((tag) => tag.id), // Only send tag IDs
+      tags: editForm.tags.map((tag) => tag.id),
       cityId: editForm.cityId,
       starred: editForm.starred,
     }
 
     try {
-      await daysApi.updateDay(day.value.timestamp, updateData)
+      if (dayExists.value) {
+        const updateData: DayUpdate = dayPayload
+        await daysApi.updateDay(day.value.timestamp, updateData)
+      } else {
+        await daysApi.createDay(day.value.timestamp, {
+          cityId: dayPayload.cityId,
+          description: dayPayload.description,
+          content: dayPayload.content,
+          steps: editForm.steps || 0,
+          mainImage: dayPayload.mainImage,
+          images: dayPayload.images,
+          tags: dayPayload.tags,
+          trackableProgresses: [],
+        })
+        dayExists.value = true
+      }
 
       const response = await daysApi.getDayDetail(day.value.timestamp)
       const dayData = (response as unknown as ApiResponse<DayDetail>).data
@@ -188,12 +207,11 @@ const saveDay = async () => {
 
       await fetchTags()
 
+      uiStore.showToast('Day saved', 'success')
       showModal.value = false
     } catch (error) {
-      console.error('Error updating day:', error)
+      console.error('Error saving day:', error)
     }
-  } catch (error) {
-    console.error('Error updating day:', error)
   } finally {
     isSaving.value = false
   }
@@ -268,40 +286,44 @@ const loadDay = async () => {
     0,
   )
 
-  const result = await daysApi.getDayDetail(timestamp / 1000)
+  try {
+    const result = await daysApi.getDayDetail(timestamp / 1000)
 
-  if (result.data) {
-    day.value = result.data
+    if (result.data) {
+      day.value = result.data
+      dayExists.value = true
 
-    // Update form with day data
-    editForm.mainImage = day.value.mainImage || ''
-    editForm.images = [...(day.value.images || [])]
-    editForm.description = day.value.description || ''
-    editForm.content = day.value.content || ''
-    editForm.tags = [...(day.value.tags || [])]
+      // Update form with day data
+      editForm.mainImage = day.value.mainImage || ''
+      editForm.images = [...(day.value.images || [])]
+      editForm.description = day.value.description || ''
+      editForm.content = day.value.content || ''
+      editForm.tags = [...(day.value.tags || [])]
 
-    // Set city and country data
-    if (day.value.city) {
-      editForm.city = day.value.city.name
-      editForm.cityId = day.value.city.id
+      // Set city and country data
+      if (day.value.city) {
+        editForm.city = day.value.city.name
+        editForm.cityId = day.value.city.id
 
-      if (day.value.city.country) {
-        editForm.country = day.value.city.country.name
-        editForm.countryId = day.value.city.country.id
+        if (day.value.city.country) {
+          editForm.country = day.value.city.country.name
+          editForm.countryId = day.value.city.country.id
+        } else {
+          editForm.country = ''
+          editForm.countryId = ''
+        }
       } else {
+        editForm.city = ''
+        editForm.cityId = ''
         editForm.country = ''
         editForm.countryId = ''
       }
-    } else {
-      editForm.city = ''
-      editForm.cityId = ''
-      editForm.country = ''
-      editForm.countryId = ''
-    }
 
-    editForm.starred = day.value.starred || false
-    editForm.steps = day.value.steps || 0
-  } else {
+      editForm.starred = day.value.starred || false
+      editForm.steps = day.value.steps || 0
+      return
+    }
+  } catch {
     const defaultCity = userStore.user.city || {
       id: '',
       name: '',
@@ -326,6 +348,7 @@ const loadDay = async () => {
       trackableProgresses: [],
       starred: false,
     }
+    dayExists.value = false
 
     // Initialize form with default values
     editForm.city = defaultCity.name

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/api/client'
 import type { ApiResponse, Country } from '@/types'
 
 export const countriesApi = {

@@ -3,8 +3,8 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { Month } from '@/types'
-import useYearsStore from '@/stores/years.ts'
 import useUiStore from '@/stores/ui.ts'
+import yearApi from '@/api/years'
 
 import ModalWindow from '@/components/ModalWindow.vue'
 import YearSlider from '@/components/YearSlider.vue'
@@ -16,7 +16,6 @@ import { useAuthUtils } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
-const yearsStore = useYearsStore()
 const uiStore = useUiStore()
 
 const { shakeElement } = useAuthUtils()
@@ -24,6 +23,9 @@ const { shakeElement } = useAuthUtils()
 const isModalOpen = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isNewMonth = ref(true)
+
+const isLoading = ref(false)
+const errorMessage = ref('')
 
 const topDayNumber = ref('')
 const currentYearNumber = ref(new Date().getFullYear())
@@ -35,6 +37,18 @@ const currentMonthRecord = ref<Month>({
   description: '',
   topDayTimestamp: 0,
 })
+
+const resetMonth = (monthNumber: number) => {
+  currentMonthRecord.value = {
+    year: currentYearNumber.value,
+    month: monthNumber,
+    backgroundImage: '',
+    description: '',
+    topDayTimestamp: 0,
+  }
+  isNewMonth.value = true
+  topDayNumber.value = ''
+}
 
 const monthDescriptionInputId = ref('month-description-input')
 const topDayInputId = ref('top-day-input')
@@ -71,19 +85,32 @@ onMounted(async () => {
     }
   }
 
-  const response = await yearsStore.getYear(currentYearNumber.value)
-  console.log('response: ', response)
-  if (response) {
-    for (const month of response) {
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await yearApi.getYear(currentYearNumber.value)
+    const months = response.data ?? []
+    let found = false
+    for (const month of months) {
       if (month.month === currentMonthNumber.value) {
         currentMonthRecord.value = month
         topDayNumber.value = new Date(month.topDayTimestamp * 1000).getDate().toString()
+        found = true
         break
       }
     }
-    isNewMonth.value = false
-  } else {
-    isNewMonth.value = true
+
+    if (found) {
+      isNewMonth.value = false
+    } else {
+      resetMonth(currentMonthNumber.value)
+    }
+  } catch (e: unknown) {
+    const maybeErr = e as { code?: number; msg?: string }
+    errorMessage.value = maybeErr?.msg || 'Failed to load year'
+    resetMonth(currentMonthNumber.value)
+  } finally {
+    isLoading.value = false
   }
 
   window.addEventListener('wheel', handleWheel, { passive: false })
@@ -152,35 +179,38 @@ function getMonthName(monthNumber: number, locale = 'en-US'): string {
 async function handleMonthSelect(monthNumber: number) {
   currentMonthNumber.value = monthNumber
 
-  console.log(`Month changed to ${monthNumber} (${getMonthName(monthNumber - 1)})`)
-
   await router.push({
     path: `/calendar/${currentYearNumber.value}`,
     query: { month: monthNumber.toString() },
   })
 
-  const response = await yearsStore.getMonth(currentYearNumber.value, monthNumber)
-  console.log('response: ', response)
-  if (response) {
-    currentMonthRecord.value = response
-    isNewMonth.value = false
-    topDayNumber.value = new Date(response.topDayTimestamp * 1000).getDate().toString()
-  } else {
-    currentMonthRecord.value = {
-      year: currentYearNumber.value,
-      month: monthNumber,
-      backgroundImage: '',
-      description: '',
-      topDayTimestamp: 0,
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await yearApi.getMonth(currentYearNumber.value, monthNumber)
+    if (response.data) {
+      currentMonthRecord.value = response.data
+      isNewMonth.value = false
+      topDayNumber.value = new Date(response.data.topDayTimestamp * 1000).getDate().toString()
+      return
     }
-    isNewMonth.value = true
-    topDayNumber.value = ''
+  } catch (e: unknown) {
+    const maybeErr = e as { code?: number; msg?: string }
+    if (maybeErr?.code !== 404) {
+      errorMessage.value = maybeErr?.msg || 'Failed to load month'
+      return
+    }
+  } finally {
+    isLoading.value = false
   }
+
+  resetMonth(monthNumber)
 }
 
 const submitMonth = async () => {
+  errorMessage.value = ''
   if (!currentMonthRecord.value.description) {
-    yearsStore.errorMessage = 'Please enter month description'
+    errorMessage.value = 'Please enter month description'
     shakeElement(monthDescriptionInputId.value)
     return
   }
@@ -191,7 +221,7 @@ const submitMonth = async () => {
     +topDayNumber.value < 1 ||
     +topDayNumber.value > 31
   ) {
-    yearsStore.errorMessage = 'Please enter a valid day number'
+    errorMessage.value = 'Please enter a valid day number'
     shakeElement(topDayInputId.value)
     return
   }
@@ -202,11 +232,30 @@ const submitMonth = async () => {
 
   // TODO: upload photo file to cloud in future
 
-  if (isNewMonth.value) {
-    await yearsStore.createMonth(currentMonthRecord.value)
-    isNewMonth.value = false
-  } else {
-    await yearsStore.updateMonth(currentMonthRecord.value)
+  isLoading.value = true
+  try {
+    if (isNewMonth.value) {
+      const res = await yearApi.createMonth(currentMonthRecord.value)
+      if (res.code !== 200) {
+        errorMessage.value = res.msg || 'Failed to create month'
+        return
+      }
+      isNewMonth.value = false
+      uiStore.showToast('Month created successfully', 'success')
+    } else {
+      const res = await yearApi.updateMonth(currentMonthRecord.value)
+      if (res.code !== 200) {
+        errorMessage.value = res.msg || 'Failed to update month'
+        return
+      }
+      uiStore.showToast('Month updated successfully', 'success')
+    }
+  } catch (e: unknown) {
+    const maybeErr = e as { msg?: string }
+    errorMessage.value = maybeErr?.msg || 'Request failed'
+    return
+  } finally {
+    isLoading.value = false
   }
 
   isModalOpen.value = false
@@ -348,8 +397,8 @@ const submitMonth = async () => {
             </div>
           </div>
 
-          <p v-if="yearsStore.errorMessage" class="text-red-400 text-sm mt-1">
-            {{ yearsStore.errorMessage }}
+          <p v-if="errorMessage" class="text-red-400 text-sm mt-1">
+            {{ errorMessage }}
           </p>
         </div>
       </form>
@@ -360,9 +409,9 @@ const submitMonth = async () => {
         <MainButton type="button" variant="secondary" @click="closeModal" class="px-4">
           Cancel
         </MainButton>
-        <AuthButton @click="submitMonth" class="px-6 min-w-[120px]" :loading="yearsStore.isLoading">
+        <AuthButton @click="submitMonth" class="px-6 min-w-[120px]" :loading="isLoading">
           <template #default>Save Changes</template>
-          <template #icon-right v-if="!yearsStore.isLoading">
+          <template #icon-right v-if="!isLoading">
             <font-awesome-icon icon="save" />
           </template>
         </AuthButton>

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/api/client'
 import type { ApiResponse, Tag } from '@/types'
 
 export const tagsApi = {
@@ -10,7 +10,7 @@ export const tagsApi = {
     return axios.get(`/api/tags/${id}`)
   },
   createTag(tag: Tag): Promise<ApiResponse<Tag>> {
-    return axios.post('/api/tags', tag)
+    return axios.post('/api/tags/', tag)
   },
   updateTag(tag: Tag): Promise<ApiResponse<Tag>> {
     return axios.put(`/api/tags/${tag.id}`, tag)

@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 
 import App from '@/App.vue'
 import router from '@/router'
+import { setAuthToken } from '@/api/client'
 
 import './assets/main.css'
 
@@ -14,5 +15,10 @@ app.use(createPinia())
 app.use(router)
 
 app.component('font-awesome-icon', FontAwesomeIcon)
+
+const accessToken = localStorage.getItem('accessToken')
+if (accessToken) {
+  setAuthToken(accessToken)
+}
 
 app.mount('#app')

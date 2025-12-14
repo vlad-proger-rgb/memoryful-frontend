@@ -25,12 +25,12 @@ export const useUserStore = defineStore('user', () => {
     },
     email: '',
     firstName: '',
-    jobTitle: '',
+    bio: '',
   })
 
   const token = ref<Token | null>(null)
 
-  function setUser(data: User) {
+  function setUser(data: Partial<User>) {
     user.value = { ...user.value, ...data }
   }
 
@@ -58,7 +58,7 @@ export const useUserStore = defineStore('user', () => {
       },
       email: '',
       firstName: '',
-      jobTitle: '',
+      bio: '',
     }
     token.value = null
     localStorage.removeItem('accessToken')
@@ -82,7 +82,13 @@ export const useUserStore = defineStore('user', () => {
     const result = await withLoading(async () => {
       const response = await authApi.verifyCode(user.value.email, code)
 
-      if (response.code === 201 && response.data) {
+      if ((response.code === 201 || response.code === 200) && response.data) {
+        const accessToken = response.data.tokens?.accessToken
+        if (!accessToken) {
+          errorMessage.value = 'Login succeeded but no access token was returned'
+          return [false, false] as [boolean, boolean]
+        }
+
         setToken(response.data.tokens)
         user.value.id = response.data.userId
 
@@ -108,7 +114,29 @@ export const useUserStore = defineStore('user', () => {
     try {
       const response = await authApi.getUserDetails()
       if (response.code === 200 && response.data) {
-        setUser(response.data)
+        const normalized = {
+          ...response.data,
+          city:
+            (response.data as unknown as { city?: User['city'] | null }).city ??
+            {
+              id: '',
+              name: '',
+              country: {
+                id: '',
+                name: '',
+                code: '',
+              },
+            },
+          country:
+            (response.data as unknown as { country?: User['country'] | null }).country ??
+            {
+              id: '',
+              name: '',
+              code: '',
+            },
+        } as User
+
+        setUser(normalized)
         return true
       }
       return false
@@ -120,10 +148,22 @@ export const useUserStore = defineStore('user', () => {
 
   async function updateUserProfile() {
     return await withLoading(async () => {
-      const userData = {
+      const userData: Partial<User> & { country?: User['country']; city?: User['city'] } = {
         firstName: user.value.firstName,
-        city: user.value.city,
-        jobTitle: user.value.jobTitle,
+        bio: user.value.bio,
+      }
+
+      if (typeof user.value.age === 'number') {
+        userData.age = user.value.age
+      }
+
+      const resolvedCountry = user.value.city?.country?.id ? user.value.city.country : user.value.country
+      if (resolvedCountry?.id) {
+        userData.country = resolvedCountry
+      }
+
+      if (user.value.city?.id) {
+        userData.city = user.value.city
       }
 
       const response = await authApi.updateUserProfile(userData)
@@ -160,7 +200,7 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!token.value)
   const isProfileComplete = computed(
-    () => !!user.value.firstName && !!user.value.city && !!user.value.jobTitle,
+    () => !!user.value.firstName && !!user.value.city,
   )
 
   return {
@@ -171,6 +211,7 @@ export const useUserStore = defineStore('user', () => {
     clearUser,
     requestVerificationCode,
     verifyCode,
+    fetchUserDetails,
     updateUserProfile,
     logout,
     initializeFromStorage,

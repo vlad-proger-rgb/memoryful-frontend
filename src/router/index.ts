@@ -80,6 +80,16 @@ const router = createRouter({
           name: 'settings-connected-apps',
           component: () => import('@/views/settings/ConnectedApps.vue'),
         },
+        {
+          path: 'workspace',
+          name: 'settings-workspace',
+          component: () => import('@/views/settings/WorkspaceSettings.vue'),
+        },
+        {
+          path: 'ai',
+          name: 'settings-ai',
+          component: () => import('@/views/settings/AiSettings.vue'),
+        },
       ],
     },
   ],

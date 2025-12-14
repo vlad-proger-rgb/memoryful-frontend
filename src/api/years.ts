@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/api/client'
 import type { ApiResponse, Month } from '@/types'
 
 export const yearApi = {
@@ -9,10 +9,10 @@ export const yearApi = {
     return axios.get(`/api/months/${year}/${monthNumber}`)
   },
   createMonth(month: Month): Promise<ApiResponse<null>> {
-    return axios.post(`/api/months`, month)
+    return axios.post(`/api/months/`, month)
   },
   updateMonth(month: Month): Promise<ApiResponse<null>> {
-    return axios.put(`/api/months`, month)
+    return axios.put(`/api/months/`, month)
   },
 }
 

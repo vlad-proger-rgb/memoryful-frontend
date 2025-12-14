@@ -9,7 +9,7 @@ export interface User {
   firstName?: string
   lastName?: string
   age?: number
-  jobTitle?: string
+  bio?: string
   photo?: string
 }
 

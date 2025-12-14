@@ -6,7 +6,7 @@ import daysApi from '@/api/days'
 import tagsApi from '@/api/tags'
 import countriesApi from '@/api/countries'
 import citiesApi from '@/api/cities'
-import type { DayListItem, Tag, Country, City } from '@/types'
+import type { DayListItem, Tag, Country, CityDetail } from '@/types'
 
 import TagSelector from '@/components/day/TagSelector.vue'
 import searchBgVideo from '@/assets/video/search_bg.mp4'
@@ -14,6 +14,7 @@ import { getIcon } from '@/plugins/fontawesome'
 import useUiStore from '@/stores/ui'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import LocationFlow from '@/components/ui/LocationFlow.vue'
 
 // Props for customizable background
 withDefaults(defineProps<{
@@ -38,35 +39,7 @@ const starredOnly = ref(false)
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const selectedCountry = ref<Country | null>(null)
-const selectedCity = ref<City | null>(null)
-
-// Dropdown data
-const countries = ref<Country[]>([])
-const cities = ref<City[]>([])
-const countryQuery = ref('')
-const cityQuery = ref('')
-const showCountryDropdown = ref(false)
-const showCityDropdown = ref(false)
-
-// Refs for dropdown positioning
-const countryFieldRef = ref<HTMLElement | null>(null)
-const cityFieldRef = ref<HTMLElement | null>(null)
-
-// Helper to create dropdown style computed from a field ref
-const useDropdownStyle = (fieldRef: typeof countryFieldRef) =>
-  computed(() => {
-    if (!fieldRef.value) return {}
-    const rect = fieldRef.value.getBoundingClientRect()
-    return {
-      position: 'fixed' as const,
-      top: `${rect.bottom + 8}px`,
-      left: `${rect.left}px`,
-      width: `${rect.width}px`,
-    }
-  })
-
-const countryDropdownStyle = useDropdownStyle(countryFieldRef)
-const cityDropdownStyle = useDropdownStyle(cityFieldRef)
+const selectedCity = ref<CityDetail | null>(null)
 
 // Results state
 const days = ref<DayListItem[]>([])
@@ -140,28 +113,6 @@ const fetchTags = async () => {
   }
 }
 
-const fetchCountries = async () => {
-  try {
-    const response = await countriesApi.getCountries(countryQuery.value)
-    countries.value = response.data || []
-  } catch {
-    // Ignore errors
-  }
-}
-
-const fetchCities = async () => {
-  if (!selectedCountry.value) {
-    cities.value = []
-    return
-  }
-  try {
-    const response = await citiesApi.getCities(selectedCountry.value.id, cityQuery.value)
-    cities.value = response.data || []
-  } catch {
-    // Ignore errors
-  }
-}
-
 const handleSubmit = (event?: Event) => {
   event?.preventDefault()
   searchDays()
@@ -172,32 +123,25 @@ const toggleSettings = () => {
   showSettings.value = !showSettings.value
 }
 
-const selectCountry = (country: Country) => {
-  selectedCountry.value = country
-  countryQuery.value = country.name
-  showCountryDropdown.value = false
+const handleLocationCountryUpdate = (val: Country | null) => {
+  selectedCountry.value = val
   selectedCity.value = null
-  cityQuery.value = ''
-  fetchCities()
 }
 
-const selectCity = (city: City) => {
-  selectedCity.value = city
-  cityQuery.value = city.name
-  showCityDropdown.value = false
+const handleLocationCityUpdate = (val: CityDetail | null) => {
+  selectedCity.value = val
+  if (val?.country) {
+    selectedCountry.value = val.country
+  }
 }
 
 const clearCountry = () => {
   selectedCountry.value = null
-  countryQuery.value = ''
   selectedCity.value = null
-  cityQuery.value = ''
-  cities.value = []
 }
 
 const clearCity = () => {
   selectedCity.value = null
-  cityQuery.value = ''
 }
 
 const clearAllFilters = () => {
@@ -208,19 +152,8 @@ const clearAllFilters = () => {
   endDate.value = null
   selectedCountry.value = null
   selectedCity.value = null
-  countryQuery.value = ''
-  cityQuery.value = ''
   selectedTags.value = []
-  cities.value = []
   router.replace({ query: {} })
-}
-
-const hideCountryDropdown = () => {
-  setTimeout(() => { showCountryDropdown.value = false }, 200)
-}
-
-const hideCityDropdown = () => {
-  setTimeout(() => { showCityDropdown.value = false }, 200)
 }
 
 const getDayUrl = (timestamp: number) => {
@@ -239,20 +172,6 @@ const formatDate = (timestamp: number) => {
     year: 'numeric',
   })
 }
-
-// Watch for country query changes
-watch(countryQuery, () => {
-  if (!selectedCountry.value || countryQuery.value !== selectedCountry.value.name) {
-    fetchCountries()
-  }
-})
-
-// Watch for city query changes
-watch(cityQuery, () => {
-  if (!selectedCity.value || cityQuery.value !== selectedCity.value.name) {
-    fetchCities()
-  }
-})
 
 // Build query params from current filters
 const buildQueryParams = () => {
@@ -284,25 +203,33 @@ const restoreFiltersFromUrl = async () => {
   if (q.startDate) startDate.value = new Date(String(q.startDate))
   if (q.endDate) endDate.value = new Date(String(q.endDate))
 
-  // Restore country
-  if (q.countryId) {
-    const countryId = String(q.countryId)
-    await fetchCountries()
-    const country = countries.value.find(c => c.id === countryId)
-    if (country) {
-      selectedCountry.value = country
-      countryQuery.value = country.name
-      await fetchCities()
+  // Restore city first (it can also set the country)
+  if (q.cityId) {
+    const cityId = String(q.cityId)
+    try {
+      const res = await citiesApi.getCityById(cityId)
+      if (res.code === 200 && res.data && 'country' in res.data) {
+        const cityDetail = res.data as unknown as CityDetail
+        selectedCity.value = cityDetail
+        selectedCountry.value = cityDetail.country
+      }
+    } catch {
+      // Ignore errors
     }
   }
 
-  // Restore city (need to fetch by ID since it may not be in the initial list)
-  if (q.cityId) {
-    const cityId = String(q.cityId)
-    const city = cities.value.find(c => c.id === cityId)
-    if (city) {
-      selectedCity.value = city
-      cityQuery.value = city.name
+  // Restore country
+  if (q.countryId && !selectedCountry.value) {
+    const countryId = String(q.countryId)
+    try {
+      const response = await countriesApi.getCountries('')
+      const list = response.data || []
+      const country = list.find((c) => c.id === countryId)
+      if (country) {
+        selectedCountry.value = country
+      }
+    } catch {
+      // Ignore errors
     }
   }
 
@@ -338,7 +265,6 @@ watch(
 onMounted(async () => {
   uiStore.disableScroll = false
   await fetchTags()
-  await fetchCountries()
   restoreFiltersFromUrl()
 })
 </script>
@@ -463,92 +389,38 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Country -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
-              <span class="text-xl max-md:text-lg text-white">Country</span>
-              <div ref="countryFieldRef" class="entry-field relative">
-                <input
-                  v-model="countryQuery"
-                  type="text"
-                  placeholder="Select country..."
-                  class="entry-input"
-                  @focus="showCountryDropdown = true"
-                  @blur="hideCountryDropdown"
+            <!-- Location -->
+            <div class="flex flex-wrap items-start justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+              <span class="text-xl max-md:text-lg text-white">Location</span>
+              <div class="w-full max-w-[520px] max-md:max-w-none">
+                <LocationFlow
+                  :country="selectedCountry"
+                  :city="selectedCity"
+                  country-input-id="search-country-input"
+                  city-input-id="search-city-input"
+                  @update:country="handleLocationCountryUpdate"
+                  @update:city="handleLocationCityUpdate"
                 />
-                <button
-                  v-if="selectedCountry"
-                  type="button"
-                  class="entry-icon cursor-pointer hover:text-white"
-                  @click="clearCountry"
-                >
-                  <font-awesome-icon icon="times" />
-                </button>
-                <font-awesome-icon v-else icon="flag" class="entry-icon" />
+                <div class="flex justify-end gap-2 mt-2">
+                  <button
+                    v-if="selectedCountry"
+                    type="button"
+                    class="text-white/70 hover:text-white text-sm"
+                    @click="clearCountry"
+                  >
+                    Clear country
+                  </button>
+                  <button
+                    v-if="selectedCity"
+                    type="button"
+                    class="text-white/70 hover:text-white text-sm"
+                    @click="clearCity"
+                  >
+                    Clear city
+                  </button>
+                </div>
               </div>
             </div>
-
-            <!-- Country Dropdown (teleported) -->
-            <Teleport to="body">
-              <div
-                v-if="showCountryDropdown && countries.length"
-                class="dropdown-menu-teleported"
-                :style="countryDropdownStyle"
-              >
-                <button
-                  v-for="country in countries.slice(0, 5)"
-                  :key="country.id"
-                  type="button"
-                  class="dropdown-item"
-                  @mousedown="selectCountry(country)"
-                >
-                  {{ country.name }}
-                </button>
-              </div>
-            </Teleport>
-
-            <!-- City -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
-              <span class="text-xl max-md:text-lg text-white">City</span>
-              <div ref="cityFieldRef" class="entry-field relative">
-                <input
-                  v-model="cityQuery"
-                  type="text"
-                  placeholder="Select city..."
-                  class="entry-input"
-                  :disabled="!selectedCountry"
-                  @focus="showCityDropdown = true"
-                  @blur="hideCityDropdown"
-                />
-                <button
-                  v-if="selectedCity"
-                  type="button"
-                  class="entry-icon cursor-pointer hover:text-white"
-                  @click="clearCity"
-                >
-                  <font-awesome-icon icon="times" />
-                </button>
-                <font-awesome-icon v-else icon="city" class="entry-icon" />
-              </div>
-            </div>
-
-            <!-- City Dropdown (teleported) -->
-            <Teleport to="body">
-              <div
-                v-if="showCityDropdown && cities.length"
-                class="dropdown-menu-teleported"
-                :style="cityDropdownStyle"
-              >
-                <button
-                  v-for="city in cities.slice(0, 5)"
-                  :key="city.id"
-                  type="button"
-                  class="dropdown-item"
-                  @mousedown="selectCity(city)"
-                >
-                  {{ city.name }}
-                </button>
-              </div>
-            </Teleport>
 
             <!-- Tags -->
             <div class="glass-inner p-3 rounded-[50px] relative z-[100]">
@@ -693,9 +565,10 @@ onMounted(async () => {
 }
 
 .glass-inner {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(17.5px);
   -webkit-backdrop-filter: blur(17.5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Settings panel animation */
@@ -789,10 +662,11 @@ onMounted(async () => {
 }
 
 .date-picker-wrapper :deep(.dp__input_wrap) {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(17.5px);
   -webkit-backdrop-filter: blur(17.5px);
   border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .date-picker-wrapper :deep(.dp__input) {
@@ -803,10 +677,11 @@ onMounted(async () => {
   font-size: 1.1rem;
   padding: 10px 16px;
   padding-left: 40px;
+  box-shadow: none;
 }
 
 .date-picker-wrapper :deep(.dp__input::placeholder) {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .date-picker-wrapper :deep(.dp__input_icon) {

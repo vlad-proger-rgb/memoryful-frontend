@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/api/client'
 import type { ApiResponse, User, AuthResponse } from '@/types'
 
 export const authApi = {

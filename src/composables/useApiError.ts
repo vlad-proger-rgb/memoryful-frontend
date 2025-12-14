@@ -1,22 +1,33 @@
 import { ref } from 'vue'
 import type { ApiResponse } from '@/types'
+import { useUiStore } from '@/stores/ui'
 
 export function useApiError() {
   const errorMessage = ref<string>('')
   const isLoading = ref<boolean>(false)
+  const uiStore = useUiStore()
 
-  const handleApiError = (error: ApiResponse | any): string => {
+  const handleApiError = (error: ApiResponse | unknown): string => {
     console.error("handleApiError error: ", error)
     let message = 'Something went wrong. Please try again'
+    let code: number | undefined
 
-    if ('code' in error && 'msg' in error) {
-      message = error.msg || 'Server error'
+    if (typeof error === 'object' && error !== null && 'code' in error && 'msg' in error) {
+      const apiError = error as ApiResponse
+      message = apiError.msg || 'Server error'
+      code = typeof apiError.code === 'number' ? apiError.code : undefined
     }
 
-    else if (error.response) {
-      message = error.response.data?.msg || 'Server error. Please try again'
-    } else if (error.request) {
+    else if (typeof error === 'object' && error !== null && 'response' in error) {
+      const response = (error as { response?: { data?: { msg?: string }; status?: number } }).response
+      message = response?.data?.msg || 'Server error. Please try again'
+      code = typeof response?.status === 'number' ? response.status : undefined
+    } else if (typeof error === 'object' && error !== null && 'request' in error) {
       message = 'Network error. Please check your connection'
+    }
+
+    if (code === 401 || message === 'Could not validate credentials') {
+      uiStore.showToast(message, 'error')
     }
 
     errorMessage.value = message

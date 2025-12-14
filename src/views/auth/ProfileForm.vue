@@ -2,21 +2,20 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useUiStore } from '@/stores/ui'
 import { useAuthUtils, useLocation } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
-import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
-import type { CityDetail, Country } from '@/types'
+import LocationFlow from '@/components/ui/LocationFlow.vue'
 
 const userStore = useUserStore()
+const uiStore = useUiStore()
 const router = useRouter()
 
 const {
   selectedCountry,
   selectedCity,
-  fetchCountries,
-  fetchCities,
   setSelectedCountry,
   setSelectedCity,
 } = useLocation()
@@ -24,9 +23,12 @@ const {
 const { shakeElement } = useAuthUtils()
 
 const nameInputId = ref('profile-name-input')
-const countryInputId = ref('profile-country-input')
-const cityInputId = ref('profile-city-input')
-const jobTitleInputId = ref('profile-job-title-input')
+const countryInputId = 'profile-country-input'
+const cityInputId = 'profile-city-input'
+const ageInputId = ref('profile-age-input')
+
+const ageDraft = ref<number | undefined>(undefined)
+const bioDraft = ref('')
 
 // Initialize form with user data if available
 onMounted(() => {
@@ -45,34 +47,46 @@ onMounted(() => {
       setSelectedCountry(userStore.user.city.country)
     }
   }
+
+  ageDraft.value = typeof userStore.user.age === 'number' ? userStore.user.age : undefined
+  bioDraft.value = userStore.user.bio || ''
 })
-
-const handleCountrySelect = (item: Country | CityDetail) => {
-  if ('code' in item) {
-    setSelectedCountry(item)
-    setSelectedCity(null)
-    userStore.errorMessage = ''
-  }
-}
-
-const handleCitySelect = (item: Country | CityDetail) => {
-  if ('country' in item) {
-    setSelectedCity(item)
-    userStore.errorMessage = ''
-  }
-}
 
 const handleUpdateProfile = async () => {
   try {
     userStore.isLoading = true
     userStore.errorMessage = ''
 
+    if (selectedCity.value) {
+      userStore.setUser({
+        city: selectedCity.value,
+        country: selectedCity.value.country,
+      })
+    } else if (selectedCountry.value) {
+      userStore.setUser({
+        city: {
+          id: '',
+          name: '',
+          country: {
+            id: '',
+            name: '',
+            code: '',
+          },
+        },
+        country: selectedCountry.value,
+      })
+    }
+
+    userStore.setUser({
+      age: ageDraft.value,
+      bio: bioDraft.value || undefined,
+    })
+
     // Update user data
     userStore.user = {
       ...userStore.user,
       firstName: userStore.user.firstName,
       lastName: userStore.user.lastName,
-      jobTitle: userStore.user.jobTitle,
     }
 
     await userStore.updateUserProfile()
@@ -91,6 +105,7 @@ const handleUpdateProfile = async () => {
 const handleLogout = async () => {
   await userStore.logout()
   userStore.errorMessage = ''
+  uiStore.showToast('Signed out', 'success')
   await router.push('/login')
 }
 </script>
@@ -108,53 +123,41 @@ const handleLogout = async () => {
       />
 
       <div class="flex flex-col md:flex-row md:justify-between gap-4">
-        <div class="w-full md:w-1/2 relative">
-          <LocationAutocomplete
-            :model-value="selectedCountry?.name || ''"
-            :placeholder="'Search country...'"
-            icon="globe"
-            :input-id="countryInputId"
-            :show-country-code="true"
-            :full-width="true"
-            :fetch-items="(query: string) => fetchCountries(query)"
-            class="relative z-10"
-            @select="handleCountrySelect"
-            @update:model-value="
-              (val: string) => {
-                /* handle input if needed */
-              }
-            "
-          />
-        </div>
-
-        <div class="w-full md:w-1/2 relative">
-          <LocationAutocomplete
-            :model-value="selectedCity?.name || ''"
-            :placeholder="selectedCountry ? 'Search city...' : 'Select country first'"
-            icon="map-marker-alt"
-            :input-id="cityInputId"
-            :disabled="!selectedCountry"
-            :country-id="selectedCountry?.id || ''"
-            :full-width="true"
-            :fetch-items="(query: string) => fetchCities(query, selectedCountry?.id || '')"
-            class="relative z-10"
-            @select="handleCitySelect"
-            @update:model-value="
-              (val: string) => {
-                /* handle input if needed */
-              }
-            "
+        <div class="w-full relative">
+          <LocationFlow
+            :country="selectedCountry"
+            :city="selectedCity"
+            :country-input-id="countryInputId"
+            :city-input-id="cityInputId"
+            variant="auth"
+            @update:country="(val) => {
+              setSelectedCountry(val)
+              setSelectedCity(null)
+              userStore.errorMessage = ''
+            }"
+            @update:city="(val) => {
+              setSelectedCity(val)
+              userStore.errorMessage = ''
+            }"
           />
         </div>
       </div>
 
       <AuthInput
-        v-model="userStore.user.jobTitle"
-        type="text"
-        placeholder="Job Title"
-        icon="briefcase"
-        :id="jobTitleInputId"
+        v-model.number="ageDraft"
+        type="number"
+        placeholder="Age (optional)"
+        icon="calendar"
+        :id="ageInputId"
         @update:model-value="userStore.errorMessage = ''"
+      />
+
+      <textarea
+        v-model="bioDraft"
+        rows="4"
+        class="w-full bg-white/20 rounded-xl px-4 py-2 outline-none resize-none text-sm text-white !placeholder-white/80 focus:ring-1 focus:ring-white transition"
+        placeholder="Bio (optional)"
+        @input="userStore.errorMessage = ''"
       />
 
       <p v-if="userStore.errorMessage" class="text-red-400 text-sm ml-2">

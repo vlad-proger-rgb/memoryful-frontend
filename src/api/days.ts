@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/api/client'
 import type { DayListItem, DayDetail, ApiResponse, DayCreate, DayUpdate, DayFilters } from '@/types'
 
 export const daysApi = {

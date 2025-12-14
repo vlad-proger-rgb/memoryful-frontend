@@ -1,40 +1,37 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps({
-  modelValue: {
-    type: [String, Number],
-    default: '',
+type InputMode =
+  | 'text'
+  | 'none'
+  | 'tel'
+  | 'url'
+  | 'email'
+  | 'numeric'
+  | 'decimal'
+  | 'search'
+  | undefined
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: string | number | undefined
+    placeholder: string
+    type?: string
+    icon: string
+    hasError?: boolean
+    inputMode?: InputMode
+    pattern?: string
+    fullWidth?: boolean
+  }>(),
+  {
+    modelValue: '',
+    type: 'text',
+    hasError: false,
+    inputMode: undefined,
+    pattern: undefined,
+    fullWidth: true,
   },
-  placeholder: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    default: 'text',
-  },
-  icon: {
-    type: String,
-    required: true,
-  },
-  hasError: {
-    type: Boolean,
-    default: false,
-  },
-  inputMode: {
-    type: String,
-    default: undefined,
-  },
-  pattern: {
-    type: String,
-    default: undefined,
-  },
-  fullWidth: {
-    type: Boolean,
-    default: true,
-  },
-})
+)
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -62,7 +59,7 @@ const containerClass = computed(() => {
 <template>
   <div :class="containerClass">
     <input
-      :value="modelValue"
+      :value="modelValue ?? ''"
       @input="updateValue"
       :type="type"
       :placeholder="placeholder"
@@ -73,3 +70,16 @@ const containerClass = computed(() => {
     <font-awesome-icon :icon="icon" class="text-white" />
   </div>
 </template>
+
+<style scoped>
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+</style>
