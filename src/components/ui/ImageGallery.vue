@@ -121,6 +121,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import ModalWindow from '@/components/ModalWindow.vue'
+import storageApi from '@/api/storage'
 
 const props = withDefaults(
   defineProps<{
@@ -140,6 +141,38 @@ const selectedIndex = ref(0)
 const isTransitioning = ref(false)
 const currentImage = ref('')
 
+const resolvedCache = ref<Record<string, string>>({})
+
+const getImageUrl = (imagePath: string) => {
+  if (!imagePath) return imagePath
+
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+
+  if (imagePath.startsWith('users/')) {
+    return resolvedCache.value[imagePath] || ''
+  }
+
+  return props.basePath ? `${props.basePath}${imagePath}` : imagePath
+}
+
+const ensureResolved = async (imagePath: string) => {
+  if (!imagePath) return
+  if (!imagePath.startsWith('users/')) return
+  if (resolvedCache.value[imagePath]) return
+
+  try {
+    const res = await storageApi.presignGet({ objectKey: imagePath })
+    const url = res.data?.downloadUrl
+    if (url) {
+      resolvedCache.value = { ...resolvedCache.value, [imagePath]: url }
+    }
+  } catch {
+    // ignore
+  }
+}
+
 // Watch for image changes to trigger transition
 watch(
   () => selectedIndex.value,
@@ -149,6 +182,7 @@ watch(
       await nextTick()
       // Small delay to allow the fade-out to be visible
       await new Promise((resolve) => setTimeout(resolve, 150))
+      await ensureResolved(props.images[newIndex])
       currentImage.value = getImageUrl(props.images[newIndex])
       isTransitioning.value = false
     }
@@ -156,15 +190,22 @@ watch(
   { immediate: true },
 )
 
-const getImageUrl = (imagePath: string) => {
-  return props.basePath ? `${props.basePath}${imagePath}` : imagePath
-}
-
 const openModal = (index: number) => {
   selectedIndex.value = index
+  void ensureResolved(props.images[index])
   currentImage.value = getImageUrl(props.images[index])
   isOpen.value = true
 }
+
+watch(
+  () => props.images,
+  async (imgs) => {
+    for (const img of imgs) {
+      await ensureResolved(img)
+    }
+  },
+  { immediate: true },
+)
 
 const closeModal = () => {
   isOpen.value = false

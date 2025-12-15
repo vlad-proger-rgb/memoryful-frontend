@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, onBeforeUnmount as onBeforeUnmountVue } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { Month } from '@/types'
@@ -12,16 +12,35 @@ import MainButton from '@/components/MainButton.vue'
 import MonthSlider from '@/components/MonthSlider.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
 
-import { useAuthUtils } from '@/composables'
+import { useAuthUtils, useStorageUpload, useStorageResolve } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
 
 const { shakeElement } = useAuthUtils()
+const { uploadToStorage } = useStorageUpload()
+const { resolveStorageSrc } = useStorageResolve()
+
+const backgroundUrl = ref<string | null>(null)
+const isBackgroundVideo = ref(false)
+
+const computeIsVideo = (src: string) => {
+  const lower = src.toLowerCase()
+  return (
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v') ||
+    lower.endsWith('.avi')
+  )
+}
 
 const isModalOpen = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const selectedBackgroundFile = ref<File | null>(null)
+const selectedBackgroundPreviewUrl = ref<string | null>(null)
+const isSelectedBackgroundPreviewVideo = ref(false)
 const isNewMonth = ref(true)
 
 const isLoading = ref(false)
@@ -38,6 +57,15 @@ const currentMonthRecord = ref<Month>({
   topDayTimestamp: 0,
 })
 
+watch(
+  () => currentMonthRecord.value.backgroundImage,
+  async (next) => {
+    backgroundUrl.value = await resolveStorageSrc(next)
+    isBackgroundVideo.value = !!next && computeIsVideo(next)
+  },
+  { immediate: true },
+)
+
 const resetMonth = (monthNumber: number) => {
   currentMonthRecord.value = {
     year: currentYearNumber.value,
@@ -48,7 +76,39 @@ const resetMonth = (monthNumber: number) => {
   }
   isNewMonth.value = true
   topDayNumber.value = ''
+  selectedBackgroundFile.value = null
+  if (fileInput.value) fileInput.value.value = ''
 }
+
+const handleBackgroundSelected = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  selectedBackgroundFile.value = input.files?.[0] || null
+}
+
+watch(
+  () => selectedBackgroundFile.value,
+  (next) => {
+    if (selectedBackgroundPreviewUrl.value) {
+      URL.revokeObjectURL(selectedBackgroundPreviewUrl.value)
+      selectedBackgroundPreviewUrl.value = null
+    }
+
+    if (!next) {
+      isSelectedBackgroundPreviewVideo.value = false
+      return
+    }
+
+    selectedBackgroundPreviewUrl.value = URL.createObjectURL(next)
+    isSelectedBackgroundPreviewVideo.value = next.type.startsWith('video/')
+  },
+)
+
+onBeforeUnmountVue(() => {
+  if (selectedBackgroundPreviewUrl.value) {
+    URL.revokeObjectURL(selectedBackgroundPreviewUrl.value)
+    selectedBackgroundPreviewUrl.value = null
+  }
+})
 
 const monthDescriptionInputId = ref('month-description-input')
 const topDayInputId = ref('top-day-input')
@@ -179,6 +239,9 @@ function getMonthName(monthNumber: number, locale = 'en-US'): string {
 async function handleMonthSelect(monthNumber: number) {
   currentMonthNumber.value = monthNumber
 
+  selectedBackgroundFile.value = null
+  if (fileInput.value) fileInput.value.value = ''
+
   await router.push({
     path: `/calendar/${currentYearNumber.value}`,
     query: { month: monthNumber.toString() },
@@ -230,7 +293,25 @@ const submitMonth = async () => {
     new Date(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value).getTime() /
     1000
 
-  // TODO: upload photo file to cloud in future
+  const file = selectedBackgroundFile.value || fileInput.value?.files?.[0]
+  if (file) {
+    try {
+      const objectKey = await uploadToStorage({
+        file,
+        intent: 'month_image',
+        year: currentYearNumber.value,
+        month: currentMonthNumber.value,
+      })
+      currentMonthRecord.value.backgroundImage = objectKey
+      selectedBackgroundFile.value = null
+      if (fileInput.value) fileInput.value.value = ''
+    } catch (e: unknown) {
+      console.error('Failed to upload month background:', e)
+      const maybeErr = e as { message?: string }
+      errorMessage.value = maybeErr?.message || 'Failed to upload month background'
+      return
+    }
+  }
 
   isLoading.value = true
   try {
@@ -264,11 +345,31 @@ const submitMonth = async () => {
 
 <template>
   <div
-    class="relative h-screen flex flex-col bg-gradient-to-b overflow-hidden transition"
-    :class="backgroundGradient(currentMonthNumber)"
+    class="relative h-screen flex flex-col overflow-hidden transition"
   >
-    <div>
-      <div class="flex justify-between">
+    <video
+      v-if="backgroundUrl && isBackgroundVideo"
+      class="absolute inset-0 w-full h-full object-cover z-0 blur-[3px] brightness-75"
+      :src="backgroundUrl"
+      autoplay
+      muted
+      loop
+      playsinline
+    />
+    <img
+      v-else-if="backgroundUrl"
+      class="absolute inset-0 w-full h-full object-cover z-0 blur-[3px] brightness-75"
+      :src="backgroundUrl"
+      alt="background"
+    />
+    <div
+      class="absolute inset-0 z-10 bg-gradient-to-b"
+      :class="backgroundGradient(currentMonthNumber)"
+      style="opacity: 0.45"
+    />
+
+    <div class="relative z-20 flex flex-col flex-1 min-h-0">
+      <div class="flex justify-between mt-3">
         <div class="flex items-center gap-4 px-4 py-2">
           <div>
             <p class="text-white text-2xl">{{ getMonthName(currentMonthNumber - 1) }}</p>
@@ -293,17 +394,19 @@ const submitMonth = async () => {
         </div>
       </div>
 
-      <div class="flex-grow">
+      <div class="flex-1 min-h-0">
         <div class="flex justify-between p-4">
           <p class="text-white/80 text-center text-2xl font-semibold">
             {{ currentMonthRecord.description || 'No description' }}
           </p>
 
-          <MonthSlider :selectedMonth="currentMonthNumber" @click="handleMonthSelect" />
+          <div class="relative z-10 max-h-[calc(100vh-14rem)] overflow-y-auto">
+            <MonthSlider :selectedMonth="currentMonthNumber" @click="handleMonthSelect" />
+          </div>
         </div>
       </div>
 
-      <div class="absolute bottom-18 left-0 right-0 flex justify-between p-4">
+      <div class="absolute bottom-18 left-0 right-0 z-30 flex justify-between p-4">
         <div>
           <MainButton @click="router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}`)">
             <template #default>Open</template>
@@ -379,21 +482,41 @@ const submitMonth = async () => {
               ref="fileInput"
               type="file"
               name="month-photo"
-              accept="image/jpeg"
+              accept="image/*,video/*"
               class="hidden"
+              @change="handleBackgroundSelected"
             />
             <div
               @click="fileInput?.click()"
-              class="w-full h-40 bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/70 transition-all duration-200 group"
+              class="w-full h-40 bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700/70 transition-all duration-200 group overflow-hidden"
             >
-              <font-awesome-icon
-                icon="cloud-upload-alt"
-                class="text-gray-400 text-3xl mb-2 group-hover:text-white transition-colors"
+              <video
+                v-if="selectedBackgroundPreviewUrl && isSelectedBackgroundPreviewVideo"
+                class="w-full h-full object-cover"
+                :src="selectedBackgroundPreviewUrl"
+                autoplay
+                muted
+                loop
+                playsinline
               />
-              <p class="text-gray-400 text-sm group-hover:text-white transition-colors">
-                Click to upload or drag and drop
+              <img
+                v-else-if="selectedBackgroundPreviewUrl"
+                class="w-full h-full object-cover"
+                :src="selectedBackgroundPreviewUrl"
+                alt="preview"
+              />
+              <template v-else>
+                <font-awesome-icon
+                  icon="cloud-upload-alt"
+                  class="text-gray-400 text-3xl mb-2 group-hover:text-white transition-colors"
+                />
+                <p class="text-gray-400 text-sm group-hover:text-white transition-colors">
+                  Click to upload or drag and drop
+                </p>
+              </template>
+              <p class="text-gray-500 text-xs mt-1">
+                {{ selectedBackgroundFile ? selectedBackgroundFile.name : 'Image/Video (max. 5MB)' }}
               </p>
-              <p class="text-gray-500 text-xs mt-1">JPG (max. 5MB)</p>
             </div>
           </div>
 

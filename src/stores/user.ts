@@ -151,6 +151,7 @@ export const useUserStore = defineStore('user', () => {
       const userData: Partial<User> & { country?: User['country']; city?: User['city'] } = {
         firstName: user.value.firstName,
         bio: user.value.bio,
+        photo: user.value.photo,
       }
 
       if (typeof user.value.age === 'number') {

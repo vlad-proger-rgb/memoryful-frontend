@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter, RouterLink, RouterView } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import bgImage from '@/assets/img/day_bg.jpg'
 import fallbackAvatar from '@/assets/img/animal1.jpg'
+
+import { useStorageResolve, useStorageUpload } from '@/composables'
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
@@ -14,7 +16,51 @@ const router = useRouter()
 uiStore.disableScroll = false
 
 const displayName = computed(() => userStore.user.firstName || 'User')
-const avatarSrc = computed(() => userStore.user.photo || fallbackAvatar)
+
+const { resolveStorageSrc } = useStorageResolve()
+const { uploadToStorage } = useStorageUpload()
+
+const avatarResolvedSrc = ref<string>(fallbackAvatar)
+watch(
+  () => userStore.user.photo,
+  async (next) => {
+    const resolved = await resolveStorageSrc(next)
+    avatarResolvedSrc.value = resolved || fallbackAvatar
+  },
+  { immediate: true },
+)
+
+const fileInput = ref<HTMLInputElement | null>(null)
+
+const handleAvatarPick = () => {
+  fileInput.value?.click()
+}
+
+const handleAvatarSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files || !input.files[0]) return
+
+  try {
+    const file = input.files[0]
+    const objectKey = await uploadToStorage({ file, intent: 'avatar' })
+    userStore.setUser({ photo: objectKey })
+
+    const ok = await userStore.updateUserProfile()
+    if (!ok) {
+      uiStore.showToast(userStore.errorMessage || 'Failed to update avatar', 'error')
+      return
+    }
+
+    await userStore.fetchUserDetails()
+    uiStore.showToast('Avatar updated', 'success')
+  } catch (e: unknown) {
+    console.error('Failed to upload avatar:', e)
+    const maybeErr = e as { message?: string }
+    uiStore.showToast(maybeErr?.message || 'Failed to upload avatar', 'error')
+  } finally {
+    if (input) input.value = ''
+  }
+}
 
 const handleLogout = async () => {
   await userStore.logout()
@@ -34,7 +80,13 @@ const handleLogout = async () => {
       <div class="pt-6 pb-4 flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div class="w-[120px] h-[120px] rounded-full overflow-hidden">
-            <img :src="avatarSrc" alt="" class="w-full h-full object-cover" />
+            <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleAvatarSelected" />
+            <img
+              :src="avatarResolvedSrc"
+              alt=""
+              class="w-full h-full object-cover cursor-pointer"
+              @click="handleAvatarPick"
+            />
           </div>
           <div>
             <p class="text-lg leading-normal">Welcome,</p>

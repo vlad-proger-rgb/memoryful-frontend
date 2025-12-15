@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 
 import daysApi from '@/api/days'
+import yearApi from '@/api/years'
 import type { DayListItem } from '@/types'
 
 import DayCard from '@/components/day/DayCard.vue'
@@ -12,6 +13,8 @@ import DayInfo from '@/components/day/DayInfo.vue'
 import DayStats from '@/components/day/DayStats.vue'
 import DayTrackables from '@/components/day/DayTrackables.vue'
 import MainButton from '@/components/MainButton.vue'
+
+import { useStorageResolve } from '@/composables'
 
 const uiStore = useUiStore()
 
@@ -35,6 +38,41 @@ const DEFAULT_CITY = {
 const days = ref<DayListItem[]>([])
 const route = useRoute()
 const router = useRouter()
+
+const { resolveStorageSrc } = useStorageResolve()
+const monthBackgroundUrl = ref<string | null>(null)
+const isMonthBackgroundVideo = ref(false)
+
+const computeIsVideo = (src: string) => {
+  const lower = src.toLowerCase()
+  return (
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v') ||
+    lower.endsWith('.avi')
+  )
+}
+
+async function fetchMonthBackground() {
+  const year = Number(route.params.year) || new Date().getFullYear()
+  const monthNumber = Number(route.params.month) || new Date().getMonth() + 1
+
+  try {
+    const res = await yearApi.getMonth(year, monthNumber)
+    const key = res.data?.backgroundImage
+    if (key) {
+      monthBackgroundUrl.value = await resolveStorageSrc(key)
+      isMonthBackgroundVideo.value = computeIsVideo(key)
+    } else {
+      monthBackgroundUrl.value = null
+      isMonthBackgroundVideo.value = false
+    }
+  } catch {
+    monthBackgroundUrl.value = null
+    isMonthBackgroundVideo.value = false
+  }
+}
 
 async function fetchDaysForMonth() {
   // Get year and month from route params or use current date
@@ -101,6 +139,7 @@ async function fetchDaysForMonth() {
 
 onMounted(() => {
   uiStore.disableScroll = false
+  fetchMonthBackground()
   fetchDaysForMonth()
 })
 
@@ -118,7 +157,23 @@ const toggleStarred = async (date: string | number) => {
 
 <template>
   <div class="relative min-h-screen w-full overflow-x-hidden">
+    <video
+      v-if="monthBackgroundUrl && isMonthBackgroundVideo"
+      class="fixed inset-0 w-full h-full object-cover z-0 blur-sm brightness-75"
+      :src="monthBackgroundUrl"
+      autoplay
+      muted
+      loop
+      playsinline
+    />
     <img
+      v-else-if="monthBackgroundUrl"
+      :src="monthBackgroundUrl"
+      class="fixed inset-0 w-full h-full object-cover z-0 blur-sm brightness-75"
+      alt="background"
+    />
+    <img
+      v-else
       src="/src/assets/img/bg.jpg"
       class="fixed inset-0 w-full h-full object-cover z-0 blur-sm brightness-75"
       alt="background"

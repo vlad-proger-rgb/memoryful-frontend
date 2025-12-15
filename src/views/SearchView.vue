@@ -6,7 +6,9 @@ import daysApi from '@/api/days'
 import tagsApi from '@/api/tags'
 import countriesApi from '@/api/countries'
 import citiesApi from '@/api/cities'
-import type { DayListItem, Tag, Country, CityDetail } from '@/types'
+import type { DayListItem, Tag, Country, CityDetail, DayFilters } from '@/types'
+
+import DayImage from '@/components/day/DayImage.vue'
 
 import TagSelector from '@/components/day/TagSelector.vue'
 import searchBgVideo from '@/assets/video/search_bg.mp4'
@@ -60,7 +62,7 @@ const searchDays = async () => {
   error.value = null
 
   try {
-    const filters: Record<string, unknown> = {}
+    const filters: DayFilters = {}
 
     if (query.value.trim()) {
       filters.description = { like: query.value.trim() }
@@ -85,7 +87,7 @@ const searchDays = async () => {
     }
 
     const response = await daysApi.getDays({
-      filters: Object.keys(filters).length ? (filters as any) : undefined,
+      filters: Object.keys(filters).length ? filters : undefined,
       tagNames: selectedTagNames.value.length ? selectedTagNames.value : undefined,
       sortField: 'timestamp',
       sortOrder: 'desc',
@@ -479,12 +481,7 @@ onMounted(async () => {
           >
             <!-- Thumbnail -->
             <div class="result-thumbnail">
-              <img
-                v-if="day.mainImage"
-                :src="'/src/assets/img/' + day.mainImage"
-                alt="Day thumbnail"
-                class="result-thumbnail-img"
-              />
+              <DayImage v-if="day.mainImage" :src="day.mainImage" alt="Day thumbnail" size="small" class="result-thumbnail-img" />
               <div v-else class="result-thumbnail-placeholder">
                 <font-awesome-icon icon="image" class="text-white/40 text-2xl" />
               </div>

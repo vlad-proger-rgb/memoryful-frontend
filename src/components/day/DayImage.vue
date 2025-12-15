@@ -1,7 +1,7 @@
 <template>
   <img
-    v-if="src"
-    :src="'/src/assets/img/' + src"
+    v-if="resolvedSrc"
+    :src="resolvedSrc"
     :alt="alt"
     :class="
       size === 'small'
@@ -23,5 +23,39 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ src: string | undefined; alt?: string; size?: 'small' | 'large' }>()
+import { computed, ref, watch } from 'vue'
+import storageApi from '@/api/storage'
+
+const props = defineProps<{ src: string | undefined; alt?: string; size?: 'small' | 'large' }>()
+
+const resolvedSrc = ref<string | null>(null)
+
+const isHttpUrl = computed(() => !!props.src && (props.src.startsWith('http://') || props.src.startsWith('https://')))
+const isObjectKey = computed(() => !!props.src && props.src.startsWith('users/'))
+
+watch(
+  () => props.src,
+  async (next) => {
+    resolvedSrc.value = null
+    if (!next) return
+
+    if (isHttpUrl.value) {
+      resolvedSrc.value = next
+      return
+    }
+
+    if (isObjectKey.value) {
+      try {
+        const res = await storageApi.presignGet({ objectKey: next })
+        resolvedSrc.value = res.data?.downloadUrl || null
+      } catch {
+        resolvedSrc.value = null
+      }
+      return
+    }
+
+    resolvedSrc.value = '/src/assets/img/' + next
+  },
+  { immediate: true },
+)
 </script>

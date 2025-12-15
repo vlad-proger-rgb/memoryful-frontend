@@ -35,7 +35,7 @@ export interface DayCreate {
   steps?: number
   mainImage?: string
   images?: string[]
-  tags?: Tag[]
+  tags?: string[]
   trackableProgresses?: DayTrackableTypeWithProgress[]
 }
 
@@ -85,6 +85,11 @@ export interface DayFilters {
    * Filter by city ID
    */
   cityId?: string
+
+  /**
+   * Filter by country ID
+   */
+  countryId?: string
 
   /**
    * Filter by creation timestamp (after)

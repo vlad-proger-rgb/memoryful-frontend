@@ -8,6 +8,7 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { daysApi, tagsApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
+import { useStorageUpload } from '@/composables'
 import type { DayDetail, DayUpdate, Tag, ApiResponse } from '@/types'
 import { getIcon } from '@/plugins/fontawesome'
 import { useLocation } from '@/composables'
@@ -19,6 +20,7 @@ import MainButton from '@/components/MainButton.vue'
 import TagSelector from '@/components/day/TagSelector.vue'
 import TrackableProgress from '@/components/day/TrackableProgress.vue'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
+import DayImage from '@/components/day/DayImage.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -53,6 +55,8 @@ const fetchTags = async () => {
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
+
+uiStore.disableScroll = false
 
 const day = ref<DayDetail>({
   timestamp: 0,
@@ -187,7 +191,7 @@ const saveDay = async () => {
         await daysApi.updateDay(day.value.timestamp, updateData)
       } else {
         await daysApi.createDay(day.value.timestamp, {
-          cityId: dayPayload.cityId,
+          cityId: dayPayload.cityId || '',
           description: dayPayload.description,
           content: dayPayload.content,
           steps: editForm.steps || 0,
@@ -240,18 +244,21 @@ const triggerImageUpload = () => {
   imageInput.value?.click()
 }
 
+const { uploadToStorage } = useStorageUpload()
+
 const handleMainImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
-  if (input.files && input.files[0]) {
-    const file = input.files[0]
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        editForm.mainImage = e.target.result as string
-      }
-    }
-    reader.readAsDataURL(file)
-  }
+  if (!input.files || !input.files[0]) return
+
+  const file = input.files[0]
+  uploadToStorage({ file, intent: 'day_main', dayTimestamp: day.value.timestamp })
+    .then((objectKey) => {
+      editForm.mainImage = objectKey
+    })
+    .catch((e) => {
+      console.error('Failed to upload main image:', e)
+      uiStore.showToast(`Failed to upload main image: ${e?.message || e}`, 'error')
+    })
 }
 
 const handleImageUpload = (event: Event) => {
@@ -259,13 +266,14 @@ const handleImageUpload = (event: Event) => {
   if (input.files) {
     const files = Array.from(input.files)
     files.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          editForm.images = [...editForm.images, e.target.result as string]
-        }
-      }
-      reader.readAsDataURL(file)
+      uploadToStorage({ file, intent: 'day_image', dayTimestamp: day.value.timestamp })
+        .then((objectKey) => {
+          editForm.images = [...editForm.images, objectKey]
+        })
+        .catch((e) => {
+          console.error('Failed to upload image:', e)
+          uiStore.showToast(`Failed to upload image: ${e?.message || e}`, 'error')
+        })
     })
   }
 }
@@ -405,9 +413,9 @@ onMounted(async () => {
         <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
           <div class="relative w-full aspect-video">
-            <img
+            <DayImage
               v-if="day.mainImage"
-              :src="'/src/assets/img/' + day.mainImage"
+              :src="day.mainImage"
               class="w-full h-full object-cover"
               :alt="day.city?.name || 'Day image'"
             />
@@ -504,7 +512,7 @@ onMounted(async () => {
           <ImageGallery
             :images="day?.images || []"
             :alt="day.city?.name || 'Day image'"
-            basePath="/src/assets/img/"
+            basePath=""
           />
         </div>
 
@@ -689,11 +697,7 @@ onMounted(async () => {
                       @change="handleMainImageUpload"
                     />
                     <template v-if="editForm.mainImage">
-                      <img
-                        :src="`/src/assets/img/${editForm.mainImage}`"
-                        class="w-full h-full object-cover"
-                        alt="Main"
-                      />
+                      <DayImage :src="editForm.mainImage" alt="Main" size="small" />
                     </template>
                     <template v-else>
                       <span class="text-white/40 text-sm">Upload</span>
@@ -718,11 +722,7 @@ onMounted(async () => {
                     :key="index"
                     class="relative group aspect-square rounded-lg overflow-hidden bg-white/5"
                   >
-                    <img
-                      :src="`/src/assets/img/${image}`"
-                      class="w-full h-full object-cover"
-                      :alt="`Image ${index + 1}`"
-                    />
+                    <DayImage :src="image" :alt="`Image ${index + 1}`" size="small" />
                     <button
                       type="button"
                       @click="removeImage(index)"

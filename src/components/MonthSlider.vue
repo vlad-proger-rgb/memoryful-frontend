@@ -27,7 +27,7 @@ defineEmits(['click'])
     <div
       v-for="(roman, number) in romanNumbers"
       :key="number"
-      class="text-white text-2xl font-semibold px-4 py-2 rounded-xl transition hover:bg-white/20 cursor-pointer"
+      class="text-white text-xl font-semibold px-3 py-1.5 rounded-xl transition hover:bg-white/20 cursor-pointer"
       :class="{
         'bg-white/20': selectedMonth === Number(number)
       }"
