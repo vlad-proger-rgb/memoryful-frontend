@@ -57,6 +57,8 @@ const currentMonthRecord = ref<Month>({
   topDayTimestamp: 0,
 })
 
+const suppressYearReload = ref(false)
+
 watch(
   () => currentMonthRecord.value.backgroundImage,
   async (next) => {
@@ -176,6 +178,24 @@ onMounted(async () => {
   window.addEventListener('wheel', handleWheel, { passive: false })
 })
 
+watch(
+  () => route.params.year,
+  async (next) => {
+    const nextYear = +next
+    if (!Number.isFinite(nextYear) || nextYear === currentYearNumber.value) return
+    currentYearNumber.value = nextYear
+  },
+)
+
+watch(
+  () => currentYearNumber.value,
+  async (next, prev) => {
+    if (suppressYearReload.value) return
+    if (next === prev) return
+    await handleMonthSelect(currentMonthNumber.value)
+  },
+)
+
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', handleWheel)
 
@@ -207,13 +227,17 @@ const changeMonth = async (direction: number) => {
 
   if (newMonth > 12) {
     newMonth = 1
+    suppressYearReload.value = true
     currentYearNumber.value++
   } else if (newMonth < 1) {
     newMonth = 12
+    suppressYearReload.value = true
     currentYearNumber.value--
   }
 
   await handleMonthSelect(newMonth)
+
+  suppressYearReload.value = false
 
   if (scrollTimeout) {
     clearTimeout(scrollTimeout)
