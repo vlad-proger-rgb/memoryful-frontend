@@ -16,7 +16,7 @@ app.use(router)
 
 app.component('font-awesome-icon', FontAwesomeIcon)
 
-const accessToken = localStorage.getItem('accessToken')
+const accessToken = sessionStorage.getItem('accessToken')
 if (accessToken) {
   setAuthToken(accessToken)
 }

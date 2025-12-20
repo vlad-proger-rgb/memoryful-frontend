@@ -21,6 +21,10 @@ export const authApi = {
   logout(): Promise<ApiResponse<null>> {
     return axios.get('/api/auth/logout')
   },
+
+  refresh(): Promise<ApiResponse<{ accessToken: string; tokenType: string }>> {
+    return axios.get('/api/auth/refresh')
+  },
 }
 
 export default authApi

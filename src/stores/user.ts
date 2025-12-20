@@ -36,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
 
   function setToken(tokenData: Token) {
     token.value = tokenData
-    localStorage.setItem('accessToken', tokenData.accessToken)
+    sessionStorage.setItem('accessToken', tokenData.accessToken)
     setAuthToken(tokenData.accessToken)
   }
 
@@ -61,7 +61,7 @@ export const useUserStore = defineStore('user', () => {
       bio: '',
     }
     token.value = null
-    localStorage.removeItem('accessToken')
+    sessionStorage.removeItem('accessToken')
     setAuthToken(null)
   }
 
@@ -89,7 +89,10 @@ export const useUserStore = defineStore('user', () => {
           return [false, false] as [boolean, boolean]
         }
 
-        setToken(response.data.tokens)
+        setToken({
+          accessToken: response.data.tokens.accessToken,
+          tokenType: response.data.tokens.tokenType,
+        })
         user.value.id = response.data.userId
 
         await fetchUserDetails()
@@ -189,13 +192,27 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function initializeFromStorage() {
-    const storedToken = localStorage.getItem('accessToken')
+    const storedToken = sessionStorage.getItem('accessToken')
     if (storedToken) {
       setToken({
         accessToken: storedToken,
         tokenType: 'bearer',
       })
       await fetchUserDetails()
+      return
+    }
+
+    try {
+      const refreshed = await authApi.refresh()
+      if (refreshed.code === 200 && refreshed.data?.accessToken) {
+        setToken({
+          accessToken: refreshed.data.accessToken,
+          tokenType: refreshed.data.tokenType ?? 'bearer',
+        })
+        await fetchUserDetails()
+      }
+    } catch {
+      // Not authenticated / no refresh cookie
     }
   }
 
