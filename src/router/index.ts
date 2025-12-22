@@ -90,6 +90,11 @@ const router = createRouter({
           name: 'settings-ai',
           component: () => import('@/views/settings/AiSettings.vue'),
         },
+        {
+          path: 'tags-trackables',
+          name: 'settings-tags-trackables',
+          component: () => import('@/views/settings/TagsTrackablesSettings.vue'),
+        },
       ],
     },
   ],

@@ -432,13 +432,16 @@ onMounted(async () => {
             :key="tag.id"
             class="text-white backdrop-blur-lg px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2"
             :style="{
-              // backgroundColor: `${tag.color}`,
-              // opacity: '0.7',
+              // backgroundColor: tag.color ? `${tag.color}33` : undefined,
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               border: '1px solid rgba(255,255,255,0.2)',
             }"
           >
-            <font-awesome-icon v-if="tag.icon" :icon="getIcon(tag.icon)" />
+            <font-awesome-icon
+              v-if="tag.icon"
+              :icon="getIcon(tag.icon)"
+              :style="{ color: tag.color || undefined }"
+            />
             {{ tag.name }}
           </span>
         </div>

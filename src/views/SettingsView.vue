@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRouter, RouterLink, RouterView } from 'vue-router'
+import { useRouter, RouterView } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import bgImage from '@/assets/img/day_bg.jpg'
 import fallbackAvatar from '@/assets/img/animal1.jpg'
+
+import SettingsSectionButton from '@/components/ui/SettingsSectionButton.vue'
 
 import { useStorageResolve, useStorageUpload } from '@/composables'
 
@@ -62,10 +64,35 @@ const handleAvatarSelected = async (event: Event) => {
   }
 }
 
+const isLoggingOut = ref(false)
+
+const sections = [
+  { to: '/settings/account', label: 'Manage Account', icon: 'user' },
+  { to: '/settings/profile', label: 'Manage Profile', icon: 'id-card' },
+  { to: '/settings/workspace', label: 'Workspace', icon: 'paintbrush' },
+  { to: '/settings/ai', label: 'AI', icon: 'robot' },
+  { to: '/settings/tags-trackables', label: 'Tags & Trackables', icon: 'tags' },
+  { to: '/settings/connected-apps', label: 'Extensions (soon)', icon: 'sliders' },
+] as const
+
 const handleLogout = async () => {
-  await userStore.logout()
-  uiStore.showToast('Signed out', 'success')
-  await router.push('/login')
+  if (isLoggingOut.value) return
+
+  const confirmed = window.confirm('Are you sure you want to sign out?')
+  if (!confirmed) return
+
+  isLoggingOut.value = true
+  try {
+    await userStore.logout()
+    uiStore.showToast('Signed out', 'success')
+    await router.push('/login')
+  } catch (e: unknown) {
+    console.error('Failed to sign out:', e)
+    const maybeErr = e as { message?: string }
+    uiStore.showToast(maybeErr?.message || 'Failed to sign out', 'error')
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 </script>
 
@@ -77,15 +104,18 @@ const handleLogout = async () => {
     />
 
     <div class="w-full max-w-[1200px] mx-auto px-4">
-      <div class="pt-6 pb-4 flex items-center justify-between">
+      <div class="sticky top-[60px] z-20 pt-6 pb-4 flex items-center justify-between pointer-events-none">
         <div class="flex items-center gap-4">
           <div class="w-[120px] h-[120px] rounded-full overflow-hidden">
             <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleAvatarSelected" />
             <img
               :src="avatarResolvedSrc"
               alt=""
-              class="w-full h-full object-cover cursor-pointer"
+              class="w-full h-full object-cover cursor-pointer transition-transform duration-150 ease-out hover:scale-[1.05] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 pointer-events-auto"
+              tabindex="0"
               @click="handleAvatarPick"
+              @keydown.enter.prevent="handleAvatarPick"
+              @keydown.space.prevent="handleAvatarPick"
             />
           </div>
           <div>
@@ -93,62 +123,42 @@ const handleLogout = async () => {
             <p class="text-2xl font-bold leading-normal">{{ displayName }}</p>
           </div>
         </div>
-
-        <button
-          class="backdrop-blur-[17.5px] bg-[rgba(191,47,47,0.2)] border border-red-500 px-4 py-2 rounded-full flex items-center gap-2 text-base text-[#bf2f2f]"
-          @click="handleLogout"
-        >
-          Sign out
-          <font-awesome-icon icon="right-from-bracket" class="text-sm" />
-        </button>
       </div>
 
       <div class="flex gap-6 items-start pb-8">
-        <aside class="w-[240px] flex flex-col gap-3">
-          <RouterLink
-            to="/settings/account"
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] px-4 py-2 rounded-full flex items-center justify-between"
-            active-class="ring-2 ring-white/50"
-          >
-            <span class="text-sm">Manage Account</span>
-            <font-awesome-icon icon="user" class="text-sm" />
-          </RouterLink>
+        <aside class="w-[240px] sticky top-[212px] self-start flex flex-col gap-3">
+          <SettingsSectionButton
+            v-for="s in sections"
+            :key="s.to"
+            :to="s.to"
+            :label="s.label"
+            :icon="s.icon"
+          />
 
-          <RouterLink
-            to="/settings/profile"
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] px-4 py-2 rounded-full flex items-center justify-between"
-            active-class="ring-2 ring-white/50"
+          <button
+            class="mt-2 backdrop-blur-[17.5px] bg-[rgba(191,47,47,0.2)] border border-red-500 px-4 py-2 rounded-full flex items-center justify-between text-base text-[#bf2f2f] transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-red-500/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:ring-0"
+            @click="handleLogout"
+            :disabled="isLoggingOut"
           >
-            <span class="text-sm">Manage Profile</span>
-            <font-awesome-icon icon="id-card" class="text-sm" />
-          </RouterLink>
-
-          <RouterLink
-            to="/settings/workspace"
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] px-4 py-2 rounded-full flex items-center justify-between"
-            active-class="ring-2 ring-white/50"
-          >
-            <span class="text-sm">Workspace</span>
-            <font-awesome-icon icon="paintbrush" class="text-sm" />
-          </RouterLink>
-
-          <RouterLink
-            to="/settings/ai"
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] px-4 py-2 rounded-full flex items-center justify-between"
-            active-class="ring-2 ring-white/50"
-          >
-            <span class="text-sm">AI</span>
-            <font-awesome-icon icon="robot" class="text-sm" />
-          </RouterLink>
-
-          <RouterLink
-            to="/settings/connected-apps"
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] px-4 py-2 rounded-full flex items-center justify-between"
-            active-class="ring-2 ring-white/50"
-          >
-            <span class="text-sm">Extensions (soon)</span>
-            <font-awesome-icon icon="sliders" class="text-sm" />
-          </RouterLink>
+            <span class="text-sm">{{ isLoggingOut ? 'Signing out…' : 'Sign out' }}</span>
+            <span class="flex items-center">
+              <svg
+                v-if="isLoggingOut"
+                class="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+              <font-awesome-icon v-else icon="right-from-bracket" class="text-sm" />
+            </span>
+          </button>
         </aside>
 
         <main class="flex-1">

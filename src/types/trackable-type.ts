@@ -6,5 +6,9 @@ export interface TrackableType {
   description?: string
   valueType: string
   icon?: FAIcon
-  meta?: Record<string, unknown>
+  metaSchema?: Record<string, unknown>
 }
+
+export type TrackableTypeCreate = Omit<TrackableType, 'id'>
+
+export type TrackableTypeUpdate = Partial<TrackableTypeCreate>

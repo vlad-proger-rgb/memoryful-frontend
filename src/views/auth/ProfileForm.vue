@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
-import { useAuthUtils, useLocation } from '@/composables'
+import { useLocation, useShake } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
@@ -20,7 +20,7 @@ const {
   setSelectedCity,
 } = useLocation()
 
-const { shakeElement } = useAuthUtils()
+const { shakeElement } = useShake()
 
 const nameInputId = ref('profile-name-input')
 const countryInputId = 'profile-country-input'

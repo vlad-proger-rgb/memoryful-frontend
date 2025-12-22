@@ -94,8 +94,16 @@ onUnmounted(() => {
       <span
         v-for="tag in selectedTags"
         :key="tag.id"
-        class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-sm text-white/90"
+        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm text-white/90"
+        :style="{
+          backgroundColor: tag.color ? `${tag.color}33` : 'rgba(255,255,255,0.1)',
+        }"
       >
+        <span
+          v-if="tag.color"
+          class="w-2.5 h-2.5 rounded-full border border-white/30"
+          :style="{ backgroundColor: tag.color }"
+        />
         {{ tag.name }}
         <button @click.stop="removeTag(tag)" class="text-white/50 hover:text-white/80">
           <font-awesome-icon icon="times" class="text-xs" />

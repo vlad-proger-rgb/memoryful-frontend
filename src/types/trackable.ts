@@ -8,6 +8,7 @@ export interface TrackableBase {
 
 export interface TrackableInDB extends TrackableBase {
   id: string
+  typeId: string
 }
 
 export interface TrackableDetail extends TrackableInDB {
@@ -24,4 +25,5 @@ export interface TrackableUpdate {
   description?: string
   icon?: FAIcon
   meta?: Record<string, unknown>
+  typeId?: string
 }

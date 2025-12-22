@@ -3,6 +3,7 @@
   import { useRouter } from 'vue-router'
   import sessionsApi from '@/api/sessions'
   import { useUiStore } from '@/stores/ui'
+  import SettingsButton from '@/components/ui/SettingsButton.vue'
   import { useUserStore } from '@/stores/user'
   import type { ApiResponse, Session } from '@/types'
 
@@ -13,8 +14,6 @@
   const uiStore = useUiStore()
   const userStore = useUserStore()
   const router = useRouter()
-
-  const signedInEmail = computed(() => userStore.user?.email?.trim() || '')
 
   const isConfirmModalOpen = ref(false)
   const confirmModalSessionId = ref<string | null>(null)
@@ -144,20 +143,11 @@
   <div class="flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-xl font-semibold">Active sessions</p>
-        <p class="text-sm opacity-80">Sessions where you are currently logged in.</p>
-        <p v-if="signedInEmail" class="text-xs opacity-80 mt-1">Signed in as: <b>{{ signedInEmail }}</b></p>
-        <p v-else class="text-xs opacity-60 mt-1">Signed in as: —</p>
+        <p class="text-lg font-semibold">Active sessions</p>
+        <p class="text-xs opacity-80">Sign out other sessions to protect your account.</p>
       </div>
 
-      <button
-        class="backdrop-blur-[17.5px] bg-white/15 px-4 py-2 rounded-full text-sm flex items-center gap-2 transition-transform duration-150 ease-out hover:bg-white/20 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-        :disabled="isLoading"
-        @click="loadSessions"
-      >
-        <font-awesome-icon icon="rotate" />
-        Refresh
-      </button>
+      <SettingsButton preset="refresh" :disabled="isLoading" @click="loadSessions" />
     </div>
 
     <p v-if="errorMessage" class="text-red-300 text-sm">{{ errorMessage }}</p>
@@ -192,15 +182,15 @@
             </div>
           </div>
 
-          <button
-            class="text-xs px-3 py-1 rounded-full border transition-transform duration-150 ease-out active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-            :class="s.isCurrent ? 'bg-white/10 border-white/25 text-white hover:bg-white/15' : 'bg-red-500/20 border-red-500/40 text-red-200 hover:bg-red-500/30'"
+          <SettingsButton
+            preset="session"
+            :tone="s.isCurrent ? 'neutral' : 'danger'"
             :disabled="revokingSessionIds.has(s.id)"
             @click="revoke(s.id)"
           >
             <span v-if="revokingSessionIds.has(s.id)">Revoking…</span>
             <span v-else>{{ s.isCurrent ? 'Revoke (sign out)' : 'Revoke' }}</span>
-          </button>
+          </SettingsButton>
         </div>
 
         <div class="text-xs opacity-80 leading-relaxed">
@@ -229,18 +219,8 @@
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-2">
-          <button
-            class="px-4 py-2 rounded-full text-sm bg-white/10 border border-white/20 hover:bg-white/15 transition-transform duration-150 ease-out active:scale-[0.98]"
-            @click="closeConfirmModal"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 rounded-full text-sm bg-red-500/25 border border-red-500/40 text-red-100 hover:bg-red-500/35 transition-transform duration-150 ease-out active:scale-[0.98]"
-            @click="confirmRevokeCurrentSession"
-          >
-            Revoke & Sign out
-          </button>
+          <SettingsButton preset="pill" label="Cancel" @click="closeConfirmModal" />
+          <SettingsButton preset="pill" tone="danger" label="Revoke & Sign out" @click="confirmRevokeCurrentSession" />
         </div>
       </div>
     </div>

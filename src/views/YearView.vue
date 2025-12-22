@@ -12,13 +12,13 @@ import MainButton from '@/components/MainButton.vue'
 import MonthSlider from '@/components/MonthSlider.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
 
-import { useAuthUtils, useStorageUpload, useStorageResolve } from '@/composables'
+import { useShake, useStorageUpload, useStorageResolve } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
 
-const { shakeElement } = useAuthUtils()
+const { shakeElement } = useShake()
 const { uploadToStorage } = useStorageUpload()
 const { resolveStorageSrc } = useStorageResolve()
 
@@ -479,6 +479,7 @@ const submitMonth = async () => {
               Month Description
             </label>
             <input
+              :id="monthDescriptionInputId"
               v-model="currentMonthRecord.description"
               type="text"
               class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -491,6 +492,7 @@ const submitMonth = async () => {
               Top Day
             </label>
             <input
+              :id="topDayInputId"
               v-model="topDayNumber"
               type="text"
               class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useAuthUtils } from '@/composables'
+import { useShake } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
@@ -10,7 +10,7 @@ import AuthButton from '@/components/auth/AuthButton.vue'
 const userStore = useUserStore()
 const code = ref<string>('')
 const router = useRouter()
-const { shakeElement } = useAuthUtils()
+const { shakeElement } = useShake()
 
 onMounted(() => {
   if (!userStore.user.email) {

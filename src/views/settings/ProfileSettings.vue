@@ -4,6 +4,9 @@ import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { useLocation } from '@/composables'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
+import SettingsButton from '@/components/ui/SettingsButton.vue'
+import SettingsInput from '@/components/ui/SettingsInput.vue'
+import SettingsTextarea from '@/components/ui/SettingsTextarea.vue'
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
@@ -102,24 +105,12 @@ const saveProfile = async () => {
     <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-4">
       <div>
         <p class="text-sm mb-2 opacity-80">Display name</p>
-        <input
-          v-model="displayNameDraft"
-          type="text"
-          class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none text-sm"
-          placeholder="Your name"
-        />
+        <SettingsInput v-model="displayNameDraft" type="text" placeholder="Your name" />
       </div>
 
       <div>
         <p class="text-sm mb-2 opacity-80">Age</p>
-        <input
-          v-model.number="ageDraft"
-          type="number"
-          min="0"
-          max="130"
-          class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none text-sm"
-          placeholder="Your age"
-        />
+        <SettingsInput v-model.number="ageDraft" type="number" min="0" max="130" placeholder="Your age" />
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,10 +134,9 @@ const saveProfile = async () => {
 
       <div>
         <p class="text-sm mb-2 opacity-80">Description</p>
-        <textarea
+        <SettingsTextarea
           v-model="bioDraft"
           rows="5"
-          class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none resize-none text-sm"
           placeholder="Tell Memoryful a bit about you (hobbies, context, preferences)..."
         />
       </div>
@@ -156,15 +146,14 @@ const saveProfile = async () => {
           <p v-if="userStore.errorMessage" class="text-red-300">{{ userStore.errorMessage }}</p>
         </div>
 
-        <button
-          class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:hover:bg-blue-600 rounded-full px-5 py-2 text-sm flex items-center gap-2"
+        <SettingsButton
+          preset="primary"
+          label="Save"
+          icon="floppy-disk"
+          :loading="userStore.isLoading"
           :disabled="userStore.isLoading"
           @click="saveProfile"
-        >
-          <font-awesome-icon v-if="userStore.isLoading" icon="circle-notch" class="animate-spin" />
-          <font-awesome-icon v-else icon="floppy-disk" />
-          Save
-        </button>
+        />
       </div>
     </section>
   </div>
