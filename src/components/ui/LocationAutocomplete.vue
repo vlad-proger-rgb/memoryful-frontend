@@ -88,6 +88,7 @@ const handleSelect = (item: Country | City | CityDetail) => {
 
 const handleFocus = () => {
   if (query.value.length >= 2) {
+    search(query.value)
     showAutocomplete.value = true
   }
 }
@@ -183,6 +184,11 @@ defineExpose({
           >
             {{ (locationItem as Country).code }}
           </span>
+        </div>
+      </template>
+      <template #empty>
+        <div class="p-2 text-center text-white/50">
+          No results found
         </div>
       </template>
     </BaseAutocomplete>

@@ -1,5 +1,9 @@
 import type { City, CityDetail } from './city'
-import type { DayTrackableProgress, DayTrackableTypeWithProgress } from './day-trackable-progress'
+import type {
+  DayTrackableProgress,
+  DayTrackableProgressUpdate,
+  DayTrackableTypeWithProgress,
+} from './day-trackable-progress'
 import type { Tag } from './tag'
 
 export interface DayListItem {
@@ -36,7 +40,7 @@ export interface DayCreate {
   mainImage?: string
   images?: string[]
   tags?: string[]
-  trackableProgresses?: DayTrackableTypeWithProgress[]
+  trackableProgresses?: DayTrackableProgressUpdate[]
 }
 
 export interface DayUpdate {
@@ -48,7 +52,7 @@ export interface DayUpdate {
   mainImage?: string
   images?: string[]
   tags?: string[] // Array of tag IDs
-  trackableProgresses?: DayTrackableTypeWithProgress[]
+  trackableProgresses?: DayTrackableProgressUpdate[]
 }
 
 /**

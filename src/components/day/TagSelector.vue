@@ -138,7 +138,7 @@ onUnmounted(() => {
       </template>
       <template #empty>
         <div v-if="searchQuery" class="px-4 py-2 text-white/50 text-sm">
-          No tags found. Press Enter to create "{{ searchQuery }}"
+          No tags found
         </div>
       </template>
     </BaseAutocomplete>

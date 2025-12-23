@@ -8,7 +8,7 @@ export interface DayTrackableProgress {
 }
 
 export interface DayTrackableProgressUpdate {
-  value?: number
+  value: number
   description: string
   trackableItemId: string
 }

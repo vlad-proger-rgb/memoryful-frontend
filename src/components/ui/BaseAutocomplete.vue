@@ -101,7 +101,14 @@ const updatePosition = () => {
 
 // Close dropdown when clicking outside
 const onClickOutside = (event: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
+  const targetNode = event.target as Node
+  const attachTarget = props.attachTo instanceof HTMLElement ? props.attachTo : null
+
+  const clickedInsideDropdown = !!dropdownRef.value && dropdownRef.value.contains(targetNode)
+  const clickedInsideAttachTo = !!attachTarget && attachTarget.contains(targetNode)
+  const clickedInsideContainer = !!containerRef.value && containerRef.value.contains(targetNode)
+
+  if (!clickedInsideDropdown && !clickedInsideAttachTo && !clickedInsideContainer) {
     emit('update:show', false)
   }
 }

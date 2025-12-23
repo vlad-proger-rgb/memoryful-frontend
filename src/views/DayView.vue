@@ -6,10 +6,13 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
 import { daysApi, tagsApi } from '@/api'
+import trackablesApi from '@/api/trackables'
+import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
-import { useStorageUpload } from '@/composables'
-import type { DayDetail, DayUpdate, Tag, ApiResponse } from '@/types'
+import { useStorageUpload, useShake } from '@/composables'
+import type { DayDetail, DayUpdate, Tag, ApiResponse, TrackableInDB, TrackableType } from '@/types'
+import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
 import { useLocation } from '@/composables'
 
@@ -21,6 +24,7 @@ import TagSelector from '@/components/day/TagSelector.vue'
 import TrackableProgress from '@/components/day/TrackableProgress.vue'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
 import DayImage from '@/components/day/DayImage.vue'
+import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -55,6 +59,7 @@ const fetchTags = async () => {
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
+const { shakeElement } = useShake()
 
 uiStore.disableScroll = false
 
@@ -100,6 +105,7 @@ interface EditForm {
   // Store IDs for proper city search
   cityId?: string
   countryId?: string
+  trackableProgresses: DayTrackableProgressUpdate[]
 }
 
 const editForm = reactive<EditForm>({
@@ -113,7 +119,146 @@ const editForm = reactive<EditForm>({
   starred: false,
   cityId: '',
   countryId: '',
+  trackableProgresses: [],
 })
+
+const trackables = ref<TrackableInDB[]>([])
+const isLoadingTrackables = ref(false)
+const trackablesError = ref<string | null>(null)
+
+const trackableTypes = ref<TrackableType[]>([])
+const isLoadingTrackableTypes = ref(false)
+const trackableTypesError = ref<string | null>(null)
+
+const fetchTrackables = async () => {
+  isLoadingTrackables.value = true
+  trackablesError.value = null
+  try {
+    const response = await trackablesApi.getTrackables()
+    trackables.value = response.data || []
+  } catch (error) {
+    console.error('Failed to fetch trackables:', error)
+    trackablesError.value = 'Failed to load trackables. Please try again later.'
+  } finally {
+    isLoadingTrackables.value = false
+  }
+}
+
+const fetchTrackableTypes = async () => {
+  isLoadingTrackableTypes.value = true
+  trackableTypesError.value = null
+  try {
+    const response = await trackableTypesApi.getTrackableTypes()
+    trackableTypes.value = response.data || []
+  } catch (error) {
+    console.error('Failed to fetch trackable types:', error)
+    trackableTypesError.value = 'Failed to load trackable types. Please try again later.'
+  } finally {
+    isLoadingTrackableTypes.value = false
+  }
+}
+
+const selectedTrackableTypeId = ref('')
+const newTrackableItemId = ref('')
+const newTrackableValue = ref<number | null>(null)
+const newTrackableDescription = ref('')
+const trackableTypeSearchQuery = ref('')
+const isTrackableTypeDropdownOpen = ref(false)
+const trackableTypeInputRef = ref<HTMLInputElement | null>(null)
+
+const trackableItemSearchQuery = ref('')
+const isTrackableItemDropdownOpen = ref(false)
+const trackableItemInputRef = ref<HTMLInputElement | null>(null)
+
+const filteredTrackableTypes = computed(() => {
+  const q = trackableTypeSearchQuery.value.trim().toLowerCase()
+  if (!q) return trackableTypes.value
+  return trackableTypes.value.filter((t) => (t.name || '').toLowerCase().includes(q))
+})
+
+const filteredTrackableItems = computed(() => {
+  const q = trackableItemSearchQuery.value.trim().toLowerCase()
+  const typeId = selectedTrackableTypeId.value
+  let items = trackables.value
+
+  if (typeId) items = items.filter((t) => t.typeId === typeId)
+  if (!q) return items
+  return items.filter((t) => (t.title || '').toLowerCase().includes(q))
+})
+
+const selectTrackableType = (t: TrackableType) => {
+  selectedTrackableTypeId.value = t.id
+  trackableTypeSearchQuery.value = t.name || ''
+  isTrackableTypeDropdownOpen.value = false
+
+  newTrackableItemId.value = ''
+  trackableItemSearchQuery.value = ''
+  isTrackableItemDropdownOpen.value = false
+}
+
+const selectTrackableItem = (t: TrackableInDB) => {
+  newTrackableItemId.value = t.id
+  trackableItemSearchQuery.value = t.title || ''
+  isTrackableItemDropdownOpen.value = false
+}
+
+const onTrackableTypeDropdownShowUpdate = (v: boolean) => {
+  isTrackableTypeDropdownOpen.value = v
+}
+
+const onTrackableItemDropdownShowUpdate = (v: boolean) => {
+  isTrackableItemDropdownOpen.value = v
+}
+
+const addTrackableProgress = () => {
+  if (!selectedTrackableTypeId.value) {
+    shakeElement('trackable-type-select-container')
+    return
+  }
+
+  if (trackableTypeSearchQuery.value.trim() && !filteredTrackableTypes.value.length) {
+    shakeElement('trackable-type-select-container')
+    return
+  }
+
+  const trackableItemId = newTrackableItemId.value
+  if (!trackableItemId) {
+    shakeElement('trackable-item-select-container')
+    return
+  }
+
+  if (trackableItemSearchQuery.value.trim() && !filteredTrackableItems.value.length) {
+    shakeElement('trackable-item-select-container')
+    return
+  }
+
+  const value = Number(newTrackableValue.value)
+  if (!Number.isFinite(value)) {
+    shakeElement('trackable-value-container')
+    return
+  }
+
+  editForm.trackableProgresses = editForm.trackableProgresses.filter(
+    (p) => p.trackableItemId !== trackableItemId,
+  )
+  editForm.trackableProgresses.push({
+    trackableItemId,
+    value,
+    description: newTrackableDescription.value || '',
+  })
+
+  newTrackableItemId.value = ''
+  newTrackableValue.value = null
+  newTrackableDescription.value = ''
+  trackableItemSearchQuery.value = ''
+  isTrackableItemDropdownOpen.value = false
+}
+
+const removeTrackableProgress = (trackableItemId: string) => {
+  editForm.trackableProgresses = editForm.trackableProgresses.filter(
+    (p) => p.trackableItemId !== trackableItemId,
+  )
+}
 
 // Reset form when day data changes
 watch(
@@ -130,6 +275,14 @@ watch(
       editForm.cityId = newVal.city?.id || ''
       editForm.countryId = newVal.city?.country?.id || ''
       editForm.starred = newVal.starred || false
+
+      editForm.trackableProgresses = (newVal.trackableProgresses || []).flatMap((byType) =>
+        (byType.progresses || []).map((p) => ({
+          trackableItemId: p.trackableItem.id,
+          value: p.value,
+          description: p.description || '',
+        })),
+      )
     }
   },
   { immediate: true, deep: true },
@@ -172,6 +325,16 @@ const handleModalOpen = () => {
 const saveDay = async () => {
   if (!day.value) return
 
+  if (!editForm.countryId) {
+    shakeElement('country-input-container')
+    return
+  }
+
+  if (!editForm.cityId) {
+    shakeElement('city-input-container')
+    return
+  }
+
   isSaving.value = true
 
   try {
@@ -183,6 +346,11 @@ const saveDay = async () => {
       tags: editForm.tags.map((tag) => tag.id),
       cityId: editForm.cityId,
       starred: editForm.starred,
+      trackableProgresses: editForm.trackableProgresses.map((p) => ({
+        trackableItemId: p.trackableItemId,
+        value: p.value,
+        description: p.description || '',
+      })),
     }
 
     try {
@@ -198,7 +366,7 @@ const saveDay = async () => {
           mainImage: dayPayload.mainImage,
           images: dayPayload.images,
           tags: dayPayload.tags,
-          trackableProgresses: [],
+          trackableProgresses: dayPayload.trackableProgresses,
         })
         dayExists.value = true
       }
@@ -369,7 +537,7 @@ const loadDay = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchTags(), loadDay()])
+  await Promise.all([fetchTags(), fetchTrackableTypes(), fetchTrackables(), loadDay()])
 })
 </script>
 
@@ -524,7 +692,7 @@ onMounted(async () => {
           v-model="showModal"
           maxWidth="2xl"
           @close="handleModalClose"
-          class="max-h-[90vh] overflow-y-auto"
+          class="max-h-[90vh] overflow-y-auto overflow-x-hidden"
         >
           <template #header>
             <div class="flex items-center justify-between">
@@ -584,7 +752,7 @@ onMounted(async () => {
 
               <!-- City and Country -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div id="country-input-container">
                   <label for="country-input" class="block text-sm font-medium text-white/70 mb-1"
                     >Country</label
                   >
@@ -607,7 +775,7 @@ onMounted(async () => {
                     "
                   />
                 </div>
-                <div>
+                <div id="city-input-container">
                   <label for="city-input" class="block text-sm font-medium text-white/70 mb-1"
                     >City</label
                   >
@@ -682,6 +850,146 @@ onMounted(async () => {
                   :error="tagsError"
                   placeholder="Add tags..."
                 />
+              </div>
+
+              <!-- Trackables -->
+              <div>
+                <label class="block text-sm font-medium text-white/70 mb-1">Trackables</label>
+
+                <div
+                  v-if="trackableTypesError"
+                  class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
+                >
+                  {{ trackableTypesError }}
+                </div>
+
+                <div
+                  v-if="trackablesError"
+                  class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
+                >
+                  {{ trackablesError }}
+                </div>
+
+                <div class="space-y-3">
+                  <div id="trackable-type-select-container" class="min-w-0">
+                    <label class="block text-xs font-medium text-white/60 mb-1">Type</label>
+                    <div class="relative min-w-0">
+                      <input
+                        ref="trackableTypeInputRef"
+                        v-model="trackableTypeSearchQuery"
+                        type="text"
+                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        :placeholder="isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'"
+                        :disabled="isLoadingTrackableTypes || !trackableTypes.length"
+                        @focus="isTrackableTypeDropdownOpen = true"
+                        @input="isTrackableTypeDropdownOpen = true"
+                      />
+
+                      <BaseAutocomplete
+                        :show="isTrackableTypeDropdownOpen"
+                        @update:show="onTrackableTypeDropdownShowUpdate"
+                        :items="filteredTrackableTypes"
+                        :loading="isLoadingTrackableTypes"
+                        :attach-to="trackableTypeInputRef"
+                        item-key="id"
+                        item-label="name"
+                        class="z-50"
+                        @select="selectTrackableType"
+                      />
+                    </div>
+                  </div>
+
+                  <div id="trackable-item-select-container" class="min-w-0">
+                    <label class="block text-xs font-medium text-white/60 mb-1">Item</label>
+                    <div class="relative min-w-0">
+                      <input
+                        ref="trackableItemInputRef"
+                        v-model="trackableItemSearchQuery"
+                        type="text"
+                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        :placeholder="
+                          !selectedTrackableTypeId
+                            ? 'Select type first'
+                            : isLoadingTrackables
+                              ? 'Loading items...'
+                              : 'Search item...'
+                        "
+                        :disabled="!selectedTrackableTypeId || isLoadingTrackables"
+                        @focus="isTrackableItemDropdownOpen = true"
+                        @input="isTrackableItemDropdownOpen = true"
+                      />
+
+                      <BaseAutocomplete
+                        :show="isTrackableItemDropdownOpen"
+                        @update:show="onTrackableItemDropdownShowUpdate"
+                        :items="filteredTrackableItems"
+                        :loading="isLoadingTrackables"
+                        :attach-to="trackableItemInputRef"
+                        item-key="id"
+                        item-label="title"
+                        class="z-50"
+                        @select="selectTrackableItem"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div id="trackable-value-container" class="min-w-0">
+                      <label class="block text-xs font-medium text-white/60 mb-1">Value</label>
+                      <input
+                        v-model.number="newTrackableValue"
+                        type="number"
+                        step="any"
+                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter value"
+                      />
+                    </div>
+
+                    <div class="md:col-span-2 min-w-0">
+                      <label class="block text-xs font-medium text-white/60 mb-1">Description</label>
+                      <input
+                        v-model="newTrackableDescription"
+                        type="text"
+                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex justify-end">
+                    <MainButton type="button" class="bg-blue-600" @click="addTrackableProgress">
+                      Add Trackable
+                    </MainButton>
+                  </div>
+                </div>
+
+                <div v-if="editForm.trackableProgresses.length" class="mt-3 space-y-2">
+                  <div
+                    v-for="p in editForm.trackableProgresses"
+                    :key="p.trackableItemId"
+                    class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                  >
+                    <div class="min-w-0">
+                      <div class="text-white/90 font-medium truncate">
+                        {{ trackables.find((t) => t.id === p.trackableItemId)?.title || 'Unknown trackable' }}
+                      </div>
+                      <div class="text-white/60 text-sm">
+                        {{ p.value }}
+                        <span v-if="p.description">- {{ p.description }}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="ml-3 text-red-200/80 hover:text-red-200 transition-colors"
+                      @click="removeTrackableProgress(p.trackableItemId)"
+                      title="Remove"
+                    >
+                      <font-awesome-icon icon="times" />
+                    </button>
+                  </div>
+                </div>
+
+                <BaseBox v-else class="mt-3 text-white/50">No trackables added</BaseBox>
               </div>
 
               <!-- Main Image -->
