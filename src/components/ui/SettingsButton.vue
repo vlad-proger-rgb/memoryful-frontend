@@ -14,6 +14,7 @@ const props = withDefaults(
     loading?: boolean
     disabled?: boolean
     loadingIcon?: string
+    type?: 'button' | 'submit' | 'reset'
   }>(),
   {
     tone: 'neutral',
@@ -22,6 +23,7 @@ const props = withDefaults(
     loading: false,
     disabled: false,
     loadingIcon: 'circle-notch',
+    type: 'button',
   },
 )
 
@@ -78,7 +80,7 @@ const resolvedIcon = computed(() => {
 </script>
 
 <template>
-  <button :class="buttonClass" :disabled="isDisabled" @click="handleClick">
+  <button :type="props.type" :class="buttonClass" :disabled="isDisabled" @click="handleClick">
     <font-awesome-icon v-if="showIcon && resolvedIcon" :icon="resolvedIcon" :class="loading ? 'animate-spin' : ''" />
     <slot>
       {{ label }}

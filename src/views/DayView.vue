@@ -10,6 +10,7 @@ import trackablesApi from '@/api/trackables'
 import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
+import useWorkspaceStore from '@/stores/workspace'
 import { useStorageUpload, useShake } from '@/composables'
 import type { DayDetail, DayUpdate, Tag, ApiResponse, TrackableInDB, TrackableType } from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
@@ -25,6 +26,8 @@ import TrackableProgress from '@/components/day/TrackableProgress.vue'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
 import DayImage from '@/components/day/DayImage.vue'
 import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
+import MediaBackground from '@/components/ui/MediaBackground.vue'
+import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -59,7 +62,12 @@ const fetchTags = async () => {
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
+const workspaceStore = useWorkspaceStore()
 const { shakeElement } = useShake()
+
+const { url: backgroundUrl, isVideo: isBackgroundVideo } = useResolvedStorageMedia(
+  () => workspaceStore.settings.dayBackground,
+)
 
 uiStore.disableScroll = false
 
@@ -544,10 +552,11 @@ onMounted(async () => {
 <template>
   <div class="relative min-h-screen w-full overflow-x-hidden">
     <!-- Background image -->
-    <img
-      src="/src/assets/img/day_bg.jpg"
-      class="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-      alt="background"
+    <MediaBackground
+      :src="backgroundUrl"
+      :is-video="isBackgroundVideo"
+      class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
+      fallback-class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
     />
 
     <!-- Main content -->

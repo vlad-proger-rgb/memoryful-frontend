@@ -3,14 +3,29 @@ import Navbar from '@/components/Navbar.vue'
 import AppToast from '@/components/ui/AppToast.vue'
 import useUiStore from '@/stores/ui.ts'
 import { useUserStore } from '@/stores/user'
-import { onMounted } from 'vue'
+import useWorkspaceStore from '@/stores/workspace'
+import { onMounted, watch } from 'vue'
 
 const uiStore = useUiStore()
 const userStore = useUserStore()
+const workspaceStore = useWorkspaceStore()
 
 onMounted(() => {
-  userStore.initializeFromStorage()
+  userStore.initializeFromStorage().then(() => {
+    if (userStore.isAuthenticated) {
+      workspaceStore.fetchMyWorkspace()
+    }
+  })
 })
+
+watch(
+  () => userStore.isAuthenticated,
+  (next) => {
+    if (next) {
+      workspaceStore.fetchMyWorkspace()
+    }
+  },
+)
 </script>
 
 <template>

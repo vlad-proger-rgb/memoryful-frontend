@@ -11,23 +11,23 @@ import type { DayListItem, Tag, Country, CityDetail, DayFilters } from '@/types'
 import DayImage from '@/components/day/DayImage.vue'
 
 import TagSelector from '@/components/day/TagSelector.vue'
-import searchBgVideo from '@/assets/video/search_bg.mp4'
 import { getIcon } from '@/plugins/fontawesome'
 import useUiStore from '@/stores/ui'
+import useWorkspaceStore from '@/stores/workspace'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
-
-// Props for customizable background
-withDefaults(defineProps<{
-  backgroundVideoUrl?: string
-}>(), {
-  backgroundVideoUrl: searchBgVideo
-})
+import MediaBackground from '@/components/ui/MediaBackground.vue'
+import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUiStore()
+const workspaceStore = useWorkspaceStore()
+
+const { url: backgroundUrl, isVideo: isBackgroundVideo } = useResolvedStorageMedia(
+  () => workspaceStore.settings.searchBackground,
+)
 
 // Search state
 const query = ref('')
@@ -273,22 +273,11 @@ onMounted(async () => {
 
 <template>
   <div class="search-page relative min-h-screen w-full overflow-x-hidden">
-    <!-- Video Background (or fallback image) -->
-    <video
-      v-if="backgroundVideoUrl"
-      autoplay
-      loop
-      muted
-      playsinline
-      class="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-    >
-      <source :src="backgroundVideoUrl" type="video/mp4" />
-    </video>
-    <img
-      v-else
-      src="/src/assets/img/bg.jpg"
-      class="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-      alt="background"
+    <MediaBackground
+      :src="backgroundUrl"
+      :is-video="isBackgroundVideo"
+      class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
+      fallback-class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
     />
 
     <!-- Content -->

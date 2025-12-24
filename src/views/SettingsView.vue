@@ -4,15 +4,18 @@ import { useRouter, RouterView } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
-import bgImage from '@/assets/img/day_bg.jpg'
 import fallbackAvatar from '@/assets/img/animal1.jpg'
+import useWorkspaceStore from '@/stores/workspace'
 
 import SettingsSectionButton from '@/components/ui/SettingsSectionButton.vue'
+import MediaBackground from '@/components/ui/MediaBackground.vue'
 
+import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 import { useStorageResolve, useStorageUpload } from '@/composables'
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
+const workspaceStore = useWorkspaceStore()
 const router = useRouter()
 
 uiStore.disableScroll = false
@@ -21,6 +24,10 @@ const displayName = computed(() => userStore.user.firstName || 'User')
 
 const { resolveStorageSrc } = useStorageResolve()
 const { uploadToStorage } = useStorageUpload()
+
+const { url: settingsBackgroundUrl, isVideo: isSettingsBackgroundVideo } = useResolvedStorageMedia(
+  () => workspaceStore.settings.settingsBackground,
+)
 
 const avatarResolvedSrc = ref<string>(fallbackAvatar)
 watch(
@@ -98,9 +105,12 @@ const handleLogout = async () => {
 
 <template>
   <div class="min-h-[calc(100vh-60px)] text-white">
-    <div
-      class="fixed inset-0 -z-10 bg-center bg-cover"
-      :style="{ backgroundImage: `url(${bgImage})` }"
+    <MediaBackground
+      :src="settingsBackgroundUrl"
+      :is-video="isSettingsBackgroundVideo"
+      :use-css-background="true"
+      class-name="fixed inset-0 -z-10 w-full h-full object-cover"
+      fallback-class-name="fixed inset-0 -z-10 bg-center bg-cover"
     />
 
     <div class="w-full max-w-[1200px] mx-auto px-4">
