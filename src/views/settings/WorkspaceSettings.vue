@@ -25,6 +25,13 @@ const computeIsVideo = (src: string) => {
   )
 }
 
+const fileInputs = ref<Record<PageKey, HTMLInputElement | null>>({
+  dashboard: null,
+  day: null,
+  search: null,
+  settings: null,
+})
+
 const selectedFiles = ref<Record<PageKey, File | null>>({
   dashboard: null,
   day: null,
@@ -89,6 +96,12 @@ const patchForPage = (page: PageKey, key: string | null) => {
   return { settingsBackground: key }
 }
 
+const isDefaultForPage = (page: PageKey) => {
+  const key = getKeyForPage(page)
+  if (!key) return true
+  return key.startsWith('users/defaults/workspace/')
+}
+
 const refreshResolved = async (page: PageKey) => {
   const key = getKeyForPage(page)
   resolvedUrls.value[page] = await resolveStorageSrc(key)
@@ -126,11 +139,16 @@ const handleFileSelected = (page: PageKey, event: Event) => {
   const url = URL.createObjectURL(file)
   previewUrls.value[page] = url
   previewIsVideo.value[page] = computeIsVideo(file.name)
+
+  input.value = ''
 }
 
 const uploadPageBackground = async (page: PageKey) => {
   const file = selectedFiles.value[page]
-  if (!file) return
+  if (!file) {
+    uiStore.showToast('Choose a file first', 'error')
+    return
+  }
 
   try {
     const objectKey = await uploadToStorage({
@@ -147,11 +165,19 @@ const uploadPageBackground = async (page: PageKey) => {
       previewUrls.value[page] = null
     }
     previewIsVideo.value[page] = false
-    uiStore.showToast(`${pageLabels[page]} background uploaded`, 'success')
+    const input = fileInputs.value[page]
+    if (input) input.value = ''
+    uiStore.showToast(`${pageLabels[page]} background saved`, 'success')
   } catch (e: unknown) {
     const maybeErr = e as { message?: string }
     uiStore.showToast(maybeErr?.message || 'Failed to upload background', 'error')
   }
+}
+
+const openFilePicker = (page: PageKey) => {
+  const input = fileInputs.value[page]
+  if (input) input.value = ''
+  input?.click()
 }
 
 const clearPageBackground = async (page: PageKey) => {
@@ -175,7 +201,6 @@ onMounted(async () => {
     </div>
 
     <section class="flex items-center justify-between gap-4">
-      <div class="text-sm opacity-80">Changes apply immediately.</div>
       <div class="text-sm opacity-80" v-if="isSaving">Saving…</div>
     </section>
 
@@ -193,15 +218,27 @@ onMounted(async () => {
               tone="danger"
               label="Clear"
               icon="trash"
+              :disabled="isDefaultForPage(page)"
               @click="clearPageBackground(page)"
             />
           </div>
         </div>
 
-        <div class="w-full rounded-xl overflow-hidden bg-black/20 border border-white/10">
+        <div class="text-xs opacity-70 min-h-[16px]">
+          <span v-if="isDefaultForPage(page)">Default background is in use.</span>
+        </div>
+
+        <div
+          class="group w-full rounded-xl overflow-hidden bg-black/20 border border-white/10 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          role="button"
+          tabindex="0"
+          @click="openFilePicker(page)"
+          @keydown.enter.prevent="openFilePicker(page)"
+          @keydown.space.prevent="openFilePicker(page)"
+        >
           <video
             v-if="(previewUrls[page] && previewIsVideo[page]) || (!previewUrls[page] && resolvedUrls[page] && resolvedIsVideo[page])"
-            class="w-full h-[160px] object-cover"
+            class="w-full h-[160px] object-cover transition-transform duration-300 ease-out group-hover:scale-110"
             :src="previewUrls[page] || resolvedUrls[page] || ''"
             autoplay
             muted
@@ -210,12 +247,12 @@ onMounted(async () => {
           />
           <img
             v-else-if="previewUrls[page] || resolvedUrls[page]"
-            class="w-full h-[160px] object-cover"
+            class="w-full h-[160px] object-cover transition-transform duration-300 ease-out group-hover:scale-110"
             :src="previewUrls[page] || resolvedUrls[page] || ''"
             alt="background preview"
           />
           <div v-else class="w-full h-[160px] flex items-center justify-center text-sm opacity-70">
-            No background
+            Click to choose background
           </div>
         </div>
 
@@ -223,14 +260,15 @@ onMounted(async () => {
           <input
             type="file"
             accept="image/*,video/*"
-            class="block w-full text-sm"
+            class="hidden"
+            :ref="(el) => (fileInputs[page] = el as HTMLInputElement)"
             @change="(e) => handleFileSelected(page, e)"
           />
 
           <div class="flex items-center gap-2">
             <SettingsButton
               preset="compact"
-              label="Upload"
+              label="Save"
               icon="upload"
               :disabled="!selectedFiles[page]"
               @click="uploadPageBackground(page)"
