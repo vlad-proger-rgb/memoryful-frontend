@@ -96,6 +96,7 @@ const day = ref<DayDetail>({
 
 const showModal = ref(false)
 const isSaving = ref(false)
+const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const dayExists = ref(false)
 
@@ -318,6 +319,26 @@ const toggleStarred = async () => {
     uiStore.showToast(updatedDay.starred ? 'Starred' : 'Unstarred', 'success')
   } catch (error) {
     console.error('Error toggling star:', error)
+  }
+}
+
+const completeDay = async () => {
+  if (!day.value?.timestamp) return
+
+  if (!dayExists.value) {
+    uiStore.showToast('Save the day first, then mark it as complete', 'error')
+    return
+  }
+
+  isCompletingDay.value = true
+  try {
+    await daysApi.completeDay(day.value.timestamp)
+    uiStore.showToast('Day marked as complete. Generating insights...', 'success')
+  } catch (error) {
+    console.error('Error completing day:', error)
+    uiStore.showToast('Failed to mark day as complete', 'error')
+  } finally {
+    isCompletingDay.value = false
   }
 }
 
@@ -573,6 +594,19 @@ onMounted(async () => {
           >
             <font-awesome-icon :icon="day.starred ? 'star' : ['far', 'star']" class="text-xl" />
           </button>
+
+          <button
+            type="button"
+            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80"
+            :class="{ 'opacity-50 cursor-not-allowed': isCompletingDay || !dayExists }"
+            :disabled="isCompletingDay || !dayExists"
+            :title="dayExists ? 'Mark day as complete (generate insights)' : 'Save the day first'"
+            @click="completeDay"
+          >
+            <font-awesome-icon v-if="isCompletingDay" icon="spinner" spin class="text-xl" />
+            <font-awesome-icon v-else icon="check" class="text-xl" />
+          </button>
+
           <MainButton
             type="button"
             variant="primary"
@@ -583,6 +617,17 @@ onMounted(async () => {
             <font-awesome-icon icon="pen" class="mr-2" />
             Edit Day
           </MainButton>
+
+          <!-- <MainButton
+            type="button"
+            variant="secondary"
+            size="sm"
+            :loading="isCompletingDay"
+            @click="completeDay"
+          >
+            <font-awesome-icon icon="check" class="mr-2" />
+            Day Completed
+          </MainButton> -->
         </div>
       </div>
 

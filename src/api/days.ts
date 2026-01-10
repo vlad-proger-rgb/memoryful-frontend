@@ -42,6 +42,9 @@ export const daysApi = {
   toggleStarred(timestamp: number): Promise<ApiResponse<null>> {
     return axios.patch(`/api/days/${timestamp}/toggle-starred`)
   },
+  completeDay(timestamp: number): Promise<ApiResponse<null>> {
+    return axios.post(`/api/days/${timestamp}/complete`)
+  },
   // deleteDay(timestamp: number): Promise<ApiResponse<null>> {
   //   return axios.delete(`/api/days/${timestamp}`)
   // },
