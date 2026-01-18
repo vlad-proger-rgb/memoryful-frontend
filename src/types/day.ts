@@ -5,6 +5,8 @@ import type {
   DayTrackableTypeWithProgress,
 } from './day-trackable-progress'
 import type { Tag } from './tag'
+import type { InsightInDB } from './insight'
+import type { SuggestionInDB } from './suggestion'
 
 export interface DayListItem {
   timestamp: number
@@ -30,6 +32,8 @@ export interface DayDetail {
   images?: string[]
   tags?: Tag[]
   trackableProgresses?: DayTrackableTypeWithProgress[]
+  insights?: InsightInDB[]
+  suggestions?: SuggestionInDB[]
 }
 
 export interface DayCreate {

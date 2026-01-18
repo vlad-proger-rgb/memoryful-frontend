@@ -4,10 +4,11 @@
       <div
         v-for="(image, index) in images"
         :key="index"
-        class="cursor-pointer hover:opacity-90 transition-opacity"
+        class="cursor-pointer hover:opacity-90 transition-all duration-300 transform hover:scale-105"
+        :style="`animation: fadeInUp 0.5s ease-out ${index * 0.1}s both`"
         @click="openModal(index)"
       >
-        <img :src="getImageUrl(image)" :alt="alt" class="w-full h-48 object-cover rounded-2xl" />
+        <img :src="getImageUrl(image)" :alt="alt" class="w-full h-48 object-cover rounded-2xl shadow-lg" />
       </div>
     </div>
     <div v-else class="text-center py-4 text-white/50 text-sm">No images to display</div>
@@ -43,15 +44,18 @@
                   <img
                     :src="currentImage"
                     :alt="alt"
-                    class="max-h-[70vh] max-w-[90vw] w-auto h-auto object-contain"
+                    class="max-h-[70vh] max-w-[90vw] w-auto h-auto object-contain transition-all duration-300"
                     @click.stop
                   />
                 </div>
                 <div
                   v-else
-                  class="max-h-[70vh] max-w-[90vw] w-auto h-auto flex items-center justify-center"
+                  class="max-h-[70vh] max-w-[90vw] w-auto h-auto flex items-center justify-center min-h-[400px]"
                 >
-                  <div class="animate-pulse text-white/50">Loading...</div>
+                  <div class="animate-pulse text-white/50 flex flex-col items-center">
+                    <font-awesome-icon icon="spinner" spin class="text-4xl mb-2" />
+                    <div>Loading...</div>
+                  </div>
                 </div>
               </Transition>
             </div>
@@ -253,15 +257,34 @@ onUnmounted(() => {
   width: 100%;
 }
 
+/* FadeInUp animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Fade transition */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: scale(0.95);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Button hover effects */

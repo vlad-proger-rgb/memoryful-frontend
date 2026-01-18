@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, watch, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, watch, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { QuillEditor } from '@vueup/vue-quill'
@@ -12,7 +12,7 @@ import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
 import { useStorageUpload, useShake } from '@/composables'
-import type { DayDetail, DayUpdate, Tag, ApiResponse, TrackableInDB, TrackableType } from '@/types'
+import type { DayDetail, DayUpdate, Tag, ApiResponse, TrackableInDB, TrackableType, InsightInDB, SuggestionInDB } from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
 import { useLocation } from '@/composables'
@@ -92,6 +92,8 @@ const day = ref<DayDetail>({
   images: [],
   trackableProgresses: [],
   starred: false,
+  insights: [],
+  suggestions: [],
 })
 
 const showModal = ref(false)
@@ -99,6 +101,10 @@ const isSaving = ref(false)
 const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const dayExists = ref(false)
+const showInsights = ref(false)
+const showScrollTop = ref(false)
+const showGoToImages = ref(false)
+const showImageFullscreen = ref(false)
 
 // Form state
 interface EditForm {
@@ -351,6 +357,44 @@ const handleModalOpen = () => {
   onModalOpen()
 }
 
+const handleDiscuss = (item: InsightInDB | SuggestionInDB, type: 'insight' | 'suggestion') => {
+  console.log(`Discuss ${type}:`, item)
+  // TODO: Implement discuss functionality
+  uiStore.showToast(`Discuss feature coming soon for ${type}`, 'info')
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const goToImages = () => {
+  const imagesSection = document.getElementById('images-section')
+  if (imagesSection) {
+    imagesSection.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const openImageFullscreen = () => {
+  showImageFullscreen.value = true
+}
+
+const closeImageFullscreen = () => {
+  showImageFullscreen.value = false
+}
+
+// Handle keyboard events
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && showImageFullscreen.value) {
+    closeImageFullscreen()
+  }
+}
+
+const handleScroll = () => {
+  const scrollPosition = window.scrollY
+  showScrollTop.value = scrollPosition > 200
+  showGoToImages.value = scrollPosition > 200
+}
+
 const saveDay = async () => {
   if (!day.value) return
 
@@ -552,6 +596,8 @@ const loadDay = async () => {
       images: [],
       trackableProgresses: [],
       starred: false,
+      insights: [],
+      suggestions: [],
     }
     dayExists.value = false
 
@@ -567,6 +613,14 @@ const loadDay = async () => {
 
 onMounted(async () => {
   await Promise.all([fetchTags(), fetchTrackableTypes(), fetchTrackables(), loadDay()])
+  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('keydown', handleKeydown)
+  handleScroll() // Check initial scroll position
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -603,6 +657,7 @@ onMounted(async () => {
             :title="dayExists ? 'Mark day as complete (generate insights)' : 'Save the day first'"
             @click="completeDay"
           >
+            Complete Day
             <font-awesome-icon v-if="isCompletingDay" icon="spinner" spin class="text-xl" />
             <font-awesome-icon v-else icon="check" class="text-xl" />
           </button>
@@ -634,15 +689,26 @@ onMounted(async () => {
       <div class="space-y-6">
         <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
-          <div class="relative w-full aspect-video">
+          <div class="relative w-full aspect-video group cursor-pointer" @click="openImageFullscreen">
             <DayImage
               v-if="day.mainImage"
               :src="day.mainImage"
-              class="w-full h-full object-cover"
+              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
               :alt="day.city?.name || 'Day image'"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-white/30">
               <font-awesome-icon icon="image" class="text-4xl" />
+            </div>
+
+            <!-- Fullscreen overlay -->
+            <div
+              v-if="day.mainImage"
+              class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
+            >
+              <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg flex items-center gap-2">
+                <font-awesome-icon icon="expand" class="text-white" />
+                <span class="text-white text-sm font-medium">View Image Fullscreen</span>
+              </div>
             </div>
           </div>
         </BaseBox>
@@ -731,14 +797,141 @@ onMounted(async () => {
           </BaseBox>
         </div>
 
+        <!-- Insights & Suggestions -->
+        <BaseBox class="mb-8">
+          <button
+            @click="showInsights = !showInsights"
+            class="w-full flex items-center justify-between text-left group"
+          >
+            <h3 class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors">
+              View Insights & Suggestions
+            </h3>
+            <font-awesome-icon
+              :icon="showInsights ? 'chevron-up' : 'chevron-down'"
+              class="text-white/50 group-hover:text-white/70 transition-colors"
+            />
+          </button>
+
+          <Transition
+            name="accordion"
+            enter-active-class="transition-all duration-300 ease-out"
+            leave-active-class="transition-all duration-300 ease-in"
+            enter-from-class="max-h-0 opacity-0 overflow-hidden"
+            enter-to-class="max-h-[2000px] opacity-100 overflow-visible"
+            leave-from-class="max-h-[2000px] opacity-100 overflow-visible"
+            leave-to-class="max-h-0 opacity-0 overflow-hidden"
+          >
+            <div v-show="showInsights" class="mt-6 space-y-6">
+              <!-- Insights Section -->
+            <div v-if="day.insights?.length">
+              <h4 class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center">
+                <font-awesome-icon icon="lightbulb" class="text-yellow-400" />
+                Insights
+              </h4>
+              <div class="text-white/40 text-xs text-center mb-3 italic">
+                <font-awesome-icon icon="info-circle" class="mr-1" />
+                Hover over insights to reveal the Discuss button
+              </div>
+              <div class="space-y-3">
+                <div
+                  v-for="insight in day.insights"
+                  :key="insight.id"
+                  class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+                >
+                  <div class="flex items-start gap-3">
+                    <font-awesome-icon
+                      v-if="insight.icon"
+                      :icon="[insight.icon.style || 'fas', insight.icon.name]"
+                      class="text-yellow-400 mt-1 flex-shrink-0"
+                    />
+                    <div class="flex-1">
+                      <h5 class="text-white font-medium mb-2">{{ insight.description }}</h5>
+                      <div class="prose prose-invert max-w-none text-sm text-white/80">
+                        <div v-html="marked(insight.content)"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                    @click="handleDiscuss(insight, 'insight')"
+                  >
+                    <font-awesome-icon icon="comments" class="mr-2" />
+                    Discuss
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-white/50 text-sm">
+              No insights available for this day
+            </div>
+
+            <!-- Suggestions Section -->
+            <div v-if="day.suggestions?.length">
+              <h4 class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center">
+                <font-awesome-icon icon="magic" class="text-purple-400" />
+                Suggestions
+              </h4>
+              <div class="text-white/40 text-xs text-center mb-3 italic">
+                <font-awesome-icon icon="info-circle" class="mr-1" />
+                Hover over suggestions to reveal the Discuss button
+              </div>
+              <div class="space-y-3">
+                <div
+                  v-for="suggestion in day.suggestions"
+                  :key="suggestion.id"
+                  class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+                >
+                  <div class="flex items-start gap-3">
+                    <font-awesome-icon
+                      v-if="suggestion.icon"
+                      :icon="[suggestion.icon.style || 'fas', suggestion.icon.name]"
+                      class="text-purple-400 mt-1 flex-shrink-0"
+                    />
+                    <div class="flex-1">
+                      <h5 class="text-white font-medium mb-2">{{ suggestion.description }}</h5>
+                      <div class="prose prose-invert max-w-none text-sm text-white/80">
+                        <div v-html="marked(suggestion.content)"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                    @click="handleDiscuss(suggestion, 'suggestion')"
+                  >
+                    <font-awesome-icon icon="comments" class="mr-2" />
+                    Discuss
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-white/50 text-sm">
+              No suggestions available for this day
+            </div>
+
+            <!-- Collapse Button -->
+            <div class="flex justify-center mt-6 pt-4 border-t border-white/10">
+              <button
+                @click="showInsights = false"
+                class="px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] border border-white/20 shadow-lg"
+              >
+                <font-awesome-icon icon="chevron-up" class="mr-2" />
+                Collapse Section
+              </button>
+            </div>
+          </div>
+          </Transition>
+        </BaseBox>
+
         <!-- Images -->
-        <h3 class="text-white/70 text-sm font-medium">Images</h3>
-        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
-          <ImageGallery
-            :images="day?.images || []"
-            :alt="day.city?.name || 'Day image'"
-            basePath=""
-          />
+        <div id="images-section">
+          <h3 class="text-white/70 text-sm font-medium">Images</h3>
+          <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+            <ImageGallery
+              :images="day?.images || []"
+              :alt="day.city?.name || 'Day image'"
+              basePath=""
+            />
+          </div>
         </div>
 
         <!-- Modal window -->
@@ -1128,6 +1321,83 @@ onMounted(async () => {
         </ModalWindow>
       </div>
     </div>
+
+    <!-- Scroll to Top Button -->
+    <Transition
+      name="fade"
+      enter-active-class="transition-opacity duration-300"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <button
+        v-if="showScrollTop"
+        @click="scrollToTop"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20"
+        title="Scroll to top"
+      >
+        <font-awesome-icon icon="arrow-up" class="mr-2" />
+        Scroll to top
+      </button>
+    </Transition>
+
+    <!-- Go to Images Button -->
+    <Transition
+      name="fade"
+      enter-active-class="transition-opacity duration-300"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <button
+        v-if="showGoToImages"
+        @click="goToImages"
+        class="fixed bottom-8 right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20"
+        title="Go to images"
+      >
+        <font-awesome-icon icon="images" class="mr-2" />
+        Go to images
+      </button>
+    </Transition>
+
+    <!-- Image Fullscreen Overlay -->
+    <Transition
+      name="fade"
+      enter-active-class="transition-opacity duration-300"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="showImageFullscreen"
+        class="fixed inset-0 z-50 bg-black flex items-center justify-center"
+        @click="closeImageFullscreen"
+      >
+        <div class="relative max-w-full max-h-full p-4">
+          <DayImage
+            v-if="day.mainImage"
+            :src="day.mainImage"
+            :alt="day.city?.name || 'Day image'"
+            class="max-h-[90vh] max-w-[95vw] w-auto h-auto object-contain"
+            @click.stop
+          />
+          <!-- Close button -->
+          <button
+            @click="closeImageFullscreen"
+            class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-black/50 p-2 rounded-full"
+            title="Close fullscreen"
+          >
+            <font-awesome-icon icon="times" class="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 

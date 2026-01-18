@@ -106,7 +106,15 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="#modal">
-    <Transition name="modal">
+    <Transition
+      name="modal-backdrop"
+      enter-active-class="transition-opacity duration-300 ease-out"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
       <div
         v-if="isOpen"
         class="fixed inset-0 z-50 overflow-y-auto"
@@ -118,10 +126,10 @@ onBeforeUnmount(() => {
           class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
         >
           <Transition
-            enter-active-class="ease-out duration-300"
+            enter-active-class="ease-out duration-500"
             enter-from-class="opacity-0"
             enter-to-class="opacity-100"
-            leave-active-class="ease-in duration-200"
+            leave-active-class="ease-in duration-400"
             leave-from-class="opacity-100"
             leave-to-class="opacity-0"
           >
@@ -144,7 +152,7 @@ onBeforeUnmount(() => {
             <div
               v-if="isOpen"
               ref="modalRef"
-              class="relative bg-gray-800 text-left shadow-xl transform transition-all flex flex-col sm:my-8 max-h-[90vh]"
+              class="relative bg-gray-800 text-left shadow-xl transform transition-all flex flex-col sm:my-8 max-h-[90vh] rounded-2xl"
               :class="{
                 'mx-auto w-full max-w-sm': maxWidth === 'sm',
                 'mx-auto w-full max-w-md': maxWidth === 'md',
@@ -163,11 +171,11 @@ onBeforeUnmount(() => {
               <!-- Header -->
               <div
                 v-if="$slots.header"
-                class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0"
+                class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0 rounded-t-2xl"
               >
                 <slot name="header" />
               </div>
-              <div v-else class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0">
+              <div v-else class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0 rounded-t-2xl">
                 <h3 class="text-lg font-medium text-white">{{ title }}</h3>
               </div>
 
@@ -179,7 +187,7 @@ onBeforeUnmount(() => {
               <!-- Footer -->
               <div
                 v-if="$slots.footer"
-                class="px-6 py-4 border-t border-white/10 bg-gray-900/50 flex-shrink-0"
+                class="px-6 py-4 border-t border-white/10 bg-gray-900/50 flex-shrink-0 rounded-b-2xl"
               >
                 <slot name="footer" />
               </div>
