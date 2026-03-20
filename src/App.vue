@@ -4,11 +4,15 @@ import AppToast from '@/components/ui/AppToast.vue'
 import useUiStore from '@/stores/ui.ts'
 import { useUserStore } from '@/stores/user'
 import useWorkspaceStore from '@/stores/workspace'
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const uiStore = useUiStore()
 const userStore = useUserStore()
 const workspaceStore = useWorkspaceStore()
+const route = useRoute()
+
+const showAppShell = computed(() => route.meta.appShell !== false)
 
 onMounted(() => {
   userStore.initializeFromStorage().then(() => {
@@ -30,9 +34,9 @@ watch(
 
 <template>
   <div class="h-screen" :class="{ 'overflow-hidden': uiStore.disableScroll }">
-    <Navbar class="fixed top-0 left-0 w-full z-50" />
+    <Navbar v-if="showAppShell" class="fixed top-0 left-0 w-full z-50" />
     <AppToast />
-    <div class="pt-[60px]">
+    <div :class="showAppShell ? 'pt-[60px]' : ''">
       <RouterView />
     </div>
   </div>

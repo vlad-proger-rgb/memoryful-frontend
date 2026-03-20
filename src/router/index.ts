@@ -7,6 +7,9 @@ const router = createRouter({
       path: '/',
       name: 'landing',
       component: () => import('@/views/LandingView.vue'),
+      meta: {
+        appShell: false,
+      },
     },
     {
       path: '/dashboard',
@@ -18,14 +21,23 @@ const router = createRouter({
       name: 'login',
       component: () => import('@/views/AuthView.vue'),
       redirect: '/login/welcome',
+      meta: {
+        appShell: false,
+      },
       children: [
         {
           path: 'welcome',
           component: () => import('@/views/auth/WelcomeCard.vue'),
+          meta: {
+            appShell: false,
+          },
         },
         {
           path: 'code-verification',
           component: () => import('@/views/auth/CodeVerification.vue'),
+          meta: {
+            appShell: false,
+          },
         },
         {
           path: 'details',

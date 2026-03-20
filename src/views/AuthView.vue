@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import useUiStore from '@/stores/ui.ts'
 import bg from '@/assets/img/auth-bg.jpg'
@@ -8,6 +8,10 @@ const uiStore = useUiStore()
 
 onMounted(() => {
   uiStore.disableScroll = true
+})
+
+onUnmounted(() => {
+  uiStore.disableScroll = false
 })
 </script>
 

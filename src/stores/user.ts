@@ -5,6 +5,14 @@ import { setAuthToken } from '@/api/client'
 import { useApiError } from '@/composables'
 import type { User, Token } from '@/types'
 
+const publicRoutes = new Set(['/', '/login', '/login/welcome', '/login/code-verification', '/login/details'])
+
+const redirectToLandingPage = () => {
+  if (typeof window === 'undefined') return
+  if (publicRoutes.has(window.location.pathname)) return
+  window.location.assign('/')
+}
+
 export const useUserStore = defineStore('user', () => {
   const { errorMessage, isLoading, withLoading } = useApiError()
 
@@ -210,10 +218,13 @@ export const useUserStore = defineStore('user', () => {
           tokenType: refreshed.data.tokenType ?? 'bearer',
         })
         await fetchUserDetails()
+        return
       }
     } catch {
-      // Not authenticated / no refresh cookie
+      redirectToLandingPage()
     }
+
+    redirectToLandingPage()
   }
 
   const isAuthenticated = computed(() => !!token.value)

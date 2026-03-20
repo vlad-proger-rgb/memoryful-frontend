@@ -6,10 +6,20 @@ axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || ''
 axios.defaults.withCredentials = true
 
 let refreshPromise: Promise<string> | null = null
+const publicRoutes = new Set(['/', '/login', '/login/welcome', '/login/code-verification', '/login/details'])
 
-const clearAuthStorage = () => {
+const redirectToLandingPage = () => {
+  if (typeof window === 'undefined') return
+  if (publicRoutes.has(window.location.pathname)) return
+  window.location.assign('/')
+}
+
+const clearAuthStorage = (redirect = false) => {
   sessionStorage.removeItem('accessToken')
   setAuthToken(null)
+  if (redirect) {
+    redirectToLandingPage()
+  }
 }
 
 const getHeader = (headers: unknown, key: string): unknown => {
@@ -84,7 +94,7 @@ axios.interceptors.response.use(
         originalRequest.headers = setHeader(originalRequest.headers, 'Authorization', `Bearer ${newAccessToken}`) as unknown as AxiosRequestHeaders
         return axios(originalRequest)
       } catch {
-        clearAuthStorage()
+        clearAuthStorage(true)
       }
     }
 
