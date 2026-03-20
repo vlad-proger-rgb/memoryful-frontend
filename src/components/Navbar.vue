@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-import logo from '@/assets/img/logo.svg'
-import aiLogo from '@/assets/img/ai_logo.svg'
+import logo from '@/assets/img/memoryful-ai-brain.png'
+import aiLogo from '@/assets/img/memoryful-ai-brain.png'
 
 // import { useUserStore } from '@/stores/user'
 
