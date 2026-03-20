@@ -9,19 +9,19 @@ import type {
 
 export const trackablesApi = {
   getTrackables(params?: { typeId?: string; search?: string }): Promise<ApiResponse<TrackableInDB[]>> {
-    return axios.get('/api/trackables/', { params })
+    return axios.get('/trackables/', { params })
   },
   getTrackableById(id: string): Promise<ApiResponse<TrackableDetail>> {
-    return axios.get(`/api/trackables/${id}`)
+    return axios.get(`/trackables/${id}`)
   },
   createTrackable(data: TrackableCreate): Promise<ApiResponse<string>> {
-    return axios.post('/api/trackables/', data)
+    return axios.post('/trackables/', data)
   },
   updateTrackable(id: string, data: TrackableUpdate): Promise<ApiResponse<null>> {
-    return axios.put(`/api/trackables/${id}`, data)
+    return axios.put(`/trackables/${id}`, data)
   },
   deleteTrackable(id: string): Promise<ApiResponse<null>> {
-    return axios.delete(`/api/trackables/${id}`)
+    return axios.delete(`/trackables/${id}`)
   },
 }
 

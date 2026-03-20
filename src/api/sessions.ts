@@ -3,11 +3,11 @@ import type { ApiResponse, Session } from '@/types'
 
 export const sessionsApi = {
   listSessions(): Promise<ApiResponse<Session[]>> {
-    return axios.get('/api/auth/sessions')
+    return axios.get('/auth/sessions')
   },
 
   revokeSession(sessionId: string): Promise<ApiResponse<null>> {
-    return axios.delete(`/api/auth/sessions/${sessionId}`)
+    return axios.delete(`/auth/sessions/${sessionId}`)
   },
 }
 

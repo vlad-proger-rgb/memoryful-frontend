@@ -36,7 +36,7 @@ const setHeader = (headers: unknown, key: string, value: string): unknown => {
 }
 
 const refreshAccessToken = async (): Promise<string> => {
-  const response = await axios.get('/api/auth/refresh')
+  const response = await axios.get('/auth/refresh')
 
   const accessToken = (response as unknown as ApiResponse<{ accessToken: string }>).data?.accessToken
 

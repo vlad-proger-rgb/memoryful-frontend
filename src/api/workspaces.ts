@@ -10,10 +10,10 @@ export interface WorkspaceSettings {
 
 export const workspacesApi = {
   getMyWorkspace(): Promise<ApiResponse<WorkspaceSettings>> {
-    return axios.get('/api/workspaces/me')
+    return axios.get('/workspaces/me')
   },
   updateMyWorkspace(body: WorkspaceSettings): Promise<ApiResponse<WorkspaceSettings>> {
-    return axios.put('/api/workspaces/me', body)
+    return axios.put('/workspaces/me', body)
   },
 }
 

@@ -5,20 +5,20 @@ type TagPayload = Omit<Tag, 'id'>
 
 export const tagsApi = {
   getTags(): Promise<ApiResponse<Tag[]>> {
-    return axios.get('/api/tags/')
+    return axios.get('/tags/')
   },
   getTagById(id: string): Promise<ApiResponse<Tag>> {
     // ???
-    return axios.get(`/api/tags/${id}`)
+    return axios.get(`/tags/${id}`)
   },
   createTag(tag: TagPayload): Promise<ApiResponse<string>> {
-    return axios.post('/api/tags/', tag)
+    return axios.post('/tags/', tag)
   },
   updateTag(tagId: string, tag: TagPayload): Promise<ApiResponse<null>> {
-    return axios.put(`/api/tags/${tagId}`, tag)
+    return axios.put(`/tags/${tagId}`, tag)
   },
   deleteTag(tagId: string): Promise<ApiResponse<Tag>> {
-    return axios.delete(`/api/tags/${tagId}`)
+    return axios.delete(`/tags/${tagId}`)
   },
 }
 

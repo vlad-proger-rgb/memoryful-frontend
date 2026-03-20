@@ -3,7 +3,7 @@ import type { ApiResponse, SuggestionInDB } from '@/types'
 
 export const suggestionsApi = {
   getSuggestions(params?: { limit?: number; offset?: number }): Promise<ApiResponse<SuggestionInDB[]>> {
-    return axios.get('/api/suggestions/', { params })
+    return axios.get('/suggestions/', { params })
   },
 }
 

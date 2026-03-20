@@ -28,10 +28,10 @@ export interface PresignGetResponse {
 
 export const storageApi = {
   presignPut(body: PresignPutRequest): Promise<ApiResponse<PresignPutResponse>> {
-    return axios.post('/api/storage/presign-put', body)
+    return axios.post('/storage/presign-put', body)
   },
   presignGet(body: PresignGetRequest): Promise<ApiResponse<PresignGetResponse>> {
-    return axios.post('/api/storage/presign-get', body)
+    return axios.post('/storage/presign-get', body)
   },
 }
 

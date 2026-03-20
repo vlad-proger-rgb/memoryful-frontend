@@ -3,7 +3,7 @@ import type { ApiResponse, InsightInDB } from '@/types'
 
 export const insightsApi = {
   getInsights(params?: { limit?: number; offset?: number }): Promise<ApiResponse<InsightInDB[]>> {
-    return axios.get('/api/insights/', { params })
+    return axios.get('/insights/', { params })
   },
 }
 

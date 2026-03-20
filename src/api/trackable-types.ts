@@ -3,19 +3,19 @@ import type { ApiResponse, TrackableType, TrackableTypeCreate, TrackableTypeUpda
 
 export const trackableTypesApi = {
   getTrackableTypes(): Promise<ApiResponse<TrackableType[]>> {
-    return axios.get('/api/trackable-types/')
+    return axios.get('/trackable-types/')
   },
   getTrackableTypeById(id: string): Promise<ApiResponse<TrackableType>> {
-    return axios.get(`/api/trackable-types/${id}`)
+    return axios.get(`/trackable-types/${id}`)
   },
   createTrackableType(data: TrackableTypeCreate): Promise<ApiResponse<string>> {
-    return axios.post('/api/trackable-types/', data)
+    return axios.post('/trackable-types/', data)
   },
   updateTrackableType(id: string, data: TrackableTypeUpdate): Promise<ApiResponse<null>> {
-    return axios.put(`/api/trackable-types/${id}`, data)
+    return axios.put(`/trackable-types/${id}`, data)
   },
   deleteTrackableType(id: string): Promise<ApiResponse<null>> {
-    return axios.delete(`/api/trackable-types/${id}`)
+    return axios.delete(`/trackable-types/${id}`)
   },
 }
 

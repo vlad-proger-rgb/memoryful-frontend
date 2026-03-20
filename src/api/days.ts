@@ -28,25 +28,25 @@ export const daysApi = {
     )
 
     const searchParams = new URLSearchParams(cleanedQuery).toString()
-    return axios.get(`/api/days/?${searchParams}`)
+    return axios.get(`/days/?${searchParams}`)
   },
   getDayDetail(timestamp: number): Promise<ApiResponse<DayDetail>> {
-    return axios.get(`/api/days/${timestamp}`)
+    return axios.get(`/days/${timestamp}`)
   },
   createDay(timestamp: number, day: DayCreate): Promise<ApiResponse<null>> {
-    return axios.post(`/api/days/${timestamp}`, day)
+    return axios.post(`/days/${timestamp}`, day)
   },
   updateDay(timestamp: number, day: DayUpdate): Promise<ApiResponse<null>> {
-    return axios.put(`/api/days/${timestamp}`, day)
+    return axios.put(`/days/${timestamp}`, day)
   },
   toggleStarred(timestamp: number): Promise<ApiResponse<null>> {
-    return axios.patch(`/api/days/${timestamp}/toggle-starred`)
+    return axios.patch(`/days/${timestamp}/toggle-starred`)
   },
   completeDay(timestamp: number): Promise<ApiResponse<null>> {
-    return axios.post(`/api/days/${timestamp}/complete`)
+    return axios.post(`/days/${timestamp}/complete`)
   },
   // deleteDay(timestamp: number): Promise<ApiResponse<null>> {
-  //   return axios.delete(`/api/days/${timestamp}`)
+  //   return axios.delete(`/days/${timestamp}`)
   // },
 }
 

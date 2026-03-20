@@ -3,12 +3,12 @@ import type { ApiResponse, Country } from '@/types'
 
 export const countriesApi = {
   getCountries(query: string): Promise<ApiResponse<Country[]>> {
-    return axios.get(`/api/countries/all/`, {
+    return axios.get(`/countries/all/`, {
       params: { query }
     })
   },
   getCountryById(id: string): Promise<ApiResponse<Country>> {
-    return axios.get(`/api/countries/${id}`)
+    return axios.get(`/countries/${id}`)
   },
 }
 
