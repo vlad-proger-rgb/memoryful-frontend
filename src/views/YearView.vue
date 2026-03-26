@@ -156,7 +156,7 @@ onMounted(async () => {
     for (const month of months) {
       if (month.month === currentMonthNumber.value) {
         currentMonthRecord.value = month
-        topDayNumber.value = new Date(month.topDayTimestamp * 1000).getDate().toString()
+        topDayNumber.value = new Date(month.topDayTimestamp * 1000).getUTCDate().toString()
         found = true
         break
       }
@@ -278,7 +278,7 @@ async function handleMonthSelect(monthNumber: number) {
     if (response.data) {
       currentMonthRecord.value = response.data
       isNewMonth.value = false
-      topDayNumber.value = new Date(response.data.topDayTimestamp * 1000).getDate().toString()
+      topDayNumber.value = new Date(response.data.topDayTimestamp * 1000).getUTCDate().toString()
       return
     }
   } catch (e: unknown) {
@@ -314,7 +314,7 @@ const submitMonth = async () => {
   }
 
   currentMonthRecord.value.topDayTimestamp =
-    new Date(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value).getTime() /
+    Date.UTC(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value) /
     1000
 
   const file = selectedBackgroundFile.value || fileInput.value?.files?.[0]
