@@ -58,10 +58,10 @@ const buttonClass = computed(() => {
 
   // pill
   if (props.tone === 'danger') {
-    return 'px-4 py-2 rounded-full text-sm bg-red-500/25 border border-red-500/40 text-red-100 hover:bg-red-500/35 transition-transform duration-150 ease-out active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed'
+    return 'px-4 py-2 rounded-full text-sm bg-red-500/25 border border-red-500/40 text-red-100 hover:bg-red-500/35 transition-transform duration-150 ease-out active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2'
   }
 
-  return 'px-4 py-2 rounded-full text-sm bg-white/10 border border-white/20 hover:bg-white/15 transition-transform duration-150 ease-out active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed'
+  return 'px-4 py-2 rounded-full text-sm bg-white/10 border border-white/20 hover:bg-white/15 transition-transform duration-150 ease-out active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2'
 })
 
 const handleClick = () => {
