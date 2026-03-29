@@ -1433,6 +1433,10 @@ onUnmounted(() => {
   color: #e5e7eb !important;
 }
 
+.ql-editor p {
+  margin-bottom: 1em !important;
+}
+
 /* Code block styling */
 .ql-snow .ql-editor pre.ql-syntax {
   background-color: #1e293b !important;
