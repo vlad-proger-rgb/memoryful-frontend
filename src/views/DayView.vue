@@ -2,8 +2,7 @@
 import { ref, onMounted, onUnmounted, reactive, watch, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
-import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
 import { daysApi, tagsApi } from '@/api'
 import trackablesApi from '@/api/trackables'
@@ -1052,37 +1051,11 @@ onUnmounted(() => {
                 <label for="content-input" class="block text-sm font-medium text-white/70 mb-1"
                   >Content</label
                 >
-                <div class="quill-container">
-                  <QuillEditor
-                    id="content"
-                    v-model:content="editForm.content"
-                    contentType="html"
-                    theme="snow"
-                    :toolbar="[
-                      ['bold', 'italic', 'underline', 'strike'],
-                      ['blockquote', 'code'],
-                      [{ header: [2, 3, false] }],
-                      [{ list: 'ordered' }, { list: 'bullet' }],
-                      ['link'],
-                    ]"
-                    :options="{
-                      placeholder: 'Write your day\'s story here...',
-                      theme: 'snow',
-                      modules: {
-                        toolbar: {
-                          container: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code'],
-                            [{ header: [2, 3, false] }],
-                            [{ list: 'ordered' }, { list: 'bullet' }],
-                            ['link'],
-                          ],
-                        },
-                      },
-                    }"
-                    class="bg-white/10 text-white text-md min-h-[200px]"
-                  />
-                </div>
+                <MarkdownEditor
+                  v-model="editForm.content"
+                  placeholder="Write your day's story here..."
+                  :min-height="200"
+                />
               </div>
 
               <!-- Tags -->
@@ -1402,121 +1375,69 @@ onUnmounted(() => {
 </template>
 
 <style>
-.quill-container {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-  overflow: hidden !important;
+/* Markdown content styling */
+.prose ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin: 1em 0 !important;
 }
 
-.ql-toolbar {
-  border: none !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+.prose ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 1em 0 !important;
 }
 
-.ql-container {
-  border: none !important;
-  background-color: transparent !important;
-  font-family: inherit !important;
+.prose li {
+  margin: 0.5em 0 !important;
+  padding-left: 0.25rem !important;
 }
 
-.ql-snow {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-  background-color: transparent !important;
+.prose ul ul,
+.prose ol ul {
+  list-style-type: circle !important;
+  margin: 0.5em 0 !important;
 }
 
-.ql-editor {
-  min-height: 200px !important;
-  font-size: 1rem !important;
-  line-height: 1.6 !important;
-  color: #e5e7eb !important;
+.prose ul ul ul,
+.prose ol ul ul,
+.prose ol ol ul {
+  list-style-type: square !important;
 }
 
-.ql-editor p {
-  margin-bottom: 1em !important;
+.prose ol ol {
+  list-style-type: lower-alpha !important;
 }
 
-/* Code block styling */
-.ql-snow .ql-editor pre.ql-syntax {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-  border-radius: 0.375rem !important;
-  padding: 1rem !important;
-  border-left: 4px solid #3b82f6 !important;
-  margin: 0.5rem 0 !important;
-  font-family: 'Fira Code', 'Courier New', monospace !important;
-  font-size: 0.875rem !important;
-  line-height: 1.5 !important;
-  overflow-x: auto !important;
+.prose p {
+  margin: 1em 0 !important;
 }
 
-.ql-snow .ql-editor code {
+.prose blockquote {
+  border-left: 4px solid rgba(255, 255, 255, 0.3) !important;
+  padding-left: 1rem !important;
+  margin: 1em 0 !important;
+  font-style: italic !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.prose code {
   background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #e2e8f0 !important;
   padding: 0.2em 0.4em !important;
   border-radius: 0.25rem !important;
-  font-family: 'Fira Code', 'Courier New', monospace !important;
   font-size: 0.9em !important;
 }
 
-.ql-snow .ql-editor pre {
-  margin: 0.5rem 0 !important;
-  padding: 0 !important;
+.prose pre {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1em 0 !important;
+}
+
+.prose pre code {
   background-color: transparent !important;
-}
-
-/* Syntax highlighting for code blocks */
-.ql-snow .ql-editor pre.ql-syntax .token.comment,
-.ql-snow .ql-editor pre.ql-syntax .token.prolog,
-.ql-snow .ql-editor pre.ql-syntax .token.doctype,
-.ql-snow .ql-editor pre.ql-syntax .token.cdata {
-  color: #94a3b8 !important; /* Slate-400 */
-  font-style: italic !important;
-}
-
-.ql-snow .ql-picker {
-  color: white !important;
-}
-
-.ql-snow .ql-stroke {
-  stroke: white !important;
-}
-
-.ql-snow .ql-fill {
-  fill: white !important;
-}
-
-.ql-snow .ql-picker-options {
-  background-color: #1f2937 !important;
-  border: 1px solid #374151 !important;
-  border-radius: 0.375rem !important;
-}
-
-.ql-snow .ql-picker-item {
-  color: #e5e7eb !important;
-}
-
-.ql-snow .ql-picker-item.ql-selected,
-.ql-snow .ql-picker-item:hover {
-  color: #3b82f6 !important;
-}
-
-.ql-snow .ql-tooltip {
-  background-color: #1f2937 !important;
-  border: 1px solid #374151 !important;
-  border-radius: 0.375rem !important;
-  color: #e5e7eb !important;
-}
-
-.ql-snow .ql-tooltip input[type='text'] {
-  background-color: #111827 !important;
-  border: 1px solid #374151 !important;
-  color: #e5e7eb !important;
-  border-radius: 0.25rem !important;
-}
-
-.ql-snow .ql-tooltip.ql-editing a.ql-action::after {
-  color: #3b82f6 !important;
+  padding: 0 !important;
 }
 </style>
