@@ -101,6 +101,7 @@ const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const dayExists = ref(false)
 const showInsights = ref(false)
+const showTrackables = ref(false)
 const showScrollTop = ref(false)
 const showGoToImages = ref(false)
 const showImageFullscreen = ref(false)
@@ -274,6 +275,63 @@ const removeTrackableProgress = (trackableItemId: string) => {
   )
 }
 
+const cancelEditTrackable = () => {
+  if (newTrackableItemId.value && newTrackableValue.value !== null) {
+    const existing = editForm.trackableProgresses.find(
+      (x) => x.trackableItemId === newTrackableItemId.value,
+    )
+    if (!existing) {
+      editForm.trackableProgresses.push({
+        trackableItemId: newTrackableItemId.value,
+        value: newTrackableValue.value,
+        description: newTrackableDescription.value || '',
+      })
+    }
+  }
+  newTrackableItemId.value = ''
+  trackableItemSearchQuery.value = ''
+  isTrackableItemDropdownOpen.value = false
+  selectedTrackableTypeId.value = ''
+  trackableTypeSearchQuery.value = ''
+  newTrackableValue.value = null
+  newTrackableDescription.value = ''
+}
+
+const editTrackableProgress = (p: DayTrackableProgressUpdate) => {
+  // If there's already an unsaved edit in the form, put it back into the list first
+  if (newTrackableItemId.value && newTrackableValue.value !== null) {
+    const existing = editForm.trackableProgresses.find(
+      (x) => x.trackableItemId === newTrackableItemId.value,
+    )
+    if (!existing) {
+      editForm.trackableProgresses.push({
+        trackableItemId: newTrackableItemId.value,
+        value: newTrackableValue.value,
+        description: newTrackableDescription.value || '',
+      })
+    }
+  }
+
+  const item = trackables.value.find((t) => t.id === p.trackableItemId)
+  if (!item) return
+
+  const type = trackableTypes.value.find((t) => t.id === item.typeId)
+  if (type) {
+    selectedTrackableTypeId.value = type.id
+    trackableTypeSearchQuery.value = type.name || ''
+    isTrackableTypeDropdownOpen.value = false
+  }
+
+  newTrackableItemId.value = p.trackableItemId
+  trackableItemSearchQuery.value = item.title || ''
+  isTrackableItemDropdownOpen.value = false
+
+  newTrackableValue.value = p.value
+  newTrackableDescription.value = p.description || ''
+
+  removeTrackableProgress(p.trackableItemId)
+}
+
 // Reset form when day data changes
 watch(
   () => day.value,
@@ -374,6 +432,7 @@ const goToImages = () => {
 }
 
 const openImageFullscreen = () => {
+  if (!day.value?.mainImage) return
   showImageFullscreen.value = true
 }
 
@@ -634,7 +693,7 @@ onUnmounted(() => {
     />
 
     <!-- Main content -->
-    <div class="relative z-10 pt-24 pb-8 px-4 max-w-2xl mx-auto w-full space-y-6">
+    <div class="relative z-10 pt-24 pb-24 px-4 max-w-2xl mx-auto w-full space-y-6">
       <!-- Header with date and actions -->
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-white">{{ day.timestamp ? date : 'Loading...' }}</h1>
@@ -688,7 +747,7 @@ onUnmounted(() => {
       <div class="space-y-6">
         <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
-          <div class="relative w-full aspect-video group cursor-pointer" @click="openImageFullscreen">
+          <div class="relative w-full aspect-video group" :class="{ 'cursor-pointer': day.mainImage }" @click="openImageFullscreen">
             <DayImage
               v-if="day.mainImage"
               :src="day.mainImage"
@@ -787,14 +846,49 @@ onUnmounted(() => {
         </BaseBox>
 
         <!-- Trackable Progress -->
-        <div class="mt-8 mb-8 space-y-4">
-          <div v-for="progress in day.trackableProgresses" :key="progress.type.id">
-            <TrackableProgress :progress="progress" />
-          </div>
-          <BaseBox v-if="!day.trackableProgresses?.length" class="text-white/50">
-            No trackable progress for this day
-          </BaseBox>
-        </div>
+        <BaseBox class="mb-8">
+          <button
+            @click="showTrackables = !showTrackables"
+            class="w-full flex items-center justify-between text-left group"
+          >
+            <h3 class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors">
+              View Trackable Progress
+            </h3>
+            <font-awesome-icon
+              :icon="showTrackables ? 'chevron-up' : 'chevron-down'"
+              class="text-white/50 group-hover:text-white/70 transition-colors"
+            />
+          </button>
+
+          <Transition
+            name="accordion"
+            enter-active-class="transition-all duration-300 ease-out"
+            leave-active-class="transition-all duration-300 ease-in"
+            enter-from-class="max-h-0 opacity-0 overflow-hidden"
+            enter-to-class="max-h-[2000px] opacity-100 overflow-visible"
+            leave-from-class="max-h-[2000px] opacity-100 overflow-visible"
+            leave-to-class="max-h-0 opacity-0 overflow-hidden"
+          >
+            <div v-show="showTrackables" class="mt-4 space-y-4">
+              <div v-for="progress in day.trackableProgresses" :key="progress.type.id">
+                <TrackableProgress :progress="progress" />
+              </div>
+              <div v-if="!day.trackableProgresses?.length" class="text-white/50 text-sm">
+                No trackable progress for this day
+              </div>
+
+              <div class="flex justify-center mt-4 pt-4 border-t border-white/10">
+                <button
+                  @click="showTrackables = false"
+                  class="px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] border border-white/20 shadow-lg cursor-pointer"
+                >
+                  <font-awesome-icon icon="chevron-up" class="mr-2" />
+                  Collapse Section
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </BaseBox>
 
         <!-- Insights & Suggestions -->
         <BaseBox class="mb-8">
@@ -1176,9 +1270,25 @@ onUnmounted(() => {
                     </div>
                   </div>
 
-                  <div class="flex justify-end">
+                  <div
+                    v-if="newTrackableItemId"
+                    class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs"
+                  >
+                    <font-awesome-icon icon="pen" class="shrink-0" />
+                    <span>Editing — update the fields above, then click <strong>Update Trackable</strong> to save. Click <strong>Cancel</strong> to discard changes.</span>
+                  </div>
+
+                  <div class="flex justify-end gap-2">
+                    <MainButton
+                      v-if="newTrackableItemId"
+                      type="button"
+                      variant="secondary"
+                      @click="cancelEditTrackable"
+                    >
+                      Cancel
+                    </MainButton>
                     <MainButton type="button" class="bg-blue-600" @click="addTrackableProgress">
-                      Add Trackable
+                      {{ newTrackableItemId ? 'Update Trackable' : 'Add Trackable' }}
                     </MainButton>
                   </div>
                 </div>
@@ -1198,14 +1308,24 @@ onUnmounted(() => {
                         <span v-if="p.description">- {{ p.description }}</span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      class="ml-3 text-red-200/80 hover:text-red-200 transition-colors"
-                      @click="removeTrackableProgress(p.trackableItemId)"
-                      title="Remove"
-                    >
-                      <font-awesome-icon icon="times" />
-                    </button>
+                    <div class="ml-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="text-white/50 hover:text-white/80 transition-colors"
+                        @click="editTrackableProgress(p)"
+                        title="Edit"
+                      >
+                        <font-awesome-icon icon="pen" />
+                      </button>
+                      <button
+                        type="button"
+                        class="text-red-200/80 hover:text-red-200 transition-colors"
+                        @click="removeTrackableProgress(p.trackableItemId)"
+                        title="Remove"
+                      >
+                        <font-awesome-icon icon="times" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1308,7 +1428,7 @@ onUnmounted(() => {
       <button
         v-if="showScrollTop"
         @click="scrollToTop"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20"
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Scroll to top"
       >
         <font-awesome-icon icon="arrow-up" class="mr-2" />
@@ -1329,7 +1449,7 @@ onUnmounted(() => {
       <button
         v-if="showGoToImages"
         @click="goToImages"
-        class="fixed bottom-8 right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20"
+        class="fixed bottom-8 right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Go to images"
       >
         <font-awesome-icon icon="images" class="mr-2" />

@@ -136,6 +136,7 @@ defineExpose({
         ref="inputRef"
         v-model="query"
         type="text"
+        autocomplete="off"
         :placeholder="placeholder"
         :disabled="disabled"
         :inputmode="inputMode"

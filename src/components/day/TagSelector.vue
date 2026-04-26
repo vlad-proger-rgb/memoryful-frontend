@@ -132,7 +132,13 @@ onUnmounted(() => {
     >
       <template #item="{ item: tag }">
         <div class="flex items-center justify-between w-full">
-          <span>{{ tag.name }}</span>
+          <div class="flex items-center gap-2">
+            <span
+              class="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
+              :style="{ backgroundColor: tag.color || 'rgba(255,255,255,0.3)' }"
+            />
+            <span>{{ tag.name }}</span>
+          </div>
           <font-awesome-icon v-if="isTagSelected(tag)" icon="check" class="text-blue-400" />
         </div>
       </template>

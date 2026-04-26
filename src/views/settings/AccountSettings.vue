@@ -196,7 +196,6 @@
         <div class="text-xs opacity-80 leading-relaxed">
           <p><span class="opacity-70">Created:</span> {{ formatDateTime(s.createdAt) }}</p>
           <p><span class="opacity-70">Expires:</span> {{ formatDateTime(s.expiresAt) }}</p>
-          <p class="mt-1 line-clamp-2"><span class="opacity-70">UA:</span> {{ s.userAgent || '—' }}</p>
         </div>
       </div>
     </div>

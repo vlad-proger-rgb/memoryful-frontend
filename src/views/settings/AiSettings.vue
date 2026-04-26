@@ -55,7 +55,12 @@ const privacySummary = computed(() => {
       </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-200 text-sm">
+      <font-awesome-icon icon="triangle-exclamation" class="text-yellow-400 shrink-0" />
+      <span>Not implemented yet — this page is a design template only. Settings here have no effect. Stay tuned!</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none select-none">
       <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
         <div>
           <p class="font-semibold">Model</p>
