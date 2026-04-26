@@ -1163,6 +1163,8 @@ onUnmounted(() => {
                   :loading="isLoadingTags"
                   :error="tagsError"
                   placeholder="Add tags..."
+                  allow-create
+                  @tag-created="(tag) => tags.push(tag)"
                 />
               </div>
 
