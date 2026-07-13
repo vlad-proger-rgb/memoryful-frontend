@@ -23,39 +23,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import storageApi from '@/api/storage'
+import { useStorageResolve } from '@/composables/useStorageResolve'
+import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const props = defineProps<{ src: string | undefined; alt?: string; size?: 'small' | 'large' }>()
 
-const resolvedSrc = ref<string | null>(null)
+void useStorageResolve // keeps the shared module-level cache warm across resolvers
 
-const isHttpUrl = computed(() => !!props.src && (props.src.startsWith('http://') || props.src.startsWith('https://')))
-const isObjectKey = computed(() => !!props.src && props.src.startsWith('users/'))
-
-watch(
-  () => props.src,
-  async (next) => {
-    resolvedSrc.value = null
-    if (!next) return
-
-    if (isHttpUrl.value) {
-      resolvedSrc.value = next
-      return
-    }
-
-    if (isObjectKey.value) {
-      try {
-        const res = await storageApi.presignGet({ objectKey: next })
-        resolvedSrc.value = res.data?.downloadUrl || null
-      } catch {
-        resolvedSrc.value = null
-      }
-      return
-    }
-
-    resolvedSrc.value = '/src/assets/img/' + next
-  },
-  { immediate: true },
-)
+const { url: resolvedSrc } = useResolvedStorageMedia(() => props.src)
 </script>
