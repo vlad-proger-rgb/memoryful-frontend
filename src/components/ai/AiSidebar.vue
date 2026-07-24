@@ -1,11 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useAiChatStore } from '@/stores/aiChat'
 import type { ChatListItem } from '@/types/chat'
 
 const store = useAiChatStore()
 const isSearching = ref(false)
 const pendingDeleteId = ref<string | null>(null)
+
+const editingId = ref<string | null>(null)
+const draftTitle = ref('')
+// A plain `ref="..."` inside v-for resolves to an array, so focus() would
+// silently no-op — and without focus the input never blurs, leaving the edit
+// box stranded when you click away. A function ref binds the element directly.
+const renameInput = ref<HTMLInputElement | null>(null)
+const setRenameInput = (el: unknown) => {
+  renameInput.value = (el as HTMLInputElement) ?? null
+}
+
+watch(editingId, async (id) => {
+  if (!id) return
+  await nextTick()
+  renameInput.value?.focus()
+  renameInput.value?.select()
+})
+
+// Belt and braces: if the open chat changes while a row is being renamed
+// (blur normally commits first), never leave the edit box stranded.
+watch(
+  () => store.currentChat?.id,
+  () => {
+    if (editingId.value) cancelRename()
+  },
+)
 
 const startNewChat = () => {
   store.startNewChat()
@@ -14,6 +40,27 @@ const startNewChat = () => {
 const toggleSearch = () => {
   isSearching.value = !isSearching.value
   if (!isSearching.value) store.searchQuery = ''
+}
+
+const startRename = (chat: ChatListItem, event: MouseEvent) => {
+  event.stopPropagation()
+  pendingDeleteId.value = null
+  draftTitle.value = chat.title
+  editingId.value = chat.id
+}
+
+const cancelRename = () => {
+  editingId.value = null
+  draftTitle.value = ''
+}
+
+const commitRename = (chat: ChatListItem) => {
+  if (editingId.value !== chat.id) return
+  const title = draftTitle.value.trim()
+  editingId.value = null
+  // Nothing to do for an empty or unchanged title.
+  if (!title || title === chat.title) return
+  store.renameChat(chat.id, title)
 }
 
 const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
@@ -72,31 +119,60 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
         {{ store.searchQuery ? 'No chats match your search' : 'No chats yet — say hi!' }}
       </div>
 
-      <button
-        v-for="chat in store.filteredChats"
-        :key="chat.id"
-        type="button"
-        class="group flex items-center justify-between gap-1 w-full text-left px-3 py-2 rounded-xl text-sm transition-colors"
-        :class="
-          store.currentChat?.id === chat.id
-            ? 'bg-white/15 text-white'
-            : 'text-white/70 hover:bg-white/10 hover:text-white'
-        "
-        @click="store.openChat(chat.id)"
-      >
-        <span class="truncate">{{ chat.title }}</span>
-        <span
-          class="shrink-0 size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          :class="pendingDeleteId === chat.id ? 'bg-rose-500/30 opacity-100' : 'hover:bg-white/15'"
-          @click="requestDelete(chat, $event)"
+      <template v-for="chat in store.filteredChats" :key="chat.id">
+        <!-- Edit mode is its own row: an <input> inside the row <button> would
+             swallow clicks and is invalid nesting. -->
+        <div
+          v-if="editingId === chat.id"
+          class="px-2 py-1 rounded-xl bg-white/15"
         >
-          <font-awesome-icon
-            :icon="pendingDeleteId === chat.id ? 'check' : 'trash'"
-            class="text-[10px]"
-            :class="pendingDeleteId === chat.id ? 'text-rose-200' : 'text-white/60'"
+          <input
+            :ref="setRenameInput"
+            v-model="draftTitle"
+            type="text"
+            maxlength="60"
+            class="w-full bg-transparent text-sm text-white outline-none"
+            @keydown.enter.prevent="commitRename(chat)"
+            @keydown.esc.prevent="cancelRename"
+            @blur="commitRename(chat)"
           />
-        </span>
-      </button>
+        </div>
+
+        <button
+          v-else
+          type="button"
+          class="group flex items-center justify-between gap-1 w-full text-left px-3 py-2 rounded-xl text-sm transition-colors"
+          :class="
+            store.currentChat?.id === chat.id
+              ? 'bg-white/15 text-white'
+              : 'text-white/70 hover:bg-white/10 hover:text-white'
+          "
+          @click="store.openChat(chat.id)"
+        >
+          <span class="truncate" @dblclick.stop="startRename(chat, $event)">{{ chat.title }}</span>
+          <span class="shrink-0 flex items-center gap-0.5">
+            <span
+              class="size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/15"
+              title="Rename"
+              @click="startRename(chat, $event)"
+            >
+              <font-awesome-icon icon="pen" class="text-[10px] text-white/60" />
+            </span>
+            <span
+              class="size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              :class="pendingDeleteId === chat.id ? 'bg-rose-500/30 opacity-100' : 'hover:bg-white/15'"
+              :title="pendingDeleteId === chat.id ? 'Click again to confirm' : 'Delete'"
+              @click="requestDelete(chat, $event)"
+            >
+              <font-awesome-icon
+                :icon="pendingDeleteId === chat.id ? 'check' : 'trash'"
+                class="text-[10px]"
+                :class="pendingDeleteId === chat.id ? 'text-rose-200' : 'text-white/60'"
+              />
+            </span>
+          </span>
+        </button>
+      </template>
     </div>
   </div>
 </template>
