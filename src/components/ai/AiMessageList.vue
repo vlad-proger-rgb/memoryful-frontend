@@ -39,6 +39,12 @@ const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
         :message="message"
       />
       <AiTypingIndicator v-if="store.isSending" />
+      <p
+        v-if="store.sendError"
+        class="text-sm text-rose-200 bg-rose-500/10 border border-rose-400/20 rounded-xl px-3 py-2"
+      >
+        {{ store.sendError }}
+      </p>
     </template>
 
     <div v-else class="flex-1 flex flex-col items-center justify-center text-center gap-4 py-8">
@@ -51,6 +57,13 @@ const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
           Ask about your days, habits, or get quick suggestions.
         </p>
       </div>
+
+      <p
+        v-if="store.sendError"
+        class="text-sm text-rose-200 bg-rose-500/10 border border-rose-400/20 rounded-xl px-3 py-2 max-w-[320px]"
+      >
+        {{ store.sendError }}
+      </p>
 
       <div class="flex flex-col gap-2 w-full max-w-[320px]">
         <button

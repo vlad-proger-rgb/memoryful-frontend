@@ -26,6 +26,9 @@ export const useAiChatStore = defineStore('aiChat', () => {
   const currentChat = ref<ChatDetail | null>(null)
   const isLoadingChat = ref(false)
   const isSending = ref(false)
+  // Last send failure, shown inline in the message list. A toast alone is easy
+  // to miss, and a failed completion otherwise looks like nothing happened.
+  const sendError = ref<string>('')
 
   const selectedModel = computed(
     () => chatModels.value.find((m) => m.id === selectedModelId.value) || chatModels.value[0] || null,
@@ -42,6 +45,20 @@ export const useAiChatStore = defineStore('aiChat', () => {
   function selectModel(modelId: string) {
     selectedModelId.value = modelId
     localStorage.setItem(MODEL_STORAGE_KEY, modelId)
+  }
+
+  /** The model new chats start with — the user's last explicit pick. */
+  function preferredModelId(): string {
+    const stored = localStorage.getItem(MODEL_STORAGE_KEY) || ''
+    if (stored && chatModels.value.some((m) => m.id === stored)) return stored
+    return chatModels.value[0]?.id || ''
+  }
+
+  /** Extract the API's message so the user sees why it failed, not a generic line. */
+  function extractErrorMessage(e: unknown): string {
+    const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+    if (typeof detail === 'string' && detail.trim()) return detail
+    return 'Failed to get a response from MemoryfulAI. Please try again.'
   }
 
   async function fetchChatModels() {
@@ -74,10 +91,17 @@ export const useAiChatStore = defineStore('aiChat', () => {
   async function openChat(id: string) {
     if (currentChat.value?.id === id) return
     isLoadingChat.value = true
+    sendError.value = ''
     try {
       const res = await aiApi.getChat(id)
       if (res.code === 200 && res.data) {
         currentChat.value = res.data
+        // Show the model this chat actually uses. The backend always answers an
+        // existing chat with the model it was created with and ignores whatever
+        // is selected, so the picker must follow the chat, not the other way
+        // round. Deliberately not persisted — that stays the new-chat default.
+        const chatModelId = res.data.chatModel?.id || res.data.modelId
+        if (chatModelId) selectedModelId.value = chatModelId
       }
     } catch (e) {
       handleApiError(e)
@@ -89,12 +113,17 @@ export const useAiChatStore = defineStore('aiChat', () => {
 
   function startNewChat() {
     currentChat.value = null
+    sendError.value = ''
+    // Back to the user's own default, rather than inheriting the model of
+    // whichever chat happened to be open.
+    selectedModelId.value = preferredModelId()
   }
 
   async function sendMessage(content: string) {
     const trimmed = content.trim()
     if (!trimmed || isSending.value) return false
     isSending.value = true
+    sendError.value = ''
 
     const userMessage: ChatMessage = { role: 'user', content: trimmed }
     const isNewChat = !currentChat.value
@@ -127,15 +156,20 @@ export const useAiChatStore = defineStore('aiChat', () => {
         currentChat.value.messages.push(res.data.message)
 
         if (isNewChat) {
-          await fetchChats()
+          // Refresh the sidebar in the background: awaiting it here kept the
+          // typing indicator on screen for a second after the reply rendered.
+          void fetchChats()
         }
       }
       return true
     } catch (e) {
       handleApiError(e)
-      uiStore.showToast('Failed to get a response from MemoryfulAI', 'error')
+      sendError.value = extractErrorMessage(e)
+      uiStore.showToast(sendError.value, 'error')
       // roll back the optimistic user message so it can be retried
       currentChat.value?.messages.pop()
+      // A failed first message never became a real chat, so drop back to the
+      // welcome view; the error banner explains why.
       if (isNewChat) currentChat.value = null
       return false
     } finally {
@@ -198,6 +232,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
     currentChat,
     isLoadingChat,
     isSending,
+    sendError,
     isPendingChat,
     selectModel,
     fetchChatModels,
