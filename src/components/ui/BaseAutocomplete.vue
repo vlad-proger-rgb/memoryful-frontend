@@ -12,6 +12,8 @@ const props = withDefaults(
     show: boolean
     loading?: boolean
     attachTo?: string | HTMLElement | null
+    searchable?: boolean
+    minWidth?: string
   }>(),
   {
     itemKey: 'id',
@@ -19,6 +21,8 @@ const props = withDefaults(
     maxHeight: '200px',
     loading: false,
     attachTo: null,
+    searchable: false,
+    minWidth: '200px',
   },
 )
 
@@ -29,10 +33,19 @@ const emit = defineEmits<{
 
 const dropdownRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
+const searchInput = ref<HTMLInputElement | null>(null)
 const selectedIndex = ref(-1)
 const dropdownStyle = ref<Record<string, string>>({})
 
-const filteredItems = computed(() => props.items)
+const searchQuery = ref('')
+
+const filteredItems = computed(() => {
+  if (!props.searchable || !searchQuery.value.trim()) return props.items
+  const q = searchQuery.value.toLowerCase()
+  return props.items.filter((item) =>
+    String(item[props.itemLabel as keyof T]).toLowerCase().includes(q),
+  )
+})
 
 const selectItem = (item: T) => {
   emit('select', item)
@@ -96,6 +109,7 @@ const updatePosition = () => {
     top: `${rect.bottom + 4}px`,
     left: `${rect.left}px`,
     width: `${rect.width}px`,
+    minWidth: props.minWidth,
   }
 }
 
@@ -117,9 +131,11 @@ watch(
   () => props.show,
   async (isVisible) => {
     if (isVisible) {
+      searchQuery.value = ''
       await nextTick()
       updatePosition()
       selectedIndex.value = -1
+      searchInput.value?.focus()
     }
   },
 )
@@ -148,25 +164,36 @@ defineExpose({
   <div ref="containerRef" class="relative w-full">
     <Teleport to="body">
       <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="dropdownStyle">
-        <div v-if="loading" class="autocomplete-menu" :style="{ maxHeight }">
-          <div class="p-2 text-center text-gray-400">Loading...</div>
-        </div>
-        <div v-else-if="filteredItems.length > 0" class="autocomplete-menu" :style="{ maxHeight }">
-          <div
-            v-for="(item, index) in filteredItems"
-            :key="String((item as ItemWithId)[itemKey] || index)"
-            class="autocomplete-item"
-            :class="{ 'bg-white/10': selectedIndex === index }"
-            @mousedown.prevent="selectItem(item)"
-            @mouseenter="onMouseEnterItem(index)"
-          >
-            <slot name="item" :item="item" :index="index">
-              {{ item[itemLabel as keyof typeof item] }}
-            </slot>
+        <div class="autocomplete-menu" :style="{ maxHeight }">
+          <div v-if="searchable" class="p-2 border-b border-white/10">
+            <input
+              ref="searchInput"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search models..."
+              class="w-full bg-white/10 text-white placeholder:text-white/40 text-xs rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-fuchsia-400"
+              @click.stop
+            />
           </div>
-        </div>
-        <div v-else-if="$slots.empty" class="autocomplete-menu" :style="{ maxHeight }">
-          <slot name="empty"></slot>
+          <div v-if="loading" class="p-2 text-center text-gray-400">Loading...</div>
+          <div v-else-if="filteredItems.length > 0">
+            <div
+              v-for="(item, index) in filteredItems"
+              :key="String((item as ItemWithId)[itemKey] || index)"
+              class="autocomplete-item"
+              :class="{ 'bg-white/10': selectedIndex === index }"
+              @mousedown.prevent="selectItem(item)"
+              @mouseenter="onMouseEnterItem(index)"
+            >
+              <slot name="item" :item="item" :index="index">
+                {{ item[itemLabel as keyof typeof item] }}
+              </slot>
+            </div>
+          </div>
+          <div v-else-if="$slots.empty" class="p-2">
+            <slot name="empty"></slot>
+          </div>
+          <div v-else class="p-2 text-center text-gray-400 text-xs">No matches</div>
         </div>
       </div>
     </Teleport>

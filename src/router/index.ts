@@ -51,6 +51,11 @@ const router = createRouter({
       component: () => import('@/views/SearchView.vue'),
     },
     {
+      path: '/ai',
+      name: 'ai',
+      component: () => import('@/views/AiView.vue'),
+    },
+    {
       path: '/calendar/',
       redirect: `/calendar/${new Date().getFullYear()}`,
     },

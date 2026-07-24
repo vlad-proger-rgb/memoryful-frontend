@@ -1,15 +1,9 @@
 <!-- src/components/auth/AuthCard.vue -->
 <script setup lang="ts">
-const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  },
-  subtitle: {
-    type: String,
-    default: ''
-  }
-})
+defineProps<{
+  title: string
+  subtitle?: string
+}>()
 </script>
 
 <template>

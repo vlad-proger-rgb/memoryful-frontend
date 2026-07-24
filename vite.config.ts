@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces)': {
+      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces|chat-models|ai)': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
