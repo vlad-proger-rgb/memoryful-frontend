@@ -143,36 +143,89 @@ export const useAiChatStore = defineStore('aiChat', () => {
       }
     }
 
+    // Placeholder the stream writes into. Read it back out of the array so we
+    // mutate Vue's reactive proxy rather than the raw object.
+    currentChat.value!.messages.push({ role: 'assistant', content: '', tools: [], streaming: true })
+    const reply = currentChat.value!.messages[currentChat.value!.messages.length - 1]
+
+    let streamError = ''
+
     try {
-      const res = await aiApi.createCompletion({
-        chatId: isNewChat ? null : currentChat.value!.id,
-        modelId: isNewChat ? selectedModelId.value || null : null,
-        content: trimmed,
-      })
+      await aiApi.streamCompletion(
+        {
+          chatId: isNewChat ? null : currentChat.value!.id,
+          modelId: isNewChat ? selectedModelId.value || null : null,
+          content: trimmed,
+        },
+        {
+          onStart: ({ chatId, title }) => {
+            if (!currentChat.value) return
+            currentChat.value.id = chatId
+            currentChat.value.title = title
+          },
+          onToken: (text) => {
+            reply.content += text
+          },
+          onToolCall: ({ name, args }) => {
+            reply.tools?.push({ name, args, status: 'running' })
+          },
+          onToolResult: ({ name }) => {
+            // Close the most recent still-running call of that tool.
+            const running = [...(reply.tools ?? [])]
+              .reverse()
+              .find((t) => t.name === name && t.status === 'running')
+            if (running) running.status = 'done'
+          },
+          onDone: ({ chatId, title, content }) => {
+            if (!currentChat.value) return
+            currentChat.value.id = chatId
+            currentChat.value.title = title
+            // Trust the persisted text so a reload shows exactly this.
+            if (content) reply.content = content
+          },
+          onError: (message) => {
+            streamError = message
+          },
+        },
+      )
 
-      if (res.code === 200 && res.data && currentChat.value) {
-        currentChat.value.id = res.data.chatId
-        currentChat.value.title = res.data.title
-        currentChat.value.messages.push(res.data.message)
-
-        if (isNewChat) {
-          // Refresh the sidebar in the background: awaiting it here kept the
-          // typing indicator on screen for a second after the reply rendered.
-          void fetchChats()
-        }
+      if (streamError) {
+        sendError.value = streamError
+        uiStore.showToast(streamError, 'error')
       }
-      return true
+
+      // Nothing came back at all — treat it as a failure rather than leaving an
+      // empty bubble sitting in the chat.
+      if (!reply.content && !reply.tools?.length) {
+        if (!streamError) {
+          sendError.value = 'MemoryfulAI returned an empty response. Please try again.'
+          uiStore.showToast(sendError.value, 'error')
+        }
+        currentChat.value?.messages.pop()
+        currentChat.value?.messages.pop()
+        if (isNewChat) currentChat.value = null
+        return false
+      }
+
+      if (isNewChat) {
+        // Refresh the sidebar in the background: awaiting it here kept the
+        // typing indicator on screen for a second after the reply rendered.
+        void fetchChats()
+      }
+      return !streamError
     } catch (e) {
       handleApiError(e)
       sendError.value = extractErrorMessage(e)
       uiStore.showToast(sendError.value, 'error')
-      // roll back the optimistic user message so it can be retried
+      // roll back the placeholder and the optimistic user message so it can be retried
+      currentChat.value?.messages.pop()
       currentChat.value?.messages.pop()
       // A failed first message never became a real chat, so drop back to the
       // welcome view; the error banner explains why.
       if (isNewChat) currentChat.value = null
       return false
     } finally {
+      reply.streaming = false
       isSending.value = false
     }
   }

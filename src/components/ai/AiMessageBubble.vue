@@ -11,6 +11,16 @@ marked.setOptions({ gfm: true, breaks: true })
 
 const isUser = computed(() => props.message.role === 'user')
 const renderedContent = computed(() => marked(props.message.content) as string)
+const tools = computed(() => props.message.tools ?? [])
+// While streaming with nothing rendered yet, the tool list (or the cursor) is
+// the only sign of life, so keep the bubble from looking empty.
+const showCursor = computed(() => props.message.streaming && !props.message.content)
+
+/** "get_day_by_timestamp" -> "Get day by timestamp" */
+const toolLabel = (name: string) => {
+  const words = name.replace(/_/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
 
 const isCopied = ref(false)
 let copyTimeout: number | null = null
@@ -44,10 +54,30 @@ const copyContent = async () => {
         MemoryfulAI
       </div>
 
+      <div v-if="!isUser && tools.length" class="mb-2 flex flex-col gap-1">
+        <div
+          v-for="(tool, i) in tools"
+          :key="`${tool.name}-${i}`"
+          class="flex items-center gap-2 text-[11px] text-white/60"
+        >
+          <font-awesome-icon
+            :icon="tool.status === 'running' ? 'circle-notch' : 'check'"
+            :spin="tool.status === 'running'"
+            class="text-[10px]"
+            :class="tool.status === 'running' ? 'text-sky-300/80' : 'text-emerald-300/80'"
+          />
+          <span>{{ toolLabel(tool.name) }}</span>
+        </div>
+      </div>
+
       <div
         v-if="isUser"
         class="text-sm text-white whitespace-pre-wrap break-words leading-relaxed"
       >{{ message.content }}</div>
+      <div
+        v-else-if="showCursor"
+        class="inline-block h-4 w-1.5 bg-white/60 animate-pulse rounded-sm align-middle"
+      />
       <div
         v-else
         class="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed"

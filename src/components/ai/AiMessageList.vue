@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useAiChatStore } from '@/stores/aiChat'
 import AiMessageBubble from './AiMessageBubble.vue'
-import AiTypingIndicator from './AiTypingIndicator.vue'
 
 const store = useAiChatStore()
 const scrollRef = ref<HTMLElement | null>(null)
@@ -21,11 +20,31 @@ const scrollToBottom = () => {
   })
 }
 
+// Grows as tokens arrive, so streaming keeps the view pinned to the bottom.
+const streamedLength = computed(() => {
+  const messages = store.currentChat?.messages
+  if (!messages?.length) return 0
+  const last = messages[messages.length - 1]
+  return last.content.length + (last.tools?.length ?? 0)
+})
+
+const isNearBottom = () => {
+  const el = scrollRef.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+}
+
+// A new message always scrolls; mid-stream growth only follows along if the user
+// hasn't scrolled up to read something earlier.
 watch(
   () => [store.currentChat?.messages.length, store.isSending],
   () => scrollToBottom(),
   { flush: 'post' },
 )
+
+watch(streamedLength, () => {
+  if (isNearBottom()) scrollToBottom()
+}, { flush: 'post' })
 
 const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
 </script>
@@ -38,7 +57,6 @@ const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
         :key="index"
         :message="message"
       />
-      <AiTypingIndicator v-if="store.isSending" />
       <p
         v-if="store.sendError"
         class="text-sm text-rose-200 bg-rose-500/10 border border-rose-400/20 rounded-xl px-3 py-2"

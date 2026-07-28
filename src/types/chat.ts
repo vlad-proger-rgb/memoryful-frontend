@@ -8,9 +8,20 @@ export interface ChatModelOption {
 
 export type ChatRole = 'system' | 'user' | 'assistant'
 
+/** A tool the assistant ran while answering. Streaming-only: not persisted, so it
+ *  shows during the reply and is gone when the chat is reloaded. */
+export interface ToolActivity {
+  name: string
+  args?: Record<string, unknown>
+  status: 'running' | 'done'
+}
+
 export interface ChatMessage {
   role: ChatRole
   content: string
+  tools?: ToolActivity[]
+  /** True while this message is still being streamed in. */
+  streaming?: boolean
 }
 
 export interface ChatListItem {
