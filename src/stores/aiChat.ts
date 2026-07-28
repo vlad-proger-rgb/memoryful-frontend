@@ -125,7 +125,13 @@ export const useAiChatStore = defineStore('aiChat', () => {
     isSending.value = true
     sendError.value = ''
 
-    const userMessage: ChatMessage = { role: 'user', content: trimmed }
+    // Timestamped locally so it renders immediately; the server's value replaces
+    // it when the stream starts.
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: trimmed,
+      createdAt: new Date().toISOString(),
+    }
     const isNewChat = !currentChat.value
 
     if (currentChat.value) {
@@ -143,8 +149,9 @@ export const useAiChatStore = defineStore('aiChat', () => {
       }
     }
 
-    // Placeholder the stream writes into. Read it back out of the array so we
-    // mutate Vue's reactive proxy rather than the raw object.
+    // Read both back out of the array so we mutate Vue's reactive proxies rather
+    // than the raw objects we pushed.
+    const sent = currentChat.value!.messages[currentChat.value!.messages.length - 1]
     currentChat.value!.messages.push({ role: 'assistant', content: '', tools: [], streaming: true })
     const reply = currentChat.value!.messages[currentChat.value!.messages.length - 1]
 
@@ -158,10 +165,11 @@ export const useAiChatStore = defineStore('aiChat', () => {
           content: trimmed,
         },
         {
-          onStart: ({ chatId, title }) => {
+          onStart: ({ chatId, title, createdAt }) => {
             if (!currentChat.value) return
             currentChat.value.id = chatId
             currentChat.value.title = title
+            if (createdAt) sent.createdAt = createdAt
           },
           onToken: (text) => {
             reply.content += text
@@ -176,12 +184,13 @@ export const useAiChatStore = defineStore('aiChat', () => {
               .find((t) => t.name === name && t.status === 'running')
             if (running) running.status = 'done'
           },
-          onDone: ({ chatId, title, content }) => {
+          onDone: ({ chatId, title, content, createdAt }) => {
             if (!currentChat.value) return
             currentChat.value.id = chatId
             currentChat.value.title = title
             // Trust the persisted text so a reload shows exactly this.
             if (content) reply.content = content
+            if (createdAt) reply.createdAt = createdAt
           },
           onError: (message) => {
             streamError = message

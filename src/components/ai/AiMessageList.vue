@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAiChatStore } from '@/stores/aiChat'
 import AiMessageBubble from './AiMessageBubble.vue'
 
@@ -45,6 +45,13 @@ watch(
 watch(streamedLength, () => {
   if (isNearBottom()) scrollToBottom()
 }, { flush: 'post' })
+
+// Opening a chat should land on the newest message. This component remounts
+// whenever a chat finishes loading (the spinner replaces it), so mounting covers
+// the common case; the id watch catches a swap that skips the loading state.
+onMounted(() => scrollToBottom())
+
+watch(() => store.currentChat?.id, () => scrollToBottom(), { flush: 'post' })
 
 const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
 </script>

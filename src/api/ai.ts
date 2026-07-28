@@ -9,11 +9,11 @@ export interface CompletionPayload {
 }
 
 export interface StreamHandlers {
-  onStart?: (e: { chatId: string; title: string }) => void
+  onStart?: (e: { chatId: string; title: string; createdAt?: string }) => void
   onToken?: (text: string) => void
   onToolCall?: (e: { name: string; args: Record<string, unknown> }) => void
   onToolResult?: (e: { name: string }) => void
-  onDone?: (e: { chatId: string; title: string; content: string }) => void
+  onDone?: (e: { chatId: string; title: string; content: string; createdAt?: string }) => void
   onError?: (message: string) => void
 }
 
@@ -37,7 +37,11 @@ function postStream(payload: CompletionPayload, token: string, signal?: AbortSig
 function dispatch(event: Record<string, unknown>, handlers: StreamHandlers) {
   switch (event.type) {
     case 'start':
-      handlers.onStart?.({ chatId: String(event.chatId), title: String(event.title) })
+      handlers.onStart?.({
+        chatId: String(event.chatId),
+        title: String(event.title),
+        createdAt: event.createdAt ? String(event.createdAt) : undefined,
+      })
       break
     case 'token':
       handlers.onToken?.(String(event.text ?? ''))
@@ -56,6 +60,7 @@ function dispatch(event: Record<string, unknown>, handlers: StreamHandlers) {
         chatId: String(event.chatId),
         title: String(event.title),
         content: String(event.content ?? ''),
+        createdAt: event.createdAt ? String(event.createdAt) : undefined,
       })
       break
     case 'error':
