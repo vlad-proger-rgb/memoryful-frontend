@@ -17,10 +17,18 @@ export interface ToolActivity {
   status?: 'running' | 'done'
 }
 
+/** Something the user @-referenced in a message. */
+export interface ChatAttachment {
+  type: 'day'
+  timestamp: number
+  label?: string
+}
+
 export interface ChatMessage {
   role: ChatRole
   content: string
   tools?: ToolActivity[]
+  attachments?: ChatAttachment[]
   createdAt?: string | null
   /** True while this message is still being streamed in. */
   streaming?: boolean

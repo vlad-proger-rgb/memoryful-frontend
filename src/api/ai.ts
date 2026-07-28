@@ -1,11 +1,12 @@
 import axios, { refreshAccessToken } from '@/api/client'
 import type { ApiResponse } from '@/types'
-import type { ChatListItem, ChatDetail, CompletionResult } from '@/types/chat'
+import type { ChatAttachment, ChatListItem, ChatDetail, CompletionResult } from '@/types/chat'
 
 export interface CompletionPayload {
   chatId?: string | null
   modelId?: string | null
   content: string
+  attachments?: ChatAttachment[]
 }
 
 export interface StreamHandlers {

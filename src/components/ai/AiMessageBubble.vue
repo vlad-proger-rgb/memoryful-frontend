@@ -13,6 +13,7 @@ marked.setOptions({ gfm: true, breaks: true })
 const isUser = computed(() => props.message.role === 'user')
 const renderedContent = computed(() => marked(props.message.content) as string)
 const tools = computed(() => props.message.tools ?? [])
+const attachments = computed(() => props.message.attachments ?? [])
 // Dots fill the wait before the first token. A running tool has its own loader,
 // so they'd only be noise next to it.
 const showThinking = computed(
@@ -69,6 +70,17 @@ const copyContent = async () => {
       <div v-if="!isUser" class="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium text-fuchsia-300/90">
         <font-awesome-icon icon="wand-magic-sparkles" class="text-[10px]" />
         MemoryfulAI
+      </div>
+
+      <div v-if="attachments.length" class="mb-2 flex flex-wrap gap-1.5">
+        <span
+          v-for="attachment in attachments"
+          :key="attachment.timestamp"
+          class="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[11px] text-white/80"
+        >
+          <font-awesome-icon icon="calendar-day" class="text-[10px] text-indigo-200" />
+          {{ attachment.label || attachment.timestamp }}
+        </span>
       </div>
 
       <div v-if="!isUser && tools.length" class="mb-2.5 flex flex-col gap-1.5">

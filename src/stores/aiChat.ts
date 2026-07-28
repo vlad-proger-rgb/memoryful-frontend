@@ -4,7 +4,13 @@ import { defineStore } from 'pinia'
 import { aiApi, chatModelsApi } from '@/api'
 import { useApiError } from '@/composables'
 import { useUiStore } from '@/stores/ui'
-import type { ChatDetail, ChatListItem, ChatMessage, ChatModelOption } from '@/types/chat'
+import type {
+  ChatAttachment,
+  ChatDetail,
+  ChatListItem,
+  ChatMessage,
+  ChatModelOption,
+} from '@/types/chat'
 
 const MODEL_STORAGE_KEY = 'ai:selectedModelId'
 const PENDING_CHAT_ID = 'pending'
@@ -119,7 +125,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
     selectedModelId.value = preferredModelId()
   }
 
-  async function sendMessage(content: string) {
+  async function sendMessage(content: string, attachments: ChatAttachment[] = []) {
     const trimmed = content.trim()
     if (!trimmed || isSending.value) return false
     isSending.value = true
@@ -130,6 +136,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
     const userMessage: ChatMessage = {
       role: 'user',
       content: trimmed,
+      attachments,
       createdAt: new Date().toISOString(),
     }
     const isNewChat = !currentChat.value
@@ -163,6 +170,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
           chatId: isNewChat ? null : currentChat.value!.id,
           modelId: isNewChat ? selectedModelId.value || null : null,
           content: trimmed,
+          attachments,
         },
         {
           onStart: ({ chatId, title, createdAt }) => {
