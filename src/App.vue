@@ -16,11 +16,7 @@ const route = useRoute()
 const showAppShell = computed(() => route.meta.appShell !== false)
 
 onMounted(() => {
-  userStore.initializeFromStorage().then(() => {
-    if (userStore.isAuthenticated) {
-      workspaceStore.fetchMyWorkspace()
-    }
-  })
+  userStore.initializeFromStorage()
 })
 
 watch(
@@ -30,6 +26,7 @@ watch(
       workspaceStore.fetchMyWorkspace()
     }
   },
+  { immediate: true },
 )
 </script>
 

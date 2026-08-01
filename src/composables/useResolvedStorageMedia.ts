@@ -1,23 +1,13 @@
 import { ref, watch } from 'vue'
 
 import { useStorageResolve } from '@/composables'
+import { isVideoPath } from '@/utils/media'
 
 type MaybeKey = string | null | undefined
 
 interface UseResolvedStorageMediaOptions {
   fallbackSrc?: string | null
   fallbackIsVideo?: boolean
-}
-
-const computeIsVideo = (src: string) => {
-  const lower = src.toLowerCase()
-  return (
-    lower.endsWith('.mp4') ||
-    lower.endsWith('.webm') ||
-    lower.endsWith('.mov') ||
-    lower.endsWith('.m4v') ||
-    lower.endsWith('.avi')
-  )
 }
 
 export function useResolvedStorageMedia(
@@ -39,7 +29,7 @@ export function useResolvedStorageMedia(
       }
 
       url.value = await resolveStorageSrc(next)
-      isVideo.value = computeIsVideo(next)
+      isVideo.value = isVideoPath(next)
     },
     { immediate: true },
   )

@@ -1,63 +1,62 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import workspacesApi from '@/api/workspaces'
+import workspacesApi, { type WorkspaceResponse } from '@/api/workspaces'
 import { useApiError } from '@/composables'
-import type { WorkspaceSettings } from '@/types/workspace'
+import { DEFAULT_BACKGROUNDS } from '@/config/workspaceDefaults'
+import { WORKSPACE_PAGES } from '@/types/workspace'
+import type {
+  WorkspaceBackgroundInput,
+  WorkspaceBackgrounds,
+  WorkspacePageKey,
+} from '@/types/workspace'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const { errorMessage, isLoading, withLoading } = useApiError()
 
-  const settings = ref<WorkspaceSettings>({
-    dashboardBackground: null,
-    dayBackground: null,
-    searchBackground: null,
-    settingsBackground: null,
-  })
+  // Seeded with the bundled defaults so backgrounds paint before the API answers.
+  const backgrounds = ref<WorkspaceBackgrounds>({ ...DEFAULT_BACKGROUNDS })
 
-  function setSettings(next: Partial<WorkspaceSettings>) {
-    settings.value = { ...settings.value, ...next }
+  const isDefault = (page: WorkspacePageKey) => !backgrounds.value[page].key
+
+  function applyResponse(data: WorkspaceResponse) {
+    backgrounds.value = Object.fromEntries(
+      WORKSPACE_PAGES.map((page) => [page, data.backgrounds?.[page] ?? DEFAULT_BACKGROUNDS[page]]),
+    ) as WorkspaceBackgrounds
   }
 
   async function fetchMyWorkspace() {
     return await withLoading(async () => {
       const res = await workspacesApi.getMyWorkspace()
       if (res.code === 200 && res.data) {
-        settings.value = {
-          dashboardBackground: res.data.dashboardBackground ?? null,
-          dayBackground: res.data.dayBackground ?? null,
-          searchBackground: res.data.searchBackground ?? null,
-          settingsBackground: res.data.settingsBackground ?? null,
-        }
+        applyResponse(res.data)
         return true
       }
       return false
     })
   }
 
-  async function updateMyWorkspace(patch: Partial<WorkspaceSettings>) {
+  async function setBackground(page: WorkspacePageKey, background: WorkspaceBackgroundInput) {
     return await withLoading(async () => {
-      const res = await workspacesApi.updateMyWorkspace(patch)
+      const res = await workspacesApi.updateMyWorkspace({ backgrounds: { [page]: background } })
       if (res.code === 200 && res.data) {
-        settings.value = {
-          dashboardBackground: res.data.dashboardBackground ?? null,
-          dayBackground: res.data.dayBackground ?? null,
-          searchBackground: res.data.searchBackground ?? null,
-          settingsBackground: res.data.settingsBackground ?? null,
-        }
+        applyResponse(res.data)
         return true
       }
       return false
     })
   }
+
+  const clearBackground = (page: WorkspacePageKey) => setBackground(page, { key: null })
 
   return {
-    settings,
+    backgrounds,
     errorMessage,
     isLoading,
-    setSettings,
+    isDefault,
     fetchMyWorkspace,
-    updateMyWorkspace,
+    setBackground,
+    clearBackground,
   }
 })
 

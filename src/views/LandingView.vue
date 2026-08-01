@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LandingParticleOrb from '@/components/LandingParticleOrb.vue'
-import logo from '@/assets/img/memoryful-ai-brain.png'
+import logo from '@/assets/img/memoryful-ai-brain.webp'
 import { getIcon } from '@/plugins/fontawesome'
 import type { FAIcon } from '@/types/fontawesome'
 import { useUserStore } from '@/stores/user'

@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import useUiStore from '@/stores/ui.ts'
-import bg from '@/assets/img/auth-bg.jpg'
+import bg from '@/assets/img/auth-bg.webp'
 
 const uiStore = useUiStore()
 

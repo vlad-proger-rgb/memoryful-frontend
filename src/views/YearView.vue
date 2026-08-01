@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, onBeforeUnmount as onBeforeUnmountVue } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { Month } from '@/types'
+import type { WorkspaceBackground } from '@/types/workspace'
 import useUiStore from '@/stores/ui.ts'
 import yearApi from '@/api/years'
 
@@ -11,8 +12,10 @@ import YearSlider from '@/components/YearSlider.vue'
 import MainButton from '@/components/MainButton.vue'
 import MonthSlider from '@/components/MonthSlider.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
+import MediaBackground from '@/components/ui/MediaBackground.vue'
 
-import { useShake, useStorageUpload, useStorageResolve } from '@/composables'
+import { useShake, useStorageUpload, useMediaPlaceholder } from '@/composables'
+import { isVideoFile } from '@/utils/media'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,21 +23,7 @@ const uiStore = useUiStore()
 
 const { shakeElement } = useShake()
 const { uploadToStorage } = useStorageUpload()
-const { resolveStorageSrc } = useStorageResolve()
-
-const backgroundUrl = ref<string | null>(null)
-const isBackgroundVideo = ref(false)
-
-const computeIsVideo = (src: string) => {
-  const lower = src.toLowerCase()
-  return (
-    lower.endsWith('.mp4') ||
-    lower.endsWith('.webm') ||
-    lower.endsWith('.mov') ||
-    lower.endsWith('.m4v') ||
-    lower.endsWith('.avi')
-  )
-}
+const { generatePlaceholder } = useMediaPlaceholder()
 
 const isModalOpen = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -59,14 +48,7 @@ const currentMonthRecord = ref<Month>({
 
 const suppressYearReload = ref(false)
 
-watch(
-  () => currentMonthRecord.value.backgroundImage,
-  async (next) => {
-    backgroundUrl.value = await resolveStorageSrc(next)
-    isBackgroundVideo.value = !!next && computeIsVideo(next)
-  },
-  { immediate: true },
-)
+const background = computed<WorkspaceBackground>(() => currentMonthRecord.value.resolved ?? {})
 
 const resetMonth = (monthNumber: number) => {
   currentMonthRecord.value = {
@@ -101,11 +83,11 @@ watch(
     }
 
     selectedBackgroundPreviewUrl.value = URL.createObjectURL(next)
-    isSelectedBackgroundPreviewVideo.value = next.type.startsWith('video/')
+    isSelectedBackgroundPreviewVideo.value = isVideoFile(next)
   },
 )
 
-onBeforeUnmountVue(() => {
+onBeforeUnmount(() => {
   if (selectedBackgroundPreviewUrl.value) {
     URL.revokeObjectURL(selectedBackgroundPreviewUrl.value)
     selectedBackgroundPreviewUrl.value = null
@@ -320,13 +302,17 @@ const submitMonth = async () => {
   const file = selectedBackgroundFile.value || fileInput.value?.files?.[0]
   if (file) {
     try {
-      const objectKey = await uploadToStorage({
-        file,
-        intent: 'month_image',
-        year: currentYearNumber.value,
-        month: currentMonthNumber.value,
-      })
+      const [objectKey, placeholder] = await Promise.all([
+        uploadToStorage({
+          file,
+          intent: 'month_image',
+          year: currentYearNumber.value,
+          month: currentMonthNumber.value,
+        }),
+        generatePlaceholder(file),
+      ])
       currentMonthRecord.value.backgroundImage = objectKey
+      currentMonthRecord.value.backgroundPlaceholder = placeholder
       selectedBackgroundFile.value = null
       if (fileInput.value) fileInput.value.value = ''
     } catch (e: unknown) {
@@ -355,6 +341,14 @@ const submitMonth = async () => {
       }
       uiStore.showToast('Month updated successfully', 'success')
     }
+
+    // The local record only holds the new object key; re-reading gets the URL.
+    try {
+      const refreshed = await yearApi.getMonth(currentYearNumber.value, currentMonthNumber.value)
+      if (refreshed.data) currentMonthRecord.value = refreshed.data
+    } catch (e: unknown) {
+      console.error('Failed to refresh month after save:', e)
+    }
   } catch (e: unknown) {
     const maybeErr = e as { msg?: string }
     errorMessage.value = maybeErr?.msg || 'Request failed'
@@ -371,20 +365,11 @@ const submitMonth = async () => {
   <div
     class="relative h-screen flex flex-col overflow-hidden transition"
   >
-    <video
-      v-if="backgroundUrl && isBackgroundVideo"
-      class="absolute inset-0 w-full h-full object-cover z-0 blur-[3px] brightness-75"
-      :src="backgroundUrl"
-      autoplay
-      muted
-      loop
-      playsinline
-    />
-    <img
-      v-else-if="backgroundUrl"
-      class="absolute inset-0 w-full h-full object-cover z-0 blur-[3px] brightness-75"
-      :src="backgroundUrl"
-      alt="background"
+    <MediaBackground
+      :src="background.url ?? null"
+      :is-video="background.isVideo"
+      :placeholder="background.placeholder"
+      container-class="absolute inset-0 z-0 blur-[3px] brightness-75"
     />
     <div
       class="absolute inset-0 z-10 bg-gradient-to-b"

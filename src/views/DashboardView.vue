@@ -2,7 +2,6 @@
 import useWorkspaceStore from '@/stores/workspace'
 import useUiStore from '@/stores/ui'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
-import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { insightsApi, suggestionsApi } from '@/api'
@@ -15,9 +14,7 @@ const uiStore = useUiStore()
 
 uiStore.disableScroll = true
 
-const { url: backgroundUrl, isVideo: isBackgroundVideo } = useResolvedStorageMedia(
-  () => workspaceStore.settings.dashboardBackground,
-)
+const background = computed(() => workspaceStore.backgrounds.dashboard)
 
 const todayPath = computed(() => {
   const now = new Date()
@@ -177,10 +174,11 @@ onActivated(() => {
 <template>
   <div class="relative h-screen w-full overflow-hidden font-dashboard">
     <MediaBackground
-      :src="backgroundUrl"
-      :is-video="isBackgroundVideo"
-      class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-      fallback-class-name="fixed inset-0 w-full h-full z-0 bg-black"
+      :src="background.url ?? null"
+      :is-video="background.isVideo"
+      :poster-url="background.posterUrl"
+      :placeholder="background.placeholder"
+      container-class="fixed inset-0 z-0 brightness-75"
     />
 
     <div class="relative z-10 pt-8 pb-8 px-5">

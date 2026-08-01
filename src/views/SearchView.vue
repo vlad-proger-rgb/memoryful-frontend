@@ -18,16 +18,13 @@ import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
-import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
 
-const { url: backgroundUrl, isVideo: isBackgroundVideo } = useResolvedStorageMedia(
-  () => workspaceStore.settings.searchBackground,
-)
+const background = computed(() => workspaceStore.backgrounds.search)
 
 // Search state
 const query = ref('')
@@ -274,10 +271,11 @@ onMounted(async () => {
 <template>
   <div class="search-page relative min-h-screen w-full overflow-x-hidden">
     <MediaBackground
-      :src="backgroundUrl"
-      :is-video="isBackgroundVideo"
-      class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-      fallback-class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
+      :src="background.url ?? null"
+      :is-video="background.isVideo"
+      :poster-url="background.posterUrl"
+      :placeholder="background.placeholder"
+      container-class="fixed inset-0 z-0 brightness-75"
     />
 
     <!-- Content -->

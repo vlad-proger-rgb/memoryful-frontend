@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-import logo from '@/assets/img/memoryful-ai-brain.png'
-import aiLogo from '@/assets/img/memoryful-ai-brain.png'
+import logo from '@/assets/img/memoryful-ai-brain.webp'
 import { useAiChatStore } from '@/stores/aiChat'
 
 // import { useUserStore } from '@/stores/user'
@@ -43,7 +42,7 @@ const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
         <span class="circle"></span>
       </span>
       <img
-        :src="aiLogo"
+        :src="logo"
         class="orbit-logo rounded-full"
         width="60px"
         height="60px"

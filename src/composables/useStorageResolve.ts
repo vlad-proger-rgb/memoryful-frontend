@@ -1,12 +1,14 @@
 import storageApi from '@/api/storage'
 
-// Module-level (singleton) cache shared by every component that calls
-// `useStorageResolve()`, so re-mounting a component for the same object key
-// (e.g. opening the fullscreen viewer for an image already shown as a
-// thumbnail) reuses the previously resolved presigned URL instead of
-// re-hitting `/storage/presign-get`. In-flight requests are deduped too, in
-// case multiple components resolve the same key concurrently.
-const cache = new Map<string, string>()
+// Module-level so every component shares one cache: re-mounting for the same key
+// (a thumbnail then its fullscreen viewer) reuses the URL, and `inFlight` collapses
+// the burst of identical requests when a list mounts many items at once.
+//
+// Entries expire well inside the presigned URL's own lifetime, so a long-lived tab
+// can't keep serving one that has since expired.
+const CACHE_TTL_MS = 60 * 60 * 1000
+
+const cache = new Map<string, { url: string; expiresAt: number }>()
 const inFlight = new Map<string, Promise<string | null>>()
 
 export function useStorageResolve() {
@@ -19,7 +21,7 @@ export function useStorageResolve() {
 
     if (src.startsWith('users/')) {
       const cached = cache.get(src)
-      if (cached) return cached
+      if (cached && cached.expiresAt > Date.now()) return cached.url
 
       const existing = inFlight.get(src)
       if (existing) return existing
@@ -28,7 +30,7 @@ export function useStorageResolve() {
         try {
           const res = await storageApi.presignGet({ objectKey: src })
           const url = res.data?.downloadUrl || null
-          if (url) cache.set(src, url)
+          if (url) cache.set(src, { url, expiresAt: Date.now() + CACHE_TTL_MS })
           return url
         } finally {
           inFlight.delete(src)
@@ -39,7 +41,7 @@ export function useStorageResolve() {
       return promise
     }
 
-    return '/src/assets/img/' + src
+    return null
   }
 
   return { resolveStorageSrc }

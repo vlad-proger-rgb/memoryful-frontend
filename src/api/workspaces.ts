@@ -1,18 +1,26 @@
 import axios from '@/api/client'
 import type { ApiResponse } from '@/types'
+import type {
+  WorkspaceBackground,
+  WorkspaceBackgroundInput,
+  WorkspacePageKey,
+} from '@/types/workspace'
 
-export interface WorkspaceSettings {
-  dashboardBackground?: string | null
-  dayBackground?: string | null
-  searchBackground?: string | null
-  settingsBackground?: string | null
+export interface WorkspaceResponse {
+  userId: string
+  /** Only the pages the user has customized. */
+  backgrounds: Partial<Record<WorkspacePageKey, WorkspaceBackground>>
+}
+
+export type WorkspaceUpdate = {
+  backgrounds: Partial<Record<WorkspacePageKey, WorkspaceBackgroundInput>>
 }
 
 export const workspacesApi = {
-  getMyWorkspace(): Promise<ApiResponse<WorkspaceSettings>> {
+  getMyWorkspace(): Promise<ApiResponse<WorkspaceResponse>> {
     return axios.get('/workspaces/me')
   },
-  updateMyWorkspace(body: WorkspaceSettings): Promise<ApiResponse<WorkspaceSettings>> {
+  updateMyWorkspace(body: WorkspaceUpdate): Promise<ApiResponse<WorkspaceResponse>> {
     return axios.put('/workspaces/me', body)
   },
 }

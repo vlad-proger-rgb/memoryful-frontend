@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import aiLogo from '@/assets/img/memoryful-ai-brain.png'
+import aiLogo from '@/assets/img/memoryful-ai-brain.webp'
 
 const totalParticles = 420
 const particles = Array.from({ length: totalParticles }, (_, index) => index + 1)

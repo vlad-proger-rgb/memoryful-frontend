@@ -1,134 +1,46 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import SettingsButton from '@/components/ui/SettingsButton.vue'
 import useUiStore from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
-import { useStorageResolve, useStorageUpload } from '@/composables'
-
-type PageKey = 'dashboard' | 'day' | 'search' | 'settings'
+import { useMediaPlaceholder, useStorageUpload } from '@/composables'
+import { isVideoFile } from '@/utils/media'
+import { WORKSPACE_PAGES } from '@/types/workspace'
+import type { WorkspacePageKey } from '@/types/workspace'
 
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
 
 const { uploadToStorage } = useStorageUpload()
-const { resolveStorageSrc } = useStorageResolve()
+const { generatePlaceholder } = useMediaPlaceholder()
 
-const computeIsVideo = (src: string) => {
-  const lower = src.toLowerCase()
-  return (
-    lower.endsWith('.mp4') ||
-    lower.endsWith('.webm') ||
-    lower.endsWith('.mov') ||
-    lower.endsWith('.m4v') ||
-    lower.endsWith('.avi')
-  )
-}
-
-const fileInputs = ref<Record<PageKey, HTMLInputElement | null>>({
-  dashboard: null,
-  day: null,
-  search: null,
-  settings: null,
-})
-
-const selectedFiles = ref<Record<PageKey, File | null>>({
-  dashboard: null,
-  day: null,
-  search: null,
-  settings: null,
-})
-
-const previewUrls = ref<Record<PageKey, string | null>>({
-  dashboard: null,
-  day: null,
-  search: null,
-  settings: null,
-})
-
-const previewIsVideo = ref<Record<PageKey, boolean>>({
-  dashboard: false,
-  day: false,
-  search: false,
-  settings: false,
-})
-
-const resolvedUrls = ref<Record<PageKey, string | null>>({
-  dashboard: null,
-  day: null,
-  search: null,
-  settings: null,
-})
-
-const resolvedIsVideo = ref<Record<PageKey, boolean>>({
-  dashboard: false,
-  day: false,
-  search: false,
-  settings: false,
-})
-
-const pageLabels: Record<PageKey, string> = {
+const pageLabels: Record<WorkspacePageKey, string> = {
   dashboard: 'Dashboard',
   day: 'Day',
+  month: 'Month',
   search: 'Search',
   settings: 'Settings',
 }
 
-const getKeyForPage = (page: PageKey) => {
-  const s = workspaceStore.settings
-  if (page === 'dashboard') return s.dashboardBackground
-  if (page === 'day') return s.dayBackground
-  if (page === 'search') return s.searchBackground
-  return s.settingsBackground
-}
+type ByPage<T> = Partial<Record<WorkspacePageKey, T>>
 
-const setKeyForPage = (page: PageKey, key: string | null) => {
-  if (page === 'dashboard') workspaceStore.setSettings({ dashboardBackground: key })
-  else if (page === 'day') workspaceStore.setSettings({ dayBackground: key })
-  else if (page === 'search') workspaceStore.setSettings({ searchBackground: key })
-  else workspaceStore.setSettings({ settingsBackground: key })
-}
+const fileInputs = ref<ByPage<HTMLInputElement | null>>({})
+const selectedFiles = ref<ByPage<File | null>>({})
+const previewUrls = ref<ByPage<string>>({})
+const previewIsVideo = ref<ByPage<boolean>>({})
+const previewVideos = ref<ByPage<HTMLVideoElement | null>>({})
 
-const patchForPage = (page: PageKey, key: string | null) => {
-  if (page === 'dashboard') return { dashboardBackground: key }
-  if (page === 'day') return { dayBackground: key }
-  if (page === 'search') return { searchBackground: key }
-  return { settingsBackground: key }
-}
+const isSaving = computed(() => workspaceStore.isLoading)
 
-const isDefaultForPage = (page: PageKey) => {
-  const key = getKeyForPage(page)
-  if (!key) return true
-  return key.startsWith('users/defaults/workspace/')
-}
-
-const refreshResolved = async (page: PageKey) => {
-  const key = getKeyForPage(page)
-  resolvedUrls.value[page] = await resolveStorageSrc(key)
-  resolvedIsVideo.value[page] = !!key && computeIsVideo(key)
-}
-
-watch(
-  () => ({ ...workspaceStore.settings }),
-  async () => {
-    await Promise.all([
-      refreshResolved('dashboard'),
-      refreshResolved('day'),
-      refreshResolved('search'),
-      refreshResolved('settings'),
-    ])
-  },
-  { immediate: true },
-)
-
-const handleFileSelected = (page: PageKey, event: Event) => {
+const handleFileSelected = (page: WorkspacePageKey, event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0] || null
   selectedFiles.value[page] = file
 
   if (previewUrls.value[page]) {
     URL.revokeObjectURL(previewUrls.value[page]!)
-    previewUrls.value[page] = null
+    delete previewUrls.value[page]
   }
 
   if (!file) {
@@ -136,14 +48,24 @@ const handleFileSelected = (page: PageKey, event: Event) => {
     return
   }
 
-  const url = URL.createObjectURL(file)
-  previewUrls.value[page] = url
-  previewIsVideo.value[page] = computeIsVideo(file.name)
+  previewUrls.value[page] = URL.createObjectURL(file)
+  previewIsVideo.value[page] = isVideoFile(file)
 
   input.value = ''
 }
 
-const uploadPageBackground = async (page: PageKey) => {
+const clearSelection = (page: WorkspacePageKey) => {
+  delete selectedFiles.value[page]
+  if (previewUrls.value[page]) {
+    URL.revokeObjectURL(previewUrls.value[page]!)
+    delete previewUrls.value[page]
+  }
+  previewIsVideo.value[page] = false
+  const input = fileInputs.value[page]
+  if (input) input.value = ''
+}
+
+const uploadPageBackground = async (page: WorkspacePageKey) => {
   const file = selectedFiles.value[page]
   if (!file) {
     uiStore.showToast('Choose a file first', 'error')
@@ -151,22 +73,12 @@ const uploadPageBackground = async (page: PageKey) => {
   }
 
   try {
-    const objectKey = await uploadToStorage({
-      file,
-      intent: 'workspace_asset',
-      workspacePageKey: page,
-    })
-
-    setKeyForPage(page, objectKey)
-    await workspaceStore.updateMyWorkspace(patchForPage(page, objectKey))
-    selectedFiles.value[page] = null
-    if (previewUrls.value[page]) {
-      URL.revokeObjectURL(previewUrls.value[page]!)
-      previewUrls.value[page] = null
-    }
-    previewIsVideo.value[page] = false
-    const input = fileInputs.value[page]
-    if (input) input.value = ''
+    const [key, placeholder] = await Promise.all([
+      uploadToStorage({ file, intent: 'workspace_asset', workspacePageKey: page }),
+      generatePlaceholder(file),
+    ])
+    await workspaceStore.setBackground(page, { key, placeholder })
+    clearSelection(page)
     uiStore.showToast(`${pageLabels[page]} background saved`, 'success')
   } catch (e: unknown) {
     const maybeErr = e as { message?: string }
@@ -174,22 +86,48 @@ const uploadPageBackground = async (page: PageKey) => {
   }
 }
 
-const openFilePicker = (page: PageKey) => {
+const openFilePicker = (page: WorkspacePageKey) => {
   const input = fileInputs.value[page]
   if (input) input.value = ''
   input?.click()
 }
 
-const clearPageBackground = async (page: PageKey) => {
-  setKeyForPage(page, null)
-  await workspaceStore.updateMyWorkspace(patchForPage(page, null))
+const clearPageBackground = async (page: WorkspacePageKey) => {
+  await workspaceStore.clearBackground(page)
   uiStore.showToast(`${pageLabels[page]} background cleared`, 'success')
 }
 
-const isSaving = computed(() => workspaceStore.isLoading)
+// Thumbnails hold their first frame until hovered, so opening this page doesn't
+// start downloading and decoding every video background at once.
+const playPreview = (page: WorkspacePageKey) => {
+  previewVideos.value[page]?.play().catch(() => {})
+}
+
+const pausePreview = (page: WorkspacePageKey) => {
+  const video = previewVideos.value[page]
+  if (!video) return
+  video.pause()
+  video.currentTime = 0
+}
+
+const shownUrl = (page: WorkspacePageKey) =>
+  previewUrls.value[page] || workspaceStore.backgrounds[page].url || ''
+
+const shownIsVideo = (page: WorkspacePageKey) =>
+  Boolean(
+    previewUrls.value[page]
+      ? previewIsVideo.value[page]
+      : workspaceStore.backgrounds[page].isVideo,
+  )
 
 onMounted(async () => {
   await workspaceStore.fetchMyWorkspace()
+})
+
+onBeforeUnmount(() => {
+  for (const url of Object.values(previewUrls.value)) {
+    if (url) URL.revokeObjectURL(url)
+  }
 })
 </script>
 
@@ -206,7 +144,7 @@ onMounted(async () => {
 
     <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div
-        v-for="page in (['dashboard', 'day', 'search', 'settings'] as const)"
+        v-for="page in WORKSPACE_PAGES"
         :key="page"
         class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3"
       >
@@ -218,14 +156,14 @@ onMounted(async () => {
               tone="danger"
               label="Clear"
               icon="trash"
-              :disabled="isDefaultForPage(page)"
+              :disabled="workspaceStore.isDefault(page)"
               @click="clearPageBackground(page)"
             />
           </div>
         </div>
 
         <div class="text-xs opacity-70 min-h-[16px]">
-          <span v-if="isDefaultForPage(page)">Default background is in use.</span>
+          <span v-if="workspaceStore.isDefault(page)">Default background is in use.</span>
         </div>
 
         <div
@@ -235,20 +173,25 @@ onMounted(async () => {
           @click="openFilePicker(page)"
           @keydown.enter.prevent="openFilePicker(page)"
           @keydown.space.prevent="openFilePicker(page)"
+          @mouseenter="playPreview(page)"
+          @mouseleave="pausePreview(page)"
+          @focusin="playPreview(page)"
+          @focusout="pausePreview(page)"
         >
           <video
-            v-if="(previewUrls[page] && previewIsVideo[page]) || (!previewUrls[page] && resolvedUrls[page] && resolvedIsVideo[page])"
+            v-if="shownUrl(page) && shownIsVideo(page)"
+            :ref="(el) => (previewVideos[page] = el as HTMLVideoElement)"
             class="w-full h-[160px] object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-            :src="previewUrls[page] || resolvedUrls[page] || ''"
-            autoplay
+            :src="shownUrl(page)"
             muted
             loop
             playsinline
+            preload="metadata"
           />
           <img
-            v-else-if="previewUrls[page] || resolvedUrls[page]"
+            v-else-if="shownUrl(page)"
             class="w-full h-[160px] object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-            :src="previewUrls[page] || resolvedUrls[page] || ''"
+            :src="shownUrl(page)"
             alt="background preview"
           />
           <div v-else class="w-full h-[160px] flex items-center justify-center text-sm opacity-70">
@@ -274,8 +217,6 @@ onMounted(async () => {
               @click="uploadPageBackground(page)"
             />
           </div>
-
-          <!-- <p class="text-xs opacity-70 break-all">Key: {{ getKeyForPage(page) || '—' }}</p> -->
         </div>
       </div>
     </section>

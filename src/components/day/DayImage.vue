@@ -23,12 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import { useStorageResolve } from '@/composables/useStorageResolve'
 import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const props = defineProps<{ src: string | undefined; alt?: string; size?: 'small' | 'large' }>()
-
-void useStorageResolve // keeps the shared module-level cache warm across resolvers
 
 const { url: resolvedSrc } = useResolvedStorageMedia(() => props.src)
 </script>

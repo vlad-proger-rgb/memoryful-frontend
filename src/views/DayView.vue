@@ -26,7 +26,6 @@ import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
 import DayImage from '@/components/day/DayImage.vue'
 import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
-import { useResolvedStorageMedia } from '@/composables/useResolvedStorageMedia'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -64,9 +63,7 @@ const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
 const { shakeElement } = useShake()
 
-const { url: backgroundUrl, isVideo: isBackgroundVideo } = useResolvedStorageMedia(
-  () => workspaceStore.settings.dayBackground,
-)
+const background = computed(() => workspaceStore.backgrounds.day)
 
 uiStore.disableScroll = false
 
@@ -686,10 +683,11 @@ onUnmounted(() => {
   <div class="relative min-h-screen w-full overflow-x-hidden">
     <!-- Background image -->
     <MediaBackground
-      :src="backgroundUrl"
-      :is-video="isBackgroundVideo"
-      class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
-      fallback-class-name="fixed inset-0 w-full h-full object-cover z-0 brightness-75"
+      :src="background.url ?? null"
+      :is-video="background.isVideo"
+      :poster-url="background.posterUrl"
+      :placeholder="background.placeholder"
+      container-class="fixed inset-0 z-0 brightness-75"
     />
 
     <!-- Main content -->
