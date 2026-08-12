@@ -1,8 +1,6 @@
 import type { WorkspaceBackground, WorkspacePageKey } from '@/types/workspace'
 
-const BASE = (
-  import.meta.env.VITE_PUBLIC_ASSET_BASE_URL || 'http://localhost:9000/memoryful'
-).replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_PUBLIC_ASSET_BASE_URL || '/memoryful').replace(/\/$/, '')
 
 const asset = (name: string) => `${BASE}/users/defaults/workspace/${name}`
 

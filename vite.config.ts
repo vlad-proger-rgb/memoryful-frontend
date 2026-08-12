@@ -9,9 +9,17 @@ export default defineConfig({
   plugins: [vue(), vueDevTools()],
   server: {
     port: 3000,
+    host: true,
     proxy: {
-      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces|chat-models|ai)': {
-        target: 'http://localhost:8000',
+      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces|chat-models|ai)':
+        {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+      // The local MinIO bucket, so default workspace assets are same-origin in dev. Without
+      // this they resolve to localhost:9000, which on a phone is the phone itself.
+      '^/memoryful/': {
+        target: 'http://localhost:9000',
         changeOrigin: true,
       },
     },
