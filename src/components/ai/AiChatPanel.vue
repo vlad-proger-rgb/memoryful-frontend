@@ -30,7 +30,9 @@ onBeforeUnmount(() => {
       />
     </Transition>
 
-    <div class="fixed inset-x-0 top-[68px] z-[71] flex justify-center pointer-events-none">
+    <div
+      class="fixed inset-x-0 top-3 md:top-[var(--app-header-height)] z-[71] flex justify-center pointer-events-none"
+    >
       <Transition name="ai-drop">
         <div v-if="store.isOpen" class="pointer-events-auto" @click.stop>
           <AiChatInterface />
@@ -52,11 +54,15 @@ onBeforeUnmount(() => {
 }
 
 .ai-drop-enter-active {
-  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+  transition:
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
 }
 
 .ai-drop-leave-active {
-  transition: transform 220ms cubic-bezier(0.4, 0, 1, 1), opacity 180ms ease;
+  transition:
+    transform 220ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 180ms ease;
 }
 
 .ai-drop-enter-from,

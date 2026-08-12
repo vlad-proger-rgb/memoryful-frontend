@@ -1,0 +1,155 @@
+<script setup lang="ts">
+import logo from '@/assets/img/memoryful-ai-brain.webp'
+import { useAiChatStore } from '@/stores/aiChat'
+
+withDefaults(defineProps<{ size?: number; ringSpread?: number }>(), {
+  size: 60,
+  // How far the halo reaches past the logo. The header default keeps it inside the bar;
+  // the bottom bar passes a wider one so the rotation is actually readable.
+  ringSpread: 1.2333,
+})
+
+const aiChatStore = useAiChatStore()
+const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
+</script>
+
+<template>
+  <button
+    type="button"
+    class="ai-logo-orbit rounded-full transition-transform duration-150 hover:scale-105"
+    :class="{ 'is-open': isAiChatOpen }"
+    :style="{ '--orb-size': `${size}px`, '--orb-ring-spread': ringSpread }"
+    title="MemoryfulAI"
+    aria-label="Open MemoryfulAI"
+    @click="toggleAiChat()"
+  >
+    <span class="orbit-rings" aria-hidden="true">
+      <span class="circle"></span>
+      <span class="circle"></span>
+      <span class="circle"></span>
+      <span class="circle"></span>
+    </span>
+    <img :src="logo" class="orbit-logo rounded-full" alt="" />
+  </button>
+</template>
+
+<style scoped>
+/* "Saturn rings of trash" orbiting the MemoryfulAI logo — signals it's clickable/CTA.
+   Every dimension derives from --orb-size so the halo keeps its proportions whether it
+   sits in the desktop header or is blown up as the mobile bottom-bar FAB. */
+.ai-logo-orbit {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.orbit-logo {
+  position: relative;
+  z-index: 2;
+  width: var(--orb-size);
+  height: var(--orb-size);
+  /* Slightly translucent + soft, faded edges so it blends like the rest of the UI. */
+  opacity: 0.8;
+  -webkit-mask-image: radial-gradient(circle at center, #000 58%, transparent 84%);
+  mask-image: radial-gradient(circle at center, #000 58%, transparent 84%);
+  transition: opacity 0.4s ease;
+}
+
+.orbit-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--orb-size) * var(--orb-ring-spread));
+  height: calc(var(--orb-size) * var(--orb-ring-spread));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.orbit-rings .circle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  background: rgba(138, 43, 226, 0.05);
+  will-change: transform;
+  transition:
+    box-shadow 0.4s ease,
+    background 0.4s ease;
+}
+
+.orbit-rings .circle:nth-of-type(1) {
+  width: 97.3%;
+  height: 81.1%;
+  animation: orbit-rt 6s infinite linear;
+  box-shadow: inset 0 0 6px 0 blueviolet;
+}
+.orbit-rings .circle:nth-of-type(2) {
+  width: 81.1%;
+  height: 97.3%;
+  animation: orbit-rt 10s infinite linear;
+  box-shadow: inset 0 0 6px 0 darkviolet;
+}
+.orbit-rings .circle:nth-of-type(3) {
+  width: 94.6%;
+  height: 86.5%;
+  animation: orbit-rt 5s infinite linear reverse;
+  box-shadow: inset 0 0 6px 0 darkmagenta;
+}
+.orbit-rings .circle:nth-of-type(4) {
+  width: 86.5%;
+  height: 94.6%;
+  animation: orbit-rt 15s infinite linear;
+  box-shadow: inset 0 0 6px 0 magenta;
+}
+
+/* Intensify the halo on hover / when the chat is open, to reinforce the CTA. */
+.ai-logo-orbit:hover .orbit-logo,
+.ai-logo-orbit.is-open .orbit-logo {
+  opacity: 0.95;
+}
+.ai-logo-orbit:hover .orbit-rings,
+.ai-logo-orbit.is-open .orbit-rings {
+  opacity: 1;
+  /* Widen horizontally only (a "voice-listener" oval) so the halo grows into the
+     header's free horizontal space without getting any taller / clipping. */
+  transform: translate(-50%, -50%) scaleX(1.2);
+}
+.ai-logo-orbit:hover .orbit-rings .circle,
+.ai-logo-orbit.is-open .orbit-rings .circle {
+  background: rgba(138, 43, 226, 0.1);
+}
+.ai-logo-orbit:hover .orbit-rings .circle:nth-of-type(1),
+.ai-logo-orbit.is-open .orbit-rings .circle:nth-of-type(1) {
+  box-shadow: inset 0 0 8px 0 blueviolet;
+}
+.ai-logo-orbit:hover .orbit-rings .circle:nth-of-type(2),
+.ai-logo-orbit.is-open .orbit-rings .circle:nth-of-type(2) {
+  box-shadow: inset 0 0 8px 0 darkviolet;
+}
+.ai-logo-orbit:hover .orbit-rings .circle:nth-of-type(3),
+.ai-logo-orbit.is-open .orbit-rings .circle:nth-of-type(3) {
+  box-shadow: inset 0 0 8px 0 darkmagenta;
+}
+.ai-logo-orbit:hover .orbit-rings .circle:nth-of-type(4),
+.ai-logo-orbit.is-open .orbit-rings .circle:nth-of-type(4) {
+  box-shadow: inset 0 0 8px 0 magenta;
+}
+
+@keyframes orbit-rt {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-rings .circle {
+    animation: none;
+  }
+}
+</style>

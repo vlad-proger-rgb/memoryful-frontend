@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Navbar from '@/components/Navbar.vue'
+import BottomNav from '@/components/BottomNav.vue'
 import AppToast from '@/components/ui/AppToast.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
 import useUiStore from '@/stores/ui.ts'
@@ -32,10 +33,16 @@ watch(
 
 <template>
   <div class="h-screen" :class="{ 'overflow-hidden': uiStore.disableScroll }">
-    <Navbar v-if="showAppShell" class="fixed top-0 left-0 w-full z-50" />
+    <Navbar v-if="showAppShell" class="fixed top-0 left-0 w-full z-50 hidden md:flex" />
+    <BottomNav v-if="showAppShell" class="md:hidden" />
     <AiChatPanel v-if="showAppShell" />
     <AppToast />
-    <div :class="showAppShell ? 'pt-[60px]' : ''">
+    <!-- Mobile clears the fixed bottom bar; desktop clears the fixed header. -->
+    <div
+      :class="
+        showAppShell ? 'pb-[var(--bottom-nav-total)] md:pb-0 md:pt-[var(--app-header-height)]' : ''
+      "
+    >
       <RouterView />
     </div>
   </div>

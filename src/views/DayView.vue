@@ -11,7 +11,16 @@ import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
 import { useStorageUpload, useShake } from '@/composables'
-import type { DayDetail, DayUpdate, Tag, ApiResponse, TrackableInDB, TrackableType, InsightInDB, SuggestionInDB } from '@/types'
+import type {
+  DayDetail,
+  DayUpdate,
+  Tag,
+  ApiResponse,
+  TrackableInDB,
+  TrackableType,
+  InsightInDB,
+  SuggestionInDB,
+} from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
 import { useLocation } from '@/composables'
@@ -745,7 +754,11 @@ onUnmounted(() => {
       <div class="space-y-6">
         <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
-          <div class="relative w-full aspect-video group" :class="{ 'cursor-pointer': day.mainImage }" @click="openImageFullscreen">
+          <div
+            class="relative w-full aspect-video group"
+            :class="{ 'cursor-pointer': day.mainImage }"
+            @click="openImageFullscreen"
+          >
             <DayImage
               v-if="day.mainImage"
               :src="day.mainImage"
@@ -761,7 +774,9 @@ onUnmounted(() => {
               v-if="day.mainImage"
               class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
             >
-              <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg flex items-center gap-2">
+              <div
+                class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg flex items-center gap-2"
+              >
                 <font-awesome-icon icon="expand" class="text-white" />
                 <span class="text-white text-sm font-medium">View Image Fullscreen</span>
               </div>
@@ -849,7 +864,9 @@ onUnmounted(() => {
             @click="showTrackables = !showTrackables"
             class="w-full flex items-center justify-between text-left group"
           >
-            <h3 class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors">
+            <h3
+              class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
+            >
               View Trackable Progress
             </h3>
             <font-awesome-icon
@@ -894,7 +911,9 @@ onUnmounted(() => {
             @click="showInsights = !showInsights"
             class="w-full flex items-center justify-between text-left group"
           >
-            <h3 class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors">
+            <h3
+              class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
+            >
               View Insights & Suggestions
             </h3>
             <font-awesome-icon
@@ -914,102 +933,102 @@ onUnmounted(() => {
           >
             <div v-show="showInsights" class="mt-6 space-y-6">
               <!-- Insights Section -->
-            <div v-if="day.insights?.length">
-              <h4 class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center">
-                <font-awesome-icon icon="lightbulb" class="text-yellow-400" />
-                Insights
-              </h4>
-              <div class="text-white/40 text-xs text-center mb-3 italic">
-                <font-awesome-icon icon="info-circle" class="mr-1" />
-                Hover over insights to reveal the Discuss button
-              </div>
-              <div class="space-y-3">
-                <div
-                  v-for="insight in day.insights"
-                  :key="insight.id"
-                  class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+              <div v-if="day.insights?.length">
+                <h4
+                  class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
                 >
-                  <div class="flex items-start gap-3">
-                    <font-awesome-icon
-                      v-if="insight.icon"
-                      :icon="[insight.icon.style || 'fas', insight.icon.name]"
-                      class="text-yellow-400 mt-1 flex-shrink-0"
-                    />
-                    <div class="flex-1">
-                      <h5 class="text-white font-medium mb-2">{{ insight.description }}</h5>
-                      <div class="prose prose-invert max-w-none text-sm text-white/80">
-                        <div v-html="marked(insight.content)"></div>
+                  <font-awesome-icon icon="lightbulb" class="text-yellow-400" />
+                  Insights
+                </h4>
+                <div class="text-white/40 text-xs text-center mb-3 italic">
+                  <font-awesome-icon icon="info-circle" class="mr-1" />
+                  Hover over insights to reveal the Discuss button
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="insight in day.insights"
+                    :key="insight.id"
+                    class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+                  >
+                    <div class="flex items-start gap-3">
+                      <font-awesome-icon
+                        v-if="insight.icon"
+                        :icon="[insight.icon.style || 'fas', insight.icon.name]"
+                        class="text-yellow-400 mt-1 flex-shrink-0"
+                      />
+                      <div class="flex-1">
+                        <h5 class="text-white font-medium mb-2">{{ insight.description }}</h5>
+                        <div class="prose prose-invert max-w-none text-sm text-white/80">
+                          <div v-html="marked(insight.content)"></div>
+                        </div>
                       </div>
                     </div>
+                    <button
+                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                      @click="handleDiscuss(insight, 'insight')"
+                    >
+                      <font-awesome-icon icon="comments" class="mr-2" />
+                      Discuss
+                    </button>
                   </div>
-                  <button
-                    class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
-                    @click="handleDiscuss(insight, 'insight')"
-                  >
-                    <font-awesome-icon icon="comments" class="mr-2" />
-                    Discuss
-                  </button>
                 </div>
               </div>
-            </div>
-            <div v-else class="text-white/50 text-sm">
-              No insights available for this day
-            </div>
+              <div v-else class="text-white/50 text-sm">No insights available for this day</div>
 
-            <!-- Suggestions Section -->
-            <div v-if="day.suggestions?.length">
-              <h4 class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center">
-                <font-awesome-icon icon="magic" class="text-purple-400" />
-                Suggestions
-              </h4>
-              <div class="text-white/40 text-xs text-center mb-3 italic">
-                <font-awesome-icon icon="info-circle" class="mr-1" />
-                Hover over suggestions to reveal the Discuss button
-              </div>
-              <div class="space-y-3">
-                <div
-                  v-for="suggestion in day.suggestions"
-                  :key="suggestion.id"
-                  class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+              <!-- Suggestions Section -->
+              <div v-if="day.suggestions?.length">
+                <h4
+                  class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
                 >
-                  <div class="flex items-start gap-3">
-                    <font-awesome-icon
-                      v-if="suggestion.icon"
-                      :icon="[suggestion.icon.style || 'fas', suggestion.icon.name]"
-                      class="text-purple-400 mt-1 flex-shrink-0"
-                    />
-                    <div class="flex-1">
-                      <h5 class="text-white font-medium mb-2">{{ suggestion.description }}</h5>
-                      <div class="prose prose-invert max-w-none text-sm text-white/80">
-                        <div v-html="marked(suggestion.content)"></div>
+                  <font-awesome-icon icon="magic" class="text-purple-400" />
+                  Suggestions
+                </h4>
+                <div class="text-white/40 text-xs text-center mb-3 italic">
+                  <font-awesome-icon icon="info-circle" class="mr-1" />
+                  Hover over suggestions to reveal the Discuss button
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="suggestion in day.suggestions"
+                    :key="suggestion.id"
+                    class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
+                  >
+                    <div class="flex items-start gap-3">
+                      <font-awesome-icon
+                        v-if="suggestion.icon"
+                        :icon="[suggestion.icon.style || 'fas', suggestion.icon.name]"
+                        class="text-purple-400 mt-1 flex-shrink-0"
+                      />
+                      <div class="flex-1">
+                        <h5 class="text-white font-medium mb-2">{{ suggestion.description }}</h5>
+                        <div class="prose prose-invert max-w-none text-sm text-white/80">
+                          <div v-html="marked(suggestion.content)"></div>
+                        </div>
                       </div>
                     </div>
+                    <button
+                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                      @click="handleDiscuss(suggestion, 'suggestion')"
+                    >
+                      <font-awesome-icon icon="comments" class="mr-2" />
+                      Discuss
+                    </button>
                   </div>
-                  <button
-                    class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
-                    @click="handleDiscuss(suggestion, 'suggestion')"
-                  >
-                    <font-awesome-icon icon="comments" class="mr-2" />
-                    Discuss
-                  </button>
                 </div>
               </div>
-            </div>
-            <div v-else class="text-white/50 text-sm">
-              No suggestions available for this day
-            </div>
+              <div v-else class="text-white/50 text-sm">No suggestions available for this day</div>
 
-            <!-- Collapse Button -->
-            <div class="flex justify-center mt-6 pt-4 border-t border-white/10">
-              <button
-                @click="showInsights = false"
-                class="px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] border border-white/20 shadow-lg"
-              >
-                <font-awesome-icon icon="chevron-up" class="mr-2" />
-                Collapse Section
-              </button>
+              <!-- Collapse Button -->
+              <div class="flex justify-center mt-6 pt-4 border-t border-white/10">
+                <button
+                  @click="showInsights = false"
+                  class="px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] border border-white/20 shadow-lg"
+                >
+                  <font-awesome-icon icon="chevron-up" class="mr-2" />
+                  Collapse Section
+                </button>
+              </div>
             </div>
-          </div>
           </Transition>
         </BaseBox>
 
@@ -1193,7 +1212,9 @@ onUnmounted(() => {
                         v-model="trackableTypeSearchQuery"
                         type="text"
                         class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        :placeholder="isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'"
+                        :placeholder="
+                          isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'
+                        "
                         :disabled="isLoadingTrackableTypes || !trackableTypes.length"
                         @focus="isTrackableTypeDropdownOpen = true"
                         @input="isTrackableTypeDropdownOpen = true"
@@ -1260,7 +1281,9 @@ onUnmounted(() => {
                     </div>
 
                     <div class="md:col-span-2 min-w-0">
-                      <label class="block text-xs font-medium text-white/60 mb-1">Description</label>
+                      <label class="block text-xs font-medium text-white/60 mb-1"
+                        >Description</label
+                      >
                       <input
                         v-model="newTrackableDescription"
                         type="text"
@@ -1275,7 +1298,11 @@ onUnmounted(() => {
                     class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs"
                   >
                     <font-awesome-icon icon="pen" class="shrink-0" />
-                    <span>Editing — update the fields above, then click <strong>Update Trackable</strong> to save. Click <strong>Cancel</strong> to discard changes.</span>
+                    <span
+                      >Editing — update the fields above, then click
+                      <strong>Update Trackable</strong> to save. Click <strong>Cancel</strong> to
+                      discard changes.</span
+                    >
                   </div>
 
                   <div class="flex justify-end gap-2">
@@ -1301,7 +1328,10 @@ onUnmounted(() => {
                   >
                     <div class="min-w-0">
                       <div class="text-white/90 font-medium truncate">
-                        {{ trackables.find((t) => t.id === p.trackableItemId)?.title || 'Unknown trackable' }}
+                        {{
+                          trackables.find((t) => t.id === p.trackableItemId)?.title ||
+                          'Unknown trackable'
+                        }}
                       </div>
                       <div class="text-white/60 text-sm">
                         {{ p.value }}
@@ -1428,7 +1458,7 @@ onUnmounted(() => {
       <button
         v-if="showScrollTop"
         @click="scrollToTop"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
+        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Scroll to top"
       >
         <font-awesome-icon icon="arrow-up" class="mr-2" />
@@ -1449,7 +1479,7 @@ onUnmounted(() => {
       <button
         v-if="showGoToImages"
         @click="goToImages"
-        class="fixed bottom-8 right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
+        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 right-4 md:right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Go to images"
       >
         <font-awesome-icon icon="images" class="mr-2" />

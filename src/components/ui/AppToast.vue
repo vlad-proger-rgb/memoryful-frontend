@@ -36,7 +36,9 @@ const toneClasses = computed(() => {
 </script>
 
 <template>
-  <div class="fixed top-[72px] left-0 right-0 z-[60] flex justify-center px-3 pointer-events-none">
+  <div
+    class="fixed top-3 md:top-[calc(var(--app-header-height)+4px)] left-0 right-0 z-[60] flex justify-center px-3 pointer-events-none"
+  >
     <Transition name="app-toast">
       <div
         v-if="uiStore.isToastVisible"
@@ -49,17 +51,20 @@ const toneClasses = computed(() => {
           :class="[toneClasses.ring, toneClasses.bg]"
         >
           <div class="flex items-start gap-3">
-            <div
-              class="mt-1 size-2 rounded-full shrink-0"
-              :class="toneClasses.dot"
-            />
+            <div class="mt-1 size-2 rounded-full shrink-0" :class="toneClasses.dot" />
 
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold" :class="toneClasses.text">
                 {{ uiStore.toastMessage }}
               </p>
               <p class="text-xs mt-0.5" :class="toneClasses.sub">
-                {{ uiStore.toastType === 'success' ? 'All set' : uiStore.toastType === 'error' ? 'Please try again' : 'Notice' }}
+                {{
+                  uiStore.toastType === 'success'
+                    ? 'All set'
+                    : uiStore.toastType === 'error'
+                      ? 'Please try again'
+                      : 'Notice'
+                }}
               </p>
             </div>
 

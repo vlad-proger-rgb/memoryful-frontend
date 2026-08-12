@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+:root {
+  /* 60px logo + the nav's p-1. Everything that clears the fixed header reads this,
+     rather than each caller guessing its own 60/68/72. */
+  --app-header-height: 68px;
+  /* The floating glass capsule, and how far it clears the screen edge. */
+  --bottom-nav-height: 64px;
+  --bottom-nav-gap: 12px;
+  /* What content actually has to clear — capsule, its gap, and the home-indicator gutter. */
+  --bottom-nav-total: calc(
+    var(--bottom-nav-height) + var(--bottom-nav-gap) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
 .shake-animation {
   animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   transform: translate3d(0, 0, 0);
