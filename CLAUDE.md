@@ -47,6 +47,26 @@ The backend must be up in Docker first — see the workspace root `CLAUDE.md`.
   is no codegen — change the backend schema and this in the same pass, or the mismatch only
   surfaces at runtime.
 
+## Mobile
+
+Phones are a first-class target. **Check every visual change at 375x812 as well as desktop** —
+most of what broke historically was invisible on a laptop.
+
+- Responsive behavior is Tailwind `md:` variants, not JS.
+- Below `md` the nav is `BottomNav.vue` (glass capsule, icon tabs, MemoryfulAI orb centered);
+  at `md`+ it's `Navbar.vue`. Destinations come from `src/config/navigation.ts` for both.
+  `App.vue` picks between them with `hidden md:flex` / `md:hidden` — the only place that
+  breakpoint is decided, so don't set `display` on either nav root in scoped CSS, which
+  outranks the utility and brings the nav back at the wrong size.
+- Clearing a fixed bar reads `--app-header-height` / `--bottom-nav-total` from
+  `assets/main.css`; the latter already folds in `env(safe-area-inset-bottom)`.
+- `opacity-0 group-hover:opacity-100` hides a control outright on touch — gate it behind
+  `@media (hover: hover)`. `title="..."` is not a label there either.
+- Open gaps are tagged **`mobile`** on the TickTick board; check it before re-diagnosing.
+
+`npm run dev` also binds the LAN for real-device testing, and proxies the MinIO bucket
+(`^/memoryful/`) so default asset URLs stay relative and same-origin.
+
 ## Things that will bite you
 
 - **The vite proxy is an explicit allow-list.** `vite.config.ts` proxies a hard-coded regex
