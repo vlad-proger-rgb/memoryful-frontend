@@ -296,8 +296,7 @@ const submitMonth = async () => {
   }
 
   currentMonthRecord.value.topDayTimestamp =
-    Date.UTC(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value) /
-    1000
+    Date.UTC(currentYearNumber.value, currentMonthNumber.value - 1, +topDayNumber.value) / 1000
 
   const file = selectedBackgroundFile.value || fileInput.value?.files?.[0]
   if (file) {
@@ -363,59 +362,66 @@ const submitMonth = async () => {
 
 <template>
   <div
-    class="relative h-screen flex flex-col overflow-hidden transition"
+    class="relative h-[calc(100dvh-var(--bottom-nav-total))] md:h-screen flex flex-col overflow-hidden transition"
   >
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"
       :placeholder="background.placeholder"
-      container-class="absolute inset-0 z-0 blur-[3px] brightness-75"
+      container-class="fixed inset-0 z-0 blur-[3px] brightness-75"
     />
     <div
-      class="absolute inset-0 z-10 bg-gradient-to-b"
+      class="fixed inset-0 z-10 bg-gradient-to-b"
       :class="backgroundGradient(currentMonthNumber)"
       style="opacity: 0.45"
     />
 
     <div class="relative z-20 flex flex-col flex-1 min-h-0">
-      <div class="flex justify-between mt-3">
-        <div class="flex items-center gap-4 px-4 py-2">
-          <div>
-            <p class="text-white text-2xl">{{ getMonthName(currentMonthNumber - 1) }}</p>
-          </div>
+      <div class="flex flex-wrap items-center gap-2 md:gap-4 mt-3 px-2 md:px-4 py-2">
+        <p class="order-1 min-w-0 flex-1 md:flex-none truncate text-white text-2xl">
+          {{ getMonthName(currentMonthNumber - 1) }}
+        </p>
+
+        <div class="order-2 md:order-3 md:ml-auto flex items-center gap-2 md:gap-4 shrink-0">
+          <MainButton aria-label="View Summary">
+            <template #icon-left>
+              <font-awesome-icon icon="chart-simple" />
+            </template>
+            <template #default>
+              <span class="hidden md:inline">View Summary</span>
+            </template>
+          </MainButton>
+          <MainButton @click="openModal" :hide-text="true" aria-label="Month settings">
+            <template #icon-right>
+              <font-awesome-icon icon="gear" />
+            </template>
+          </MainButton>
+        </div>
+
+        <div class="order-3 md:order-2 basis-full md:basis-auto">
           <YearSlider
+            class="w-fit"
             @click="router.push(`/calendar/${currentYearNumber}`)"
             @prev="currentYearNumber--"
             @next="currentYearNumber++"
             :year="currentYearNumber"
           />
         </div>
-
-        <div class="flex items-center gap-4 px-4 py-2">
-          <MainButton>
-            <template #default>View Summary</template>
-          </MainButton>
-          <MainButton @click="openModal" :hide-text="true">
-            <template #icon-right>
-              <font-awesome-icon icon="gear" />
-            </template>
-          </MainButton>
-        </div>
       </div>
 
       <div class="flex-1 min-h-0">
-        <div class="flex justify-between p-4">
-          <p class="text-white/80 text-center text-2xl font-semibold">
+        <div class="flex justify-between gap-4 p-4 h-full">
+          <p class="min-w-0 text-white/80 text-center text-2xl font-semibold">
             {{ currentMonthRecord.description || 'No description' }}
           </p>
 
-          <div class="relative z-10 max-h-[calc(100vh-14rem)] overflow-y-auto">
+          <div class="relative z-10 self-start max-h-full overflow-y-auto shrink-0">
             <MonthSlider :selectedMonth="currentMonthNumber" @click="handleMonthSelect" />
           </div>
         </div>
       </div>
 
-      <div class="absolute bottom-18 left-0 right-0 z-30 flex justify-between p-4">
+      <div class="md:absolute md:bottom-18 md:left-0 md:right-0 z-30 flex justify-between p-4">
         <div>
           <MainButton @click="router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}`)">
             <template #default>Open</template>
@@ -526,7 +532,9 @@ const submitMonth = async () => {
                 </p>
               </template>
               <p class="text-gray-500 text-xs mt-1">
-                {{ selectedBackgroundFile ? selectedBackgroundFile.name : 'Image/Video (max. 5MB)' }}
+                {{
+                  selectedBackgroundFile ? selectedBackgroundFile.name : 'Image/Video (max. 5MB)'
+                }}
               </p>
             </div>
           </div>

@@ -32,12 +32,11 @@ watch(
 </script>
 
 <template>
-  <div class="h-screen" :class="{ 'overflow-hidden': uiStore.disableScroll }">
+  <div class="min-h-dvh md:h-screen" :class="{ 'md:overflow-hidden': uiStore.disableScroll }">
     <Navbar v-if="showAppShell" class="fixed top-0 left-0 w-full z-50 hidden md:flex" />
     <BottomNav v-if="showAppShell" class="md:hidden" />
     <AiChatPanel v-if="showAppShell" />
     <AppToast />
-    <!-- Mobile clears the fixed bottom bar; desktop clears the fixed header. -->
     <div
       :class="
         showAppShell ? 'pb-[var(--bottom-nav-total)] md:pb-0 md:pt-[var(--app-header-height)]' : ''

@@ -36,14 +36,20 @@ const todayIso = computed(() => {
   return `${yyyy}-${mm}-${dd}`
 })
 
-const todaysInsightsRaw = computed(() => rawInsights.value.filter((i) => i.dateBegin === todayIso.value))
-const todaysSuggestionsRaw = computed(() => rawSuggestions.value.filter((s) => s.date === todayIso.value))
+const todaysInsightsRaw = computed(() =>
+  rawInsights.value.filter((i) => i.dateBegin === todayIso.value),
+)
+const todaysSuggestionsRaw = computed(() =>
+  rawSuggestions.value.filter((s) => s.date === todayIso.value),
+)
 
 const insightsPreview = computed(() => todaysInsightsRaw.value.slice(0, 3))
 const suggestionsPreview = computed(() => todaysSuggestionsRaw.value.slice(0, 3))
 
 const getInsightIcon = (item: InsightInDB): [string, string] => {
-  return item.icon ? (getIcon(item.icon) as [string, string]) : (['fas', 'lightbulb'] as [string, string])
+  return item.icon
+    ? (getIcon(item.icon) as [string, string])
+    : (['fas', 'lightbulb'] as [string, string])
 }
 
 const getSuggestionIcon = (item: SuggestionInDB): [string, string] => {
@@ -172,7 +178,7 @@ onActivated(() => {
 </script>
 
 <template>
-  <div class="relative h-screen w-full overflow-hidden font-dashboard">
+  <div class="relative min-h-dvh w-full md:h-screen md:overflow-hidden font-dashboard">
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"
@@ -192,7 +198,10 @@ onActivated(() => {
 
             <div class="mt-8 flex items-center justify-center gap-12 flex-wrap">
               <div class="stat-col">
-                <font-awesome-icon icon="person-walking" class="text-[44px] text-lime-400 drop-shadow" />
+                <font-awesome-icon
+                  icon="person-walking"
+                  class="text-[44px] text-lime-400 drop-shadow"
+                />
                 <div class="stat-val">+32%</div>
               </div>
               <div class="stat-col">
@@ -260,10 +269,7 @@ onActivated(() => {
             </div>
             <div class="mt-8 flex flex-col gap-4">
               <div v-if="isLoadingAi" class="text-white/70 text-center">Loading...</div>
-              <div
-                v-else-if="!todaysInsightsRaw.length"
-                class="text-white/70 text-center"
-              >
+              <div v-else-if="!todaysInsightsRaw.length" class="text-white/70 text-center">
                 No insights for today yet - write the day and mark it as complete to generate.
               </div>
               <div v-for="item in insightsPreview" :key="item.id" class="flex flex-col gap-3">
@@ -273,10 +279,14 @@ onActivated(() => {
                   @click="toggleInsight(item.id)"
                   :aria-expanded="isInsightExpanded(item.id)"
                 >
-                  <span class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90">
+                  <span
+                    class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
+                  >
                     <font-awesome-icon :icon="getInsightIcon(item)" class="text-[22px]" />
                   </span>
-                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">{{ item.description }}</span>
+                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
+                    {{ item.description }}
+                  </span>
                   <font-awesome-icon
                     icon="angle-down"
                     class="text-[22px] opacity-90 transition-transform duration-200"
@@ -327,10 +337,7 @@ onActivated(() => {
             </div>
             <div class="mt-8 flex flex-col gap-4">
               <div v-if="isLoadingAi" class="text-white/70 text-center">Loading...</div>
-              <div
-                v-else-if="!todaysSuggestionsRaw.length"
-                class="text-white/70 text-center"
-              >
+              <div v-else-if="!todaysSuggestionsRaw.length" class="text-white/70 text-center">
                 No suggestions for today yet - write the day and mark it as complete to generate.
               </div>
               <div v-for="item in suggestionsPreview" :key="item.id" class="flex flex-col gap-3">
@@ -340,10 +347,14 @@ onActivated(() => {
                   @click="toggleSuggestion(item.id)"
                   :aria-expanded="isSuggestionExpanded(item.id)"
                 >
-                  <span class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90">
+                  <span
+                    class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
+                  >
                     <font-awesome-icon :icon="getSuggestionIcon(item)" class="text-[22px]" />
                   </span>
-                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">{{ item.description }}</span>
+                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
+                    {{ item.description }}
+                  </span>
                   <font-awesome-icon
                     icon="angle-down"
                     class="text-[22px] opacity-90 transition-transform duration-200"
@@ -379,17 +390,21 @@ onActivated(() => {
                     v-if="aiModalItems.length"
                     type="button"
                     class="pill-button pill-button-sm !w-auto"
-                    @click="aiModalMode === 'insights' ? toggleAllInsights() : toggleAllSuggestions()"
+                    @click="
+                      aiModalMode === 'insights' ? toggleAllInsights() : toggleAllSuggestions()
+                    "
                   >
-                    <span>{{
-                      aiModalMode === 'insights'
-                        ? areAllTodaysInsightsExpanded
-                          ? 'Collapse all'
-                          : 'Expand all'
-                        : areAllTodaysSuggestionsExpanded
-                          ? 'Collapse all'
-                          : 'Expand all'
-                    }}</span>
+                    <span>
+                      {{
+                        aiModalMode === 'insights'
+                          ? areAllTodaysInsightsExpanded
+                            ? 'Collapse all'
+                            : 'Expand all'
+                          : areAllTodaysSuggestionsExpanded
+                            ? 'Collapse all'
+                            : 'Expand all'
+                      }}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -405,21 +420,31 @@ onActivated(() => {
 
             <template #default>
               <div class="space-y-6">
-                <div v-if="!aiModalItems.length" class="text-white/70 text-center">Nothing for today.</div>
+                <div v-if="!aiModalItems.length" class="text-white/70 text-center">
+                  Nothing for today.
+                </div>
 
                 <div v-else>
                   <div v-if="aiModalMode === 'insights'" class="flex flex-col gap-3">
-                    <div v-for="item in (aiModalItems as InsightInDB[])" :key="item.id" class="flex flex-col gap-3">
+                    <div
+                      v-for="item in aiModalItems as InsightInDB[]"
+                      :key="item.id"
+                      class="flex flex-col gap-3"
+                    >
                       <button
                         type="button"
                         class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/20 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/30 hover:-translate-y-px"
                         @click="toggleInsight(item.id)"
                         :aria-expanded="isInsightExpanded(item.id)"
                       >
-                        <span class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90">
+                        <span
+                          class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
+                        >
                           <font-awesome-icon :icon="getInsightIcon(item)" class="text-[22px]" />
                         </span>
-                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">{{ item.description }}</span>
+                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
+                          {{ item.description }}
+                        </span>
                         <font-awesome-icon
                           icon="angle-down"
                           class="text-[22px] opacity-90 transition-transform duration-200"
@@ -446,17 +471,25 @@ onActivated(() => {
                   </div>
 
                   <div v-else class="flex flex-col gap-3">
-                    <div v-for="item in (aiModalItems as SuggestionInDB[])" :key="item.id" class="flex flex-col gap-3">
+                    <div
+                      v-for="item in aiModalItems as SuggestionInDB[]"
+                      :key="item.id"
+                      class="flex flex-col gap-3"
+                    >
                       <button
                         type="button"
                         class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/15 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/25 hover:-translate-y-px"
                         @click="toggleSuggestion(item.id)"
                         :aria-expanded="isSuggestionExpanded(item.id)"
                       >
-                        <span class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90">
+                        <span
+                          class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
+                        >
                           <font-awesome-icon :icon="getSuggestionIcon(item)" class="text-[22px]" />
                         </span>
-                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">{{ item.description }}</span>
+                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
+                          {{ item.description }}
+                        </span>
                         <font-awesome-icon
                           icon="angle-down"
                           class="text-[22px] opacity-90 transition-transform duration-200"
@@ -493,7 +526,15 @@ onActivated(() => {
 
 <style scoped>
 .font-dashboard {
-  font-family: Verdana, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    Verdana,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
 }
 
 .glass-card {
@@ -551,7 +592,9 @@ onActivated(() => {
   color: white;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .pill-button:hover {
@@ -575,7 +618,9 @@ onActivated(() => {
 
 .collapse-enter-active,
 .collapse-leave-active {
-  transition: height 220ms ease, opacity 220ms ease;
+  transition:
+    height 220ms ease,
+    opacity 220ms ease;
   overflow: hidden;
 }
 

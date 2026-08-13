@@ -702,9 +702,11 @@ onUnmounted(() => {
     <!-- Main content -->
     <div class="relative z-10 pt-24 pb-24 px-4 max-w-2xl mx-auto w-full space-y-6">
       <!-- Header with date and actions -->
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-white">{{ day.timestamp ? date : 'Loading...' }}</h1>
-        <div class="flex items-center space-x-3">
+      <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-3 mb-6">
+        <h1 class="text-2xl font-bold text-white min-w-0">
+          {{ day.timestamp ? date : 'Loading...' }}
+        </h1>
+        <div class="flex items-center gap-3 ml-auto shrink-0">
           <button
             @click="toggleStarred"
             class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -716,7 +718,7 @@ onUnmounted(() => {
 
           <button
             type="button"
-            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80"
+            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80 whitespace-nowrap"
             :class="{ 'opacity-50 cursor-not-allowed': isCompletingDay || !dayExists }"
             :disabled="isCompletingDay || !dayExists"
             :title="dayExists ? 'Mark day as complete (generate insights)' : 'Save the day first'"
@@ -1096,9 +1098,9 @@ onUnmounted(() => {
 
               <!-- Description -->
               <div>
-                <label for="description-input" class="block text-sm font-medium text-white/70 mb-1"
-                  >Description</label
-                >
+                <label for="description-input" class="block text-sm font-medium text-white/70 mb-1">
+                  Description
+                </label>
                 <input
                   v-model="editForm.description"
                   type="text"
@@ -1110,9 +1112,9 @@ onUnmounted(() => {
               <!-- City and Country -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div id="country-input-container">
-                  <label for="country-input" class="block text-sm font-medium text-white/70 mb-1"
-                    >Country</label
-                  >
+                  <label for="country-input" class="block text-sm font-medium text-white/70 mb-1">
+                    Country
+                  </label>
                   <LocationAutocomplete
                     v-model="editForm.country"
                     input-id="country-input"
@@ -1133,9 +1135,9 @@ onUnmounted(() => {
                   />
                 </div>
                 <div id="city-input-container">
-                  <label for="city-input" class="block text-sm font-medium text-white/70 mb-1"
-                    >City</label
-                  >
+                  <label for="city-input" class="block text-sm font-medium text-white/70 mb-1">
+                    City
+                  </label>
                   <LocationAutocomplete
                     v-model="editForm.city"
                     input-id="city-input"
@@ -1159,9 +1161,9 @@ onUnmounted(() => {
 
               <!-- Content -->
               <div>
-                <label for="content-input" class="block text-sm font-medium text-white/70 mb-1"
-                  >Content</label
-                >
+                <label for="content-input" class="block text-sm font-medium text-white/70 mb-1">
+                  Content
+                </label>
                 <MarkdownEditor
                   v-model="editForm.content"
                   placeholder="Write your day's story here..."
@@ -1171,9 +1173,9 @@ onUnmounted(() => {
 
               <!-- Tags -->
               <div>
-                <label for="tags-input" class="block text-sm font-medium text-white/70 mb-1"
-                  >Tags</label
-                >
+                <label for="tags-input" class="block text-sm font-medium text-white/70 mb-1">
+                  Tags
+                </label>
                 <TagSelector
                   v-model="editForm.tags"
                   :available-tags="tags"
@@ -1281,9 +1283,9 @@ onUnmounted(() => {
                     </div>
 
                     <div class="md:col-span-2 min-w-0">
-                      <label class="block text-xs font-medium text-white/60 mb-1"
-                        >Description</label
-                      >
+                      <label class="block text-xs font-medium text-white/60 mb-1">
+                        Description
+                      </label>
                       <input
                         v-model="newTrackableDescription"
                         type="text"
@@ -1298,11 +1300,13 @@ onUnmounted(() => {
                     class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs"
                   >
                     <font-awesome-icon icon="pen" class="shrink-0" />
-                    <span
-                      >Editing — update the fields above, then click
-                      <strong>Update Trackable</strong> to save. Click <strong>Cancel</strong> to
-                      discard changes.</span
-                    >
+                    <span>
+                      Editing — update the fields above, then click
+                      <strong>Update Trackable</strong>
+                      to save. Click
+                      <strong>Cancel</strong>
+                      to discard changes.
+                    </span>
                   </div>
 
                   <div class="flex justify-end gap-2">
@@ -1364,9 +1368,9 @@ onUnmounted(() => {
 
               <!-- Main Image -->
               <div>
-                <label for="main-image-input" class="block text-sm font-medium text-white/70 mb-1"
-                  >Main Image</label
-                >
+                <label for="main-image-input" class="block text-sm font-medium text-white/70 mb-1">
+                  Main Image
+                </label>
                 <div class="flex items-center space-x-4">
                   <div
                     class="relative w-24 h-24 rounded-lg overflow-hidden bg-white/5 border border-dashed border-white/20 flex items-center justify-center"
@@ -1395,8 +1399,9 @@ onUnmounted(() => {
                 <label
                   for="additional-images-input"
                   class="block text-sm font-medium text-white/70 mb-1"
-                  >Additional Images</label
                 >
+                  Additional Images
+                </label>
                 <div class="grid grid-cols-4 gap-3">
                   <div
                     v-for="(image, index) in editForm.images"
