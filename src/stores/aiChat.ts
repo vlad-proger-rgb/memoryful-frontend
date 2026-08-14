@@ -9,12 +9,17 @@ import type { ChatDetail, ChatListItem, ChatMessage, ChatModelOption } from '@/t
 const MODEL_STORAGE_KEY = 'ai:selectedModelId'
 const PENDING_CHAT_ID = 'pending'
 
+// Below md the chat list overlays the conversation instead of docking beside it, so it
+// starts closed and dismisses itself once a chat is picked. Presentation stays in CSS;
+// this is the one thing that genuinely differs in behavior
+const isSidebarDocked = () => window.matchMedia('(min-width: 768px)').matches
+
 export const useAiChatStore = defineStore('aiChat', () => {
   const { handleApiError, withLoading } = useApiError()
   const uiStore = useUiStore()
 
   const isOpen = ref(false)
-  const isSidebarOpen = ref(true)
+  const isSidebarOpen = ref(isSidebarDocked())
 
   const chatModels = ref<ChatModelOption[]>([])
   const selectedModelId = ref<string>(localStorage.getItem(MODEL_STORAGE_KEY) || '')
@@ -31,7 +36,8 @@ export const useAiChatStore = defineStore('aiChat', () => {
   const sendError = ref<string>('')
 
   const selectedModel = computed(
-    () => chatModels.value.find((m) => m.id === selectedModelId.value) || chatModels.value[0] || null,
+    () =>
+      chatModels.value.find((m) => m.id === selectedModelId.value) || chatModels.value[0] || null,
   )
 
   const filteredChats = computed(() => {
@@ -89,6 +95,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
   }
 
   async function openChat(id: string) {
+    if (!isSidebarDocked()) isSidebarOpen.value = false
     if (currentChat.value?.id === id) return
     isLoadingChat.value = true
     sendError.value = ''
@@ -112,6 +119,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
   }
 
   function startNewChat() {
+    if (!isSidebarDocked()) isSidebarOpen.value = false
     currentChat.value = null
     sendError.value = ''
     // Back to the user's own default, rather than inheriting the model of

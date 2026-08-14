@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
+import { useScrollLock } from '@vueuse/core'
 import { useAiChatStore } from '@/stores/aiChat'
 import AiChatInterface from './AiChatInterface.vue'
 
 const store = useAiChatStore()
+
+// The panel covers the whole viewport on a phone, where a scroll gesture would
+// otherwise chain through to the page behind it
+const isPageLocked = useScrollLock(document.body)
 
 const onKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && store.isOpen) {
@@ -11,12 +16,20 @@ const onKeydown = (e: KeyboardEvent) => {
   }
 }
 
+watch(
+  () => store.isOpen,
+  (open) => {
+    isPageLocked.value = open
+  },
+)
+
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  isPageLocked.value = false
 })
 </script>
 
@@ -31,10 +44,14 @@ onBeforeUnmount(() => {
     </Transition>
 
     <div
-      class="fixed inset-x-0 top-3 md:top-[var(--app-header-height)] z-[71] flex justify-center pointer-events-none"
+      class="fixed inset-x-0 top-0 bottom-0 md:top-[var(--app-header-height)] md:bottom-auto z-[71] flex justify-center pointer-events-none"
     >
       <Transition name="ai-drop">
-        <div v-if="store.isOpen" class="pointer-events-auto" @click.stop>
+        <div
+          v-if="store.isOpen"
+          class="pointer-events-auto w-full h-full md:w-auto md:h-auto"
+          @click.stop
+        >
           <AiChatInterface />
         </div>
       </Transition>
@@ -65,10 +82,18 @@ onBeforeUnmount(() => {
     opacity 180ms ease;
 }
 
+/* A sheet rises from the bottom edge; the desktop panel drops out of the header */
 .ai-drop-enter-from,
 .ai-drop-leave-to {
   opacity: 0;
-  transform: translateY(-32px) scale(0.96);
-  transform-origin: top center;
+  transform: translateY(100%);
+}
+
+@media (min-width: 768px) {
+  .ai-drop-enter-from,
+  .ai-drop-leave-to {
+    transform: translateY(-32px) scale(0.96);
+    transform-origin: top center;
+  }
 }
 </style>

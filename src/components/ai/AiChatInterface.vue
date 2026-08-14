@@ -27,9 +27,21 @@ const onAttach = () => {
 
 <template>
   <div
-    class="ai-panel-bg relative flex overflow-hidden rounded-[28px] border border-white/10 shadow-2xl shadow-black/50"
-    :class="fullPage ? 'w-full max-w-[900px] h-[calc(100dvh-140px)]' : 'w-[720px] h-[600px]'"
+    class="ai-panel-bg relative flex overflow-hidden border border-white/10 shadow-2xl shadow-black/50"
+    :class="
+      fullPage
+        ? 'w-full max-w-[900px] h-[calc(100dvh-140px)] rounded-[28px]'
+        : 'w-full h-full rounded-none md:w-[720px] md:h-[600px] md:rounded-[28px]'
+    "
   >
+    <Transition name="ai-scrim">
+      <div
+        v-if="store.isSidebarOpen"
+        class="absolute inset-0 z-10 bg-black/50 md:hidden"
+        @click="store.toggleSidebar()"
+      />
+    </Transition>
+
     <Transition name="ai-sidebar">
       <AiSidebar v-if="store.isSidebarOpen" />
     </Transition>
@@ -56,17 +68,45 @@ const onAttach = () => {
   backdrop-filter: blur(18px);
 }
 
+/* Below md the chat list is a drawer over the conversation, so it slides in; at md+ it is
+   a docked column and collapses its own width instead */
 .ai-sidebar-enter-active,
 .ai-sidebar-leave-active {
   transition:
-    width 220ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 180ms ease;
-  overflow: hidden;
 }
 
 .ai-sidebar-enter-from,
 .ai-sidebar-leave-to {
-  width: 0 !important;
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+@media (min-width: 768px) {
+  .ai-sidebar-enter-active,
+  .ai-sidebar-leave-active {
+    transition:
+      width 220ms ease,
+      opacity 180ms ease;
+    overflow: hidden;
+  }
+
+  .ai-sidebar-enter-from,
+  .ai-sidebar-leave-to {
+    width: 0 !important;
+    transform: none;
+    opacity: 0;
+  }
+}
+
+.ai-scrim-enter-active,
+.ai-scrim-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.ai-scrim-enter-from,
+.ai-scrim-leave-to {
   opacity: 0;
 }
 </style>

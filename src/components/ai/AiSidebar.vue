@@ -78,7 +78,9 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
 </script>
 
 <template>
-  <div class="w-[220px] shrink-0 flex flex-col bg-black/30 border-r border-white/5 h-full">
+  <div
+    class="absolute inset-y-0 left-0 z-20 w-[78%] max-w-[280px] bg-[#0d0d12]/95 backdrop-blur-xl md:static md:z-auto md:w-[220px] md:max-w-none md:bg-black/30 md:backdrop-blur-none shrink-0 flex flex-col border-r border-white/5 h-full"
+  >
     <div class="flex items-center justify-between gap-1 px-3 py-3 shrink-0">
       <p class="text-xs font-semibold text-white/50 uppercase tracking-wide">Chats</p>
       <div class="flex items-center gap-1">
@@ -93,7 +95,11 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
         <button
           type="button"
           class="size-7 rounded-lg flex items-center justify-center transition-colors"
-          :class="isSearching ? 'text-white bg-white/15' : 'text-white/70 hover:text-white hover:bg-white/10'"
+          :class="
+            isSearching
+              ? 'text-white bg-white/15'
+              : 'text-white/70 hover:text-white hover:bg-white/10'
+          "
           title="Search chats"
           @click="toggleSearch"
         >
@@ -113,19 +119,21 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto px-2 pb-2 flex flex-col gap-1 ai-sidebar-scroll">
-      <div v-if="store.isLoadingChats" class="text-center text-xs text-white/40 py-4">Loading...</div>
+      <div v-if="store.isLoadingChats" class="text-center text-xs text-white/40 py-4">
+        Loading...
+      </div>
 
-      <div v-else-if="!store.filteredChats.length" class="text-center text-xs text-white/40 py-4 px-2">
+      <div
+        v-else-if="!store.filteredChats.length"
+        class="text-center text-xs text-white/40 py-4 px-2"
+      >
         {{ store.searchQuery ? 'No chats match your search' : 'No chats yet — say hi!' }}
       </div>
 
       <template v-for="chat in store.filteredChats" :key="chat.id">
         <!-- Edit mode is its own row: an <input> inside the row <button> would
              swallow clicks and is invalid nesting. -->
-        <div
-          v-if="editingId === chat.id"
-          class="px-2 py-1 rounded-xl bg-white/15"
-        >
+        <div v-if="editingId === chat.id" class="px-2 py-1 rounded-xl bg-white/15">
           <input
             :ref="setRenameInput"
             v-model="draftTitle"
@@ -160,7 +168,9 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
             </span>
             <span
               class="size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              :class="pendingDeleteId === chat.id ? 'bg-rose-500/30 opacity-100' : 'hover:bg-white/15'"
+              :class="
+                pendingDeleteId === chat.id ? 'bg-rose-500/30 opacity-100' : 'hover:bg-white/15'
+              "
               :title="pendingDeleteId === chat.id ? 'Click again to confirm' : 'Delete'"
               @click="requestDelete(chat, $event)"
             >
