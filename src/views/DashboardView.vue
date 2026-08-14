@@ -381,7 +381,7 @@ onActivated(() => {
             </div>
           </section>
 
-          <ModalWindow v-model="showAiModal" maxWidth="2xl" class="max-h-[90vh] overflow-y-auto">
+          <ModalWindow v-model="showAiModal" maxWidth="2xl">
             <template #header>
               <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-white">{{ aiModalTitle }}</h2>

@@ -1047,12 +1047,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Modal window -->
-        <ModalWindow
-          v-model="showModal"
-          maxWidth="2xl"
-          @close="handleModalClose"
-          class="max-h-[90vh] overflow-y-auto overflow-x-hidden"
-        >
+        <ModalWindow v-model="showModal" maxWidth="2xl" @close="handleModalClose">
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-xl font-semibold text-white">Edit Day - {{ date }}</h2>

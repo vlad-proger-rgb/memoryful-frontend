@@ -1,7 +1,38 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useEventListener, useFocus, useScrollLock } from '@vueuse/core'
+
+type MaxWidth = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full'
+
+const MAX_WIDTHS: Record<MaxWidth, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
+  '6xl': 'max-w-6xl',
+  '7xl': 'max-w-7xl',
+  full: 'max-w-full',
+}
+
+// Written out rather than built from MAX_WIDTHS — Tailwind only sees literal class names.
+const DESKTOP_MAX_WIDTHS: Record<MaxWidth, string> = {
+  sm: 'md:max-w-sm',
+  md: 'md:max-w-md',
+  lg: 'md:max-w-lg',
+  xl: 'md:max-w-xl',
+  '2xl': 'md:max-w-2xl',
+  '3xl': 'md:max-w-3xl',
+  '4xl': 'md:max-w-4xl',
+  '5xl': 'md:max-w-5xl',
+  '6xl': 'md:max-w-6xl',
+  '7xl': 'md:max-w-7xl',
+  full: 'md:max-w-full',
+}
 
 const props = defineProps({
   modelValue: {
@@ -21,13 +52,49 @@ const props = defineProps({
     default: true,
   },
   maxWidth: {
-    type: String as PropType<
-      'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full'
-    >,
+    type: String as PropType<MaxWidth>,
     default: 'md',
     validator: (value: string) =>
       ['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full'].includes(value),
   },
+  fullScreenOnMobile: {
+    type: Boolean,
+    default: true,
+  },
+})
+
+const goesFullScreen = computed(() => props.fullScreenOnMobile && props.maxWidth !== 'full')
+
+const wrapperClass = computed(() =>
+  goesFullScreen.value
+    ? 'h-full md:block md:h-auto md:min-h-dvh'
+    : 'flex items-center justify-center min-h-dvh pt-4 px-4 pb-20 text-center md:block md:p-0',
+)
+
+const cardClass = computed(() => {
+  if (props.maxWidth === 'full') {
+    return 'w-full max-w-full h-full max-h-full m-0 rounded-none'
+  }
+  if (goesFullScreen.value) {
+    return [
+      'w-full h-full rounded-none',
+      'md:mx-auto md:h-auto md:max-h-[90dvh] md:my-8 md:rounded-2xl',
+      DESKTOP_MAX_WIDTHS[props.maxWidth],
+    ]
+  }
+  return ['mx-auto w-full my-8 max-h-[90dvh] rounded-2xl', MAX_WIDTHS[props.maxWidth]]
+})
+
+const headerClass = computed(() => {
+  if (props.maxWidth === 'full') return ''
+  return goesFullScreen.value ? 'md:rounded-t-2xl' : 'rounded-t-2xl'
+})
+
+const footerClass = computed(() => {
+  if (props.maxWidth === 'full') return 'py-4'
+  return goesFullScreen.value
+    ? 'pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:rounded-b-2xl'
+    : 'py-4 rounded-b-2xl'
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])
@@ -122,9 +189,7 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
       >
-        <div
-          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
+        <div :class="wrapperClass">
           <Transition
             enter-active-class="ease-out duration-500"
             enter-from-class="opacity-0"
@@ -143,40 +208,27 @@ onBeforeUnmount(() => {
 
           <Transition
             enter-active-class="ease-out duration-300"
-            enter-from-class="opacity-0 translate-y-4 sm:scale-95"
-            enter-to-class="opacity-100 translate-y-0 sm:scale-100"
+            enter-from-class="opacity-0 translate-y-4 md:scale-95"
+            enter-to-class="opacity-100 translate-y-0 md:scale-100"
             leave-active-class="ease-in duration-200"
-            leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-            leave-to-class="opacity-0 translate-y-4 sm:scale-95"
+            leave-from-class="opacity-100 translate-y-0 md:scale-100"
+            leave-to-class="opacity-0 translate-y-4 md:scale-95"
           >
             <div
               v-if="isOpen"
               ref="modalRef"
-              class="relative bg-gray-800 text-left shadow-xl transform transition-all flex flex-col sm:my-8 max-h-[90vh] rounded-2xl"
-              :class="{
-                'mx-auto w-full max-w-sm': maxWidth === 'sm',
-                'mx-auto w-full max-w-md': maxWidth === 'md',
-                'mx-auto w-full max-w-lg': maxWidth === 'lg',
-                'mx-auto w-full max-w-xl': maxWidth === 'xl',
-                'mx-auto w-full max-w-2xl': maxWidth === '2xl' || !maxWidth,
-                'mx-auto w-full max-w-3xl': maxWidth === '3xl',
-                'mx-auto w-full max-w-4xl': maxWidth === '4xl',
-                'mx-auto w-full max-w-5xl': maxWidth === '5xl',
-                'mx-auto w-full max-w-6xl': maxWidth === '6xl',
-                'mx-auto w-full max-w-7xl': maxWidth === '7xl',
-                'w-full max-w-full h-full max-h-full m-0 rounded-none': maxWidth === 'full',
-              }"
+              class="relative bg-gray-800 text-left shadow-xl transform transition-all flex flex-col"
+              :class="cardClass"
               tabindex="-1"
             >
               <!-- Header -->
               <div
-                v-if="$slots.header"
-                class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0 rounded-t-2xl"
+                class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0"
+                :class="headerClass"
               >
-                <slot name="header" />
-              </div>
-              <div v-else class="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0 rounded-t-2xl">
-                <h3 class="text-lg font-medium text-white">{{ title }}</h3>
+                <slot name="header">
+                  <h3 class="text-lg font-medium text-white">{{ title }}</h3>
+                </slot>
               </div>
 
               <!-- Content -->
@@ -187,7 +239,8 @@ onBeforeUnmount(() => {
               <!-- Footer -->
               <div
                 v-if="$slots.footer"
-                class="px-6 py-4 border-t border-white/10 bg-gray-900/50 flex-shrink-0 rounded-b-2xl"
+                class="px-6 border-t border-white/10 bg-gray-900/50 flex-shrink-0"
+                :class="footerClass"
               >
                 <slot name="footer" />
               </div>
