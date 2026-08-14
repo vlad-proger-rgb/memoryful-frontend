@@ -1,11 +1,60 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useAiChatStore } from '@/stores/aiChat'
 import type { ChatListItem } from '@/types/chat'
 
 const store = useAiChatStore()
 const isSearching = ref(false)
 const pendingDeleteId = ref<string | null>(null)
+
+// Touch has no hover, so a long press stands in for the hover-revealed actions.
+// Held by id, not by object, so a chat deleted from under it closes the sheet.
+const menuChatId = ref<string | null>(null)
+const menuChat = computed(() => store.filteredChats.find((c) => c.id === menuChatId.value) ?? null)
+
+const LONG_PRESS_MS = 450
+// Past this the finger is scrolling the list, not holding a row.
+const LONG_PRESS_SLOP_PX = 10
+
+let pressTimer: number | null = null
+let pressOrigin: { x: number; y: number } | null = null
+// Set when the press opened the sheet, so the click that follows doesn't also open the chat.
+let pressOpenedSheet = false
+
+const cancelPress = () => {
+  if (pressTimer !== null) window.clearTimeout(pressTimer)
+  pressTimer = null
+  pressOrigin = null
+}
+
+const startPress = (chat: ChatListItem, event: PointerEvent) => {
+  if (event.pointerType === 'mouse') return
+  cancelPress()
+  pressOpenedSheet = false
+  pressOrigin = { x: event.clientX, y: event.clientY }
+  pressTimer = window.setTimeout(() => {
+    pressOpenedSheet = true
+    pendingDeleteId.value = null
+    menuChatId.value = chat.id
+    navigator.vibrate?.(10)
+  }, LONG_PRESS_MS)
+}
+
+const movePress = (event: PointerEvent) => {
+  if (!pressOrigin) return
+  const dx = Math.abs(event.clientX - pressOrigin.x)
+  const dy = Math.abs(event.clientY - pressOrigin.y)
+  if (dx > LONG_PRESS_SLOP_PX || dy > LONG_PRESS_SLOP_PX) cancelPress()
+}
+
+const openChat = (chat: ChatListItem) => {
+  if (pressOpenedSheet) {
+    pressOpenedSheet = false
+    return
+  }
+  store.openChat(chat.id)
+}
 
 const editingId = ref<string | null>(null)
 const draftTitle = ref('')
@@ -68,6 +117,7 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
   if (pendingDeleteId.value === chat.id) {
     store.deleteChat(chat.id)
     pendingDeleteId.value = null
+    closeMenu()
   } else {
     pendingDeleteId.value = chat.id
     window.setTimeout(() => {
@@ -75,6 +125,32 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
     }, 2500)
   }
 }
+
+// The header's "Rename" acts on the current chat but the editor is a row here.
+watch(
+  () => store.renameRequest,
+  (req) => {
+    if (!req) return
+    const chat = store.chats.find((c) => c.id === req.id)
+    if (!chat) return
+    pendingDeleteId.value = null
+    draftTitle.value = chat.title
+    editingId.value = chat.id
+  },
+  { deep: true },
+)
+
+function closeMenu() {
+  menuChatId.value = null
+  pendingDeleteId.value = null
+}
+
+const renameFromMenu = (chat: ChatListItem, event: MouseEvent) => {
+  startRename(chat, event)
+  closeMenu()
+}
+
+onBeforeUnmount(cancelPress)
 </script>
 
 <template>
@@ -87,6 +163,7 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
         <button
           type="button"
           class="size-7 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="New chat"
           title="New chat"
           @click="startNewChat"
         >
@@ -100,6 +177,7 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
               ? 'text-white bg-white/15'
               : 'text-white/70 hover:text-white hover:bg-white/10'
           "
+          aria-label="Search chats"
           title="Search chats"
           @click="toggleSearch"
         >
@@ -131,7 +209,7 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
       </div>
 
       <template v-for="chat in store.filteredChats" :key="chat.id">
-        <!-- Edit mode is its own row: an <input> inside the row <button> would
+        <!-- Edit mode replaces the whole row: an <input> inside the title <button> would
              swallow clicks and is invalid nesting. -->
         <div v-if="editingId === chat.id" class="px-2 py-1 rounded-xl bg-white/15">
           <input
@@ -139,37 +217,56 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
             v-model="draftTitle"
             type="text"
             maxlength="60"
-            class="w-full bg-transparent text-sm text-white outline-none"
+            class="w-full bg-transparent text-base md:text-sm text-white outline-none"
             @keydown.enter.prevent="commitRename(chat)"
             @keydown.esc.prevent="cancelRename"
             @blur="commitRename(chat)"
           />
         </div>
 
-        <button
+        <div
           v-else
-          type="button"
-          class="group flex items-center justify-between gap-1 w-full text-left px-3 py-2 rounded-xl text-sm transition-colors"
+          class="group flex items-center gap-0.5 rounded-xl text-sm transition-colors"
           :class="
             store.currentChat?.id === chat.id
               ? 'bg-white/15 text-white'
               : 'text-white/70 hover:bg-white/10 hover:text-white'
           "
-          @click="store.openChat(chat.id)"
         >
-          <span class="truncate" @dblclick.stop="startRename(chat, $event)">{{ chat.title }}</span>
-          <span class="shrink-0 flex items-center gap-0.5">
-            <span
-              class="size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/15"
+          <button
+            type="button"
+            class="flex-1 min-w-0 truncate text-left pl-3 py-2 touch:select-none"
+            @click="openChat(chat)"
+            @dblclick.stop="startRename(chat, $event)"
+            @pointerdown="startPress(chat, $event)"
+            @pointermove="movePress"
+            @pointerup="cancelPress"
+            @pointerleave="cancelPress"
+            @pointercancel="cancelPress"
+            @contextmenu.prevent
+          >
+            {{ chat.title }}
+          </button>
+          <span class="shrink-0 flex items-center gap-0.5 pr-3">
+            <button
+              type="button"
+              class="size-5 touch:hidden rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-white/15"
+              :aria-label="`Rename ${chat.title}`"
               title="Rename"
               @click="startRename(chat, $event)"
             >
               <font-awesome-icon icon="pen" class="text-[10px] text-white/60" />
-            </span>
-            <span
-              class="size-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            </button>
+            <button
+              type="button"
+              class="size-5 touch:hidden rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
               :class="
                 pendingDeleteId === chat.id ? 'bg-rose-500/30 opacity-100' : 'hover:bg-white/15'
+              "
+              :aria-label="
+                pendingDeleteId === chat.id
+                  ? `Confirm deleting ${chat.title}`
+                  : `Delete ${chat.title}`
               "
               :title="pendingDeleteId === chat.id ? 'Click again to confirm' : 'Delete'"
               @click="requestDelete(chat, $event)"
@@ -179,11 +276,45 @@ const requestDelete = (chat: ChatListItem, event: MouseEvent) => {
                 class="text-[10px]"
                 :class="pendingDeleteId === chat.id ? 'text-rose-200' : 'text-white/60'"
               />
-            </span>
+            </button>
           </span>
-        </button>
+        </div>
       </template>
     </div>
+
+    <!-- Inside the root on purpose: a second root node would make this component a
+         fragment, and the parent's <Transition> silently stops animating a fragment.
+         The sheet teleports to body regardless of where it sits here. -->
+    <BottomSheet
+      :show="!!menuChat"
+      :label="menuChat ? `Options for ${menuChat.title}` : undefined"
+      :title="menuChat?.title"
+      @update:show="closeMenu"
+    >
+      <template v-if="menuChat">
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-3 px-4 py-3.5 text-left text-white active:bg-white/10"
+          @click="renameFromMenu(menuChat, $event)"
+        >
+          <font-awesome-icon icon="pen" class="w-4 text-white/60" />
+          Rename
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="flex w-full items-center gap-3 px-4 py-3.5 text-left text-rose-300 active:bg-rose-500/10"
+          @click="requestDelete(menuChat, $event)"
+        >
+          <font-awesome-icon
+            :icon="pendingDeleteId === menuChat.id ? 'check' : 'trash'"
+            class="w-4"
+          />
+          {{ pendingDeleteId === menuChat.id ? 'Tap again to confirm' : 'Delete' }}
+        </button>
+      </template>
+    </BottomSheet>
   </div>
 </template>
 
