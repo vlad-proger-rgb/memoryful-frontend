@@ -12,7 +12,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 pb-10 bg-black/30">
+  <div class="min-h-dvh flex items-center justify-center p-4 pb-10 bg-black/30">
     <AiChatInterface full-page />
   </div>
 </template>

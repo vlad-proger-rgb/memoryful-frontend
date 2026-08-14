@@ -101,7 +101,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-60px)] text-white">
+  <div class="min-h-[calc(100dvh-var(--app-header-height))] text-white">
     <MediaBackground
       :src="settingsBackground.url ?? null"
       :is-video="settingsBackground.isVideo"
@@ -111,10 +111,18 @@ const handleLogout = async () => {
     />
 
     <div class="w-full max-w-[1200px] mx-auto px-4">
-      <div class="sticky top-[60px] z-20 pt-6 pb-4 flex items-center justify-between pointer-events-none">
+      <div
+        class="sticky top-[var(--app-header-height)] z-20 pt-6 pb-4 flex items-center justify-between pointer-events-none"
+      >
         <div class="flex items-center gap-4">
           <div class="w-[120px] h-[120px] rounded-full overflow-hidden">
-            <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleAvatarSelected" />
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="handleAvatarSelected"
+            />
             <img
               :src="avatarResolvedSrc"
               alt=""
@@ -156,7 +164,14 @@ const handleLogout = async () => {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
                 <path
                   class="opacity-75"
                   fill="currentColor"
@@ -169,7 +184,9 @@ const handleLogout = async () => {
         </aside>
 
         <main class="flex-1">
-          <div class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] rounded-3xl overflow-hidden px-6 py-6">
+          <div
+            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] rounded-3xl overflow-hidden px-6 py-6"
+          >
             <RouterView />
           </div>
         </main>

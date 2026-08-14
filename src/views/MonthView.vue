@@ -138,7 +138,7 @@ const toggleStarred = async (date: string | number) => {
 </script>
 
 <template>
-  <div class="relative min-h-screen w-full overflow-x-hidden">
+  <div class="relative min-h-dvh w-full overflow-x-hidden">
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"

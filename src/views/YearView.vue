@@ -462,7 +462,7 @@ const submitMonth = async () => {
       </div>
     </template>
 
-    <div class="p-3 overflow-y-auto max-h-[60vh] bg-gray-800/30">
+    <div class="p-3 overflow-y-auto max-h-[60dvh] bg-gray-800/30">
       <form @submit.prevent="submitMonth" class="space-y-6">
         <div class="space-y-4">
           <div>

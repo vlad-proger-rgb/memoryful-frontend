@@ -8,7 +8,11 @@
         :style="`animation: fadeInUp 0.5s ease-out ${index * 0.1}s both`"
         @click="openModal(index)"
       >
-        <img :src="getImageUrl(image)" :alt="alt" class="w-full h-48 object-cover rounded-2xl shadow-lg" />
+        <img
+          :src="getImageUrl(image)"
+          :alt="alt"
+          class="w-full h-48 object-cover rounded-2xl shadow-lg"
+        />
       </div>
     </div>
     <div v-else class="text-center py-4 text-white/50 text-sm">No images to display</div>
@@ -44,13 +48,13 @@
                   <img
                     :src="currentImage"
                     :alt="alt"
-                    class="max-h-[70vh] max-w-[90vw] w-auto h-auto object-contain transition-all duration-300"
+                    class="max-h-[70dvh] max-w-[90vw] w-auto h-auto object-contain transition-all duration-300"
                     @click.stop
                   />
                 </div>
                 <div
                   v-else
-                  class="max-h-[70vh] max-w-[90vw] w-auto h-auto flex items-center justify-center min-h-[400px]"
+                  class="max-h-[70dvh] max-w-[90vw] w-auto h-auto flex items-center justify-center min-h-[400px]"
                 >
                   <div class="animate-pulse text-white/50 flex flex-col items-center">
                     <font-awesome-icon icon="spinner" spin class="text-4xl mb-2" />

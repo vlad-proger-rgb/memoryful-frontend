@@ -28,7 +28,7 @@ const onAttach = () => {
 <template>
   <div
     class="ai-panel-bg relative flex overflow-hidden rounded-[28px] border border-white/10 shadow-2xl shadow-black/50"
-    :class="fullPage ? 'w-full max-w-[900px] h-[calc(100vh-140px)]' : 'w-[720px] h-[600px]'"
+    :class="fullPage ? 'w-full max-w-[900px] h-[calc(100dvh-140px)]' : 'w-[720px] h-[600px]'"
   >
     <Transition name="ai-sidebar">
       <AiSidebar v-if="store.isSidebarOpen" />
@@ -58,7 +58,9 @@ const onAttach = () => {
 
 .ai-sidebar-enter-active,
 .ai-sidebar-leave-active {
-  transition: width 220ms ease, opacity 180ms ease;
+  transition:
+    width 220ms ease,
+    opacity 180ms ease;
   overflow: hidden;
 }
 

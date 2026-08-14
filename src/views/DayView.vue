@@ -689,7 +689,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative min-h-screen w-full overflow-x-hidden">
+  <div class="relative min-h-dvh w-full overflow-x-hidden">
     <!-- Background image -->
     <MediaBackground
       :src="background.url ?? null"
@@ -1512,7 +1512,7 @@ onUnmounted(() => {
             v-if="day.mainImage"
             :src="day.mainImage"
             :alt="day.city?.name || 'Day image'"
-            class="max-h-[90vh] max-w-[95vw] w-auto h-auto object-contain"
+            class="max-h-[90dvh] max-w-[95vw] w-auto h-auto object-contain"
             @click.stop
           />
           <!-- Close button -->

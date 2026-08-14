@@ -62,7 +62,7 @@ const repoLinks = [
 </script>
 
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.14),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#020617_100%)] text-white">
+  <div class="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.14),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_45%,#020617_100%)] text-white">
     <div class="pointer-events-none absolute inset-0">
       <div class="absolute left-[-8rem] top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl"></div>
       <div class="absolute right-[-6rem] top-16 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl"></div>

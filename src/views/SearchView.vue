@@ -269,7 +269,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="search-page relative min-h-screen w-full overflow-x-hidden">
+  <div class="search-page relative min-h-dvh w-full overflow-x-hidden">
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"

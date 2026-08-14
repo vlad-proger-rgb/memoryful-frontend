@@ -18,7 +18,7 @@ onUnmounted(() => {
 <template>
   <div
     :style="{ backgroundImage: `url(${bg})` }"
-    class="min-h-screen bg-cover bg-center flex justify-center items-center"
+    class="min-h-dvh bg-cover bg-center flex justify-center items-center"
   >
     <RouterView />
   </div>

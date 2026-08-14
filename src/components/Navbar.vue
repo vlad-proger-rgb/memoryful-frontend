@@ -21,7 +21,7 @@ const destination = (key: string) => navDestinations.find((d) => d.key === key)!
     class="flex justify-between items-center p-1 bg-[radial-gradient(circle,rgba(0,0,0,0.6)_0%,rgba(0,0,0,1)_100%)] text-white backdrop-blur-sm"
   >
     <RouterLink :to="destination('dashboard').to">
-      <img :src="logo" class="rounded-full" width="60px" height="60px" alt="Memoryful Logo" />
+      <img :src="logo" class="rounded-full w-[60px] h-[60px]" alt="Memoryful Logo" />
     </RouterLink>
 
     <RouterLink :to="destination('calendar').to" class="flex items-center">
