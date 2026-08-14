@@ -43,7 +43,9 @@ const filteredItems = computed(() => {
   if (!props.searchable || !searchQuery.value.trim()) return props.items
   const q = searchQuery.value.toLowerCase()
   return props.items.filter((item) =>
-    String(item[props.itemLabel as keyof T]).toLowerCase().includes(q),
+    String(item[props.itemLabel as keyof T])
+      .toLowerCase()
+      .includes(q),
   )
 })
 
@@ -97,9 +99,7 @@ const onMouseEnterItem = (index: number) => {
 }
 
 const updatePosition = () => {
-  const target = props.attachTo instanceof HTMLElement
-    ? props.attachTo
-    : containerRef.value
+  const target = props.attachTo instanceof HTMLElement ? props.attachTo : containerRef.value
 
   if (!target) return
 
@@ -163,45 +163,78 @@ defineExpose({
 <template>
   <div ref="containerRef" class="relative w-full">
     <Teleport to="body">
-      <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="dropdownStyle">
-        <div class="autocomplete-menu" :style="{ maxHeight }">
-          <div v-if="searchable" class="p-2 border-b border-white/10">
-            <input
-              ref="searchInput"
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search models..."
-              class="w-full bg-white/10 text-white placeholder:text-white/40 text-xs rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-fuchsia-400"
-              @click.stop
-            />
-          </div>
-          <div v-if="loading" class="p-2 text-center text-gray-400">Loading...</div>
-          <div v-else-if="filteredItems.length > 0">
-            <div
-              v-for="(item, index) in filteredItems"
-              :key="String((item as ItemWithId)[itemKey] || index)"
-              class="autocomplete-item"
-              :class="{ 'bg-white/10': selectedIndex === index }"
-              @mousedown.prevent="selectItem(item)"
-              @mouseenter="onMouseEnterItem(index)"
-            >
-              <slot name="item" :item="item" :index="index">
-                {{ item[itemLabel as keyof typeof item] }}
-              </slot>
+      <Transition name="autocomplete">
+        <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="dropdownStyle">
+          <div class="autocomplete-menu" :style="{ maxHeight }">
+            <div v-if="searchable" class="p-2 border-b border-white/10">
+              <input
+                ref="searchInput"
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search models..."
+                class="w-full bg-white/10 text-white placeholder:text-white/40 text-xs rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-fuchsia-400"
+                @click.stop
+              />
             </div>
+            <div v-if="loading" class="p-2 text-center text-gray-400">Loading...</div>
+            <div v-else-if="filteredItems.length > 0">
+              <div
+                v-for="(item, index) in filteredItems"
+                :key="String((item as ItemWithId)[itemKey] || index)"
+                class="autocomplete-item"
+                :class="{ 'bg-white/10': selectedIndex === index }"
+                @mousedown.prevent="selectItem(item)"
+                @mouseenter="onMouseEnterItem(index)"
+              >
+                <slot name="item" :item="item" :index="index">
+                  {{ item[itemLabel as keyof typeof item] }}
+                </slot>
+              </div>
+            </div>
+            <div v-else-if="$slots.empty" class="p-2">
+              <slot name="empty"></slot>
+            </div>
+            <div v-else class="p-2 text-center text-gray-400 text-xs">No matches</div>
           </div>
-          <div v-else-if="$slots.empty" class="p-2">
-            <slot name="empty"></slot>
-          </div>
-          <div v-else class="p-2 text-center text-gray-400 text-xs">No matches</div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
 
 <style>
+.autocomplete-enter-active {
+  transition:
+    opacity 120ms ease,
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.autocomplete-leave-active {
+  transition:
+    opacity 90ms ease,
+    transform 90ms ease;
+}
+
+.autocomplete-enter-from,
+.autocomplete-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .autocomplete-enter-active,
+  .autocomplete-leave-active {
+    transition-duration: 1ms;
+  }
+
+  .autocomplete-enter-from,
+  .autocomplete-leave-to {
+    transform: none;
+  }
+}
+
 .autocomplete-dropdown {
+  transform-origin: top left;
   z-index: 9999;
   background: rgb(31 41 55);
   border-radius: 0.5rem;

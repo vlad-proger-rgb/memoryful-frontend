@@ -49,10 +49,12 @@ const onAttach = () => {
     <div class="flex-1 min-w-0 flex flex-col h-full">
       <AiChatHeader :full-page="fullPage" />
 
-      <div v-if="store.isLoadingChat" class="flex-1 flex items-center justify-center">
-        <font-awesome-icon icon="circle-notch" class="animate-spin text-white/40 text-xl" />
-      </div>
-      <AiMessageList v-else @suggestion="onSuggestion" />
+      <Transition name="ai-swap" mode="out-in">
+        <div v-if="store.isLoadingChat" class="flex-1 flex items-center justify-center">
+          <font-awesome-icon icon="circle-notch" class="animate-spin text-white/40 text-xl" />
+        </div>
+        <AiMessageList v-else @suggestion="onSuggestion" />
+      </Transition>
 
       <AiMessageInput ref="inputRef" @attach="onAttach" />
     </div>
@@ -108,5 +110,19 @@ const onAttach = () => {
 .ai-scrim-enter-from,
 .ai-scrim-leave-to {
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-sidebar-enter-active,
+  .ai-sidebar-leave-active,
+  .ai-scrim-enter-active,
+  .ai-scrim-leave-active {
+    transition-duration: 1ms;
+  }
+
+  .ai-sidebar-enter-from,
+  .ai-sidebar-leave-to {
+    transform: none;
+  }
 }
 </style>

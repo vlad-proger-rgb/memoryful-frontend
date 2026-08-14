@@ -1,9 +1,5 @@
 @import 'tailwindcss';
 
-/* Reveals what a hover-reveal hides. Overrides the base class rather than gating it, so it
-   always sorts later and desktop hover keeps working untouched. Two @media blocks, not one
-   comma list — the shorthand `@custom-variant touch (...)` form silently drops all but the
-   first condition. */
 @custom-variant touch {
   @media (hover: none) {
     @slot;
@@ -14,16 +10,42 @@
 }
 
 :root {
-  /* 60px logo + the nav's p-1. Everything that clears the fixed header reads this,
-     rather than each caller guessing its own 60/68/72. */
   --app-header-height: 68px;
-  /* The floating glass capsule, and how far it clears the screen edge. */
   --bottom-nav-height: 64px;
   --bottom-nav-gap: 12px;
-  /* What content actually has to clear — capsule, its gap, and the home-indicator gutter. */
   --bottom-nav-total: calc(
     var(--bottom-nav-height) + var(--bottom-nav-gap) + env(safe-area-inset-bottom, 0px)
   );
+}
+
+.ai-swap-enter-active {
+  transition:
+    opacity 160ms ease,
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ai-swap-leave-active {
+  transition: opacity 60ms ease;
+}
+
+.ai-swap-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.ai-swap-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-swap-enter-active,
+  .ai-swap-leave-active {
+    transition-duration: 1ms;
+  }
+
+  .ai-swap-enter-from {
+    transform: none;
+  }
 }
 
 .shake-animation {

@@ -3,7 +3,6 @@ import { onBeforeUnmount, watch } from 'vue'
 
 const props = defineProps<{
   show: boolean
-  /** Names the menu for screen readers — usually what the actions apply to. */
   label?: string
   title?: string
 }>()
@@ -28,21 +27,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <!-- z-[80] clears AiChatPanel's z-[71] panel; anything lower renders behind the
-       full-screen mobile panel and is invisible. -->
   <Teleport to="body">
-    <Transition
-      enter-active-class="transition-opacity duration-150"
-      leave-active-class="transition-opacity duration-150"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
-    >
+    <Transition name="sheet">
       <div v-if="show" class="fixed inset-0 z-[80] flex flex-col justify-end">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close" />
         <div
           role="menu"
           :aria-label="label"
-          class="relative flex max-h-[75dvh] flex-col rounded-t-2xl border-t border-white/10 bg-[#14141b] pb-[env(safe-area-inset-bottom,0px)]"
+          class="sheet-panel relative flex max-h-[75dvh] flex-col rounded-t-2xl border-t border-white/10 bg-[#14141b] pb-[env(safe-area-inset-bottom,0px)]"
         >
           <div class="shrink-0 px-4 pt-3 pb-2">
             <div class="mx-auto mb-3 h-1 w-9 rounded-full bg-white/20" />
@@ -56,3 +48,40 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.sheet-enter-active .sheet-panel {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sheet-leave-active .sheet-panel {
+  transition: transform 200ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+
+.sheet-enter-from .sheet-panel,
+.sheet-leave-to .sheet-panel {
+  transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter-active .sheet-panel,
+  .sheet-leave-active .sheet-panel {
+    transition: none;
+  }
+
+  .sheet-enter-from .sheet-panel,
+  .sheet-leave-to .sheet-panel {
+    transform: none;
+  }
+}
+</style>
