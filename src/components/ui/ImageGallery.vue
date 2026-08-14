@@ -73,7 +73,7 @@
               aria-label="Previous image"
             >
               <div
-                class="h-24 w-10 flex items-center justify-center rounded-r-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-110 group-hover:scale-110"
+                class="h-24 w-10 flex items-center justify-center rounded-r-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 touch:opacity-100 scale-110 group-hover:scale-110"
               >
                 <font-awesome-icon icon="chevron-left" class="h-7 w-7 text-white" />
               </div>
@@ -88,7 +88,7 @@
               aria-label="Next image"
             >
               <div
-                class="h-24 w-10 flex items-center justify-center rounded-l-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-110 group-hover:scale-110"
+                class="h-24 w-10 flex items-center justify-center rounded-l-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 touch:opacity-100 scale-110 group-hover:scale-110"
               >
                 <font-awesome-icon icon="chevron-right" class="h-7 w-7 text-white" />
               </div>

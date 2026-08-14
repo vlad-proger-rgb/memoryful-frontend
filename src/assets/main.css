@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+/* Reveals what a hover-reveal hides. Overrides the base class rather than gating it, so it
+   always sorts later and desktop hover keeps working untouched. Two @media blocks, not one
+   comma list — the shorthand `@custom-variant touch (...)` form silently drops all but the
+   first condition. */
+@custom-variant touch {
+  @media (hover: none) {
+    @slot;
+  }
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
 :root {
   /* 60px logo + the nav's p-1. Everything that clears the fixed header reads this,
      rather than each caller guessing its own 60/68/72. */

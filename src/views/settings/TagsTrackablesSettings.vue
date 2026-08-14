@@ -459,6 +459,7 @@ onMounted(async () => {
             class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
             :class="!newTagName.trim() ? 'opacity-60 cursor-not-allowed hover:scale-100 hover:ring-0' : ''"
             :disabled="!newTagName.trim()"
+            aria-label="Pick an icon"
             title="Pick an icon"
             @click="newTagIconSelectorOpen = true"
           >
@@ -494,6 +495,7 @@ onMounted(async () => {
             <input
               v-model="newTagColor"
               type="color"
+              aria-label="Pick a color"
               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               :disabled="!newTagName.trim()"
             />
@@ -539,6 +541,7 @@ onMounted(async () => {
                   :ref="(el) => { if (el) tagIconButtonRefs[t.id] = el as HTMLElement }"
                   type="button"
                   class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
+                  aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="tagIconSelectorOpen[t.id] = true"
                 >
@@ -570,7 +573,7 @@ onMounted(async () => {
                     class="absolute inset-0 transition-[filter] duration-150 ease-out group-hover:brightness-110"
                     :style="{ backgroundColor: normalizeHexColor(t.color || '') || 'rgba(0,0,0,0.2)' }"
                   />
-                  <input v-model="t.color" type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <input v-model="t.color" type="color" aria-label="Pick a color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 </label>
                 <input
                   v-model="t.color"
@@ -623,6 +626,7 @@ onMounted(async () => {
                   ref="newTrackableTypeIconButtonRef"
                   type="button"
                   class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="newTrackableTypeIconSelectorOpen = true"
                 >
@@ -712,6 +716,7 @@ onMounted(async () => {
                   :ref="(el) => { if (el) trackableTypeIconButtonRefs[tt.id] = el as HTMLElement }"
                   type="button"
                   class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="trackableTypeIconSelectorOpen[tt.id] = true"
                 >
@@ -783,6 +788,7 @@ onMounted(async () => {
                 ref="newTrackableIconButtonRef"
                 type="button"
                 class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                aria-label="Pick an icon"
                 title="Pick an icon"
                 @click="newTrackableIconSelectorOpen = true"
               >
@@ -882,6 +888,7 @@ onMounted(async () => {
                   :ref="(el) => { if (el) trackableIconButtonRefs[t.id] = el as HTMLElement }"
                   type="button"
                   class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="trackableIconSelectorOpen[t.id] = true"
                 >

@@ -123,8 +123,9 @@ const copyContent = async () => {
 
       <button
         type="button"
-        class="absolute -bottom-2.5 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full size-6 flex items-center justify-center"
+        class="absolute -bottom-2.5 opacity-0 group-hover:opacity-100 focus:opacity-100 touch:opacity-100 transition-opacity duration-150 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full size-6 flex items-center justify-center"
         :class="isUser ? 'left-2' : 'right-2'"
+        :aria-label="isCopied ? 'Copied' : 'Copy message'"
         title="Copy"
         @click="copyContent"
       >

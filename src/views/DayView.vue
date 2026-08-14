@@ -275,6 +275,9 @@ const addTrackableProgress = () => {
   isTrackableItemDropdownOpen.value = false
 }
 
+const trackableTitle = (trackableItemId: string) =>
+  trackables.value.find((t) => t.id === trackableItemId)?.title || 'Unknown trackable'
+
 const removeTrackableProgress = (trackableItemId: string) => {
   editForm.trackableProgresses = editForm.trackableProgresses.filter(
     (p) => p.trackableItemId !== trackableItemId,
@@ -711,6 +714,8 @@ onUnmounted(() => {
             @click="toggleStarred"
             class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             :class="{ 'text-yellow-400': day.starred, 'text-white/60': !day.starred }"
+            :aria-label="day.starred ? 'Remove from favorites' : 'Add to favorites'"
+            :aria-pressed="!!day.starred"
             :title="day.starred ? 'Remove from favorites' : 'Add to favorites'"
           >
             <font-awesome-icon :icon="day.starred ? 'star' : ['far', 'star']" class="text-xl" />
@@ -759,7 +764,12 @@ onUnmounted(() => {
           <div
             class="relative w-full aspect-video group"
             :class="{ 'cursor-pointer': day.mainImage }"
+            :role="day.mainImage ? 'button' : undefined"
+            :tabindex="day.mainImage ? 0 : undefined"
+            :aria-label="day.mainImage ? 'View image fullscreen' : undefined"
             @click="openImageFullscreen"
+            @keydown.enter="openImageFullscreen"
+            @keydown.space.prevent="openImageFullscreen"
           >
             <DayImage
               v-if="day.mainImage"
@@ -942,7 +952,7 @@ onUnmounted(() => {
                   <font-awesome-icon icon="lightbulb" class="text-yellow-400" />
                   Insights
                 </h4>
-                <div class="text-white/40 text-xs text-center mb-3 italic">
+                <div class="text-white/40 text-xs text-center mb-3 italic touch:hidden">
                   <font-awesome-icon icon="info-circle" class="mr-1" />
                   Hover over insights to reveal the Discuss button
                 </div>
@@ -966,7 +976,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                     <button
-                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg touch:static touch:mt-3 touch:ml-auto touch:block touch:w-fit touch:opacity-100"
                       @click="handleDiscuss(insight, 'insight')"
                     >
                       <font-awesome-icon icon="comments" class="mr-2" />
@@ -985,7 +995,7 @@ onUnmounted(() => {
                   <font-awesome-icon icon="magic" class="text-purple-400" />
                   Suggestions
                 </h4>
-                <div class="text-white/40 text-xs text-center mb-3 italic">
+                <div class="text-white/40 text-xs text-center mb-3 italic touch:hidden">
                   <font-awesome-icon icon="info-circle" class="mr-1" />
                   Hover over suggestions to reveal the Discuss button
                 </div>
@@ -1009,7 +1019,7 @@ onUnmounted(() => {
                       </div>
                     </div>
                     <button
-                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg"
+                      class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg touch:static touch:mt-3 touch:ml-auto touch:block touch:w-fit touch:opacity-100"
                       @click="handleDiscuss(suggestion, 'suggestion')"
                     >
                       <font-awesome-icon icon="comments" class="mr-2" />
@@ -1327,10 +1337,7 @@ onUnmounted(() => {
                   >
                     <div class="min-w-0">
                       <div class="text-white/90 font-medium truncate">
-                        {{
-                          trackables.find((t) => t.id === p.trackableItemId)?.title ||
-                          'Unknown trackable'
-                        }}
+                        {{ trackableTitle(p.trackableItemId) }}
                       </div>
                       <div class="text-white/60 text-sm">
                         {{ p.value }}
@@ -1342,6 +1349,7 @@ onUnmounted(() => {
                         type="button"
                         class="text-white/50 hover:text-white/80 transition-colors"
                         @click="editTrackableProgress(p)"
+                        :aria-label="`Edit ${trackableTitle(p.trackableItemId)}`"
                         title="Edit"
                       >
                         <font-awesome-icon icon="pen" />
@@ -1350,6 +1358,7 @@ onUnmounted(() => {
                         type="button"
                         class="text-red-200/80 hover:text-red-200 transition-colors"
                         @click="removeTrackableProgress(p.trackableItemId)"
+                        :aria-label="`Remove ${trackableTitle(p.trackableItemId)}`"
                         title="Remove"
                       >
                         <font-awesome-icon icon="times" />
@@ -1407,7 +1416,8 @@ onUnmounted(() => {
                     <button
                       type="button"
                       @click="removeImage(index)"
-                      class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      :aria-label="`Remove image ${index + 1}`"
+                      class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
                     >
                       <font-awesome-icon icon="times" class="text-white" />
                     </button>
@@ -1514,6 +1524,7 @@ onUnmounted(() => {
           <button
             @click="closeImageFullscreen"
             class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-black/50 p-2 rounded-full"
+            aria-label="Close fullscreen"
             title="Close fullscreen"
           >
             <font-awesome-icon icon="times" class="h-6 w-6" />
