@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRouter, RouterView } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter, RouterView } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
@@ -79,6 +79,19 @@ const sections = [
   { to: '/settings/connected-apps', label: 'Extensions (soon)', icon: 'sliders' },
 ] as const
 
+const route = useRoute()
+const sectionNav = ref<HTMLElement | null>(null)
+
+// The nav is a horizontal scroller below md, so the active section can start out off-screen.
+const revealActiveSection = () => {
+  const nav = sectionNav.value
+  if (!nav || nav.scrollWidth <= nav.clientWidth) return
+  nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' })
+}
+
+onMounted(revealActiveSection)
+watch(() => route.path, revealActiveSection, { flush: 'post' })
+
 const handleLogout = async () => {
   if (isLoggingOut.value) return
 
@@ -101,7 +114,9 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-var(--app-header-height))] text-white">
+  <div
+    class="min-h-[calc(100dvh-var(--bottom-nav-total))] md:min-h-[calc(100dvh-var(--app-header-height))] text-white"
+  >
     <MediaBackground
       :src="settingsBackground.url ?? null"
       :is-video="settingsBackground.isVideo"
@@ -112,10 +127,10 @@ const handleLogout = async () => {
 
     <div class="w-full max-w-[1200px] mx-auto px-4">
       <div
-        class="sticky top-[var(--app-header-height)] z-20 pt-6 pb-4 flex items-center justify-between pointer-events-none"
+        class="md:sticky md:top-[var(--app-header-height)] z-20 pt-4 pb-4 md:pt-6 flex items-center justify-between pointer-events-none"
       >
-        <div class="flex items-center gap-4">
-          <div class="w-[120px] h-[120px] rounded-full overflow-hidden">
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="w-20 h-20 md:w-[120px] md:h-[120px] shrink-0 rounded-full overflow-hidden">
             <input
               ref="fileInput"
               type="file"
@@ -133,15 +148,53 @@ const handleLogout = async () => {
               @keydown.space.prevent="handleAvatarPick"
             />
           </div>
-          <div>
-            <p class="text-lg leading-normal">Welcome,</p>
-            <p class="text-2xl font-bold leading-normal">{{ displayName }}</p>
+          <div class="min-w-0">
+            <p class="text-base md:text-lg leading-normal">Welcome,</p>
+            <p class="text-xl md:text-2xl font-bold leading-normal truncate">{{ displayName }}</p>
           </div>
         </div>
+
+        <button
+          class="pointer-events-auto shrink-0 backdrop-blur-[17.5px] bg-[rgba(191,47,47,0.2)] border border-red-400 px-4 py-2 min-h-11 md:min-h-0 rounded-full flex items-center gap-2 text-base text-red-300 [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-red-400/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:ring-0"
+          @click="handleLogout"
+          :disabled="isLoggingOut"
+        >
+          <span class="text-sm font-semibold whitespace-nowrap">
+            {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
+          </span>
+          <span class="flex items-center">
+            <svg
+              v-if="isLoggingOut"
+              class="h-4 w-4 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+            <font-awesome-icon v-else icon="right-from-bracket" class="text-sm" />
+          </span>
+        </button>
       </div>
 
-      <div class="flex gap-6 items-start pb-8">
-        <aside class="w-[240px] sticky top-[212px] self-start flex flex-col gap-3">
+      <div class="flex flex-col gap-6 md:flex-row md:items-start pb-8">
+        <!-- py-1 is not spacing: overflow-x-auto forces overflow-y to auto, which would clip the active pill's ring. -->
+        <nav
+          ref="sectionNav"
+          class="flex gap-2 overflow-x-auto -mx-4 px-4 py-1 md:mx-0 md:px-0 md:py-0 md:w-[240px] md:shrink-0 md:sticky md:top-[calc(var(--app-header-height)+144px)] md:flex-col md:gap-3 md:overflow-visible"
+        >
           <SettingsSectionButton
             v-for="s in sections"
             :key="s.to"
@@ -149,43 +202,11 @@ const handleLogout = async () => {
             :label="s.label"
             :icon="s.icon"
           />
+        </nav>
 
-          <button
-            class="mt-2 backdrop-blur-[17.5px] bg-[rgba(191,47,47,0.2)] border border-red-500 px-4 py-2 rounded-full flex items-center justify-between text-base text-[#bf2f2f] transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-red-500/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:ring-0"
-            @click="handleLogout"
-            :disabled="isLoggingOut"
-          >
-            <span class="text-sm">{{ isLoggingOut ? 'Signing out…' : 'Sign out' }}</span>
-            <span class="flex items-center">
-              <svg
-                v-if="isLoggingOut"
-                class="h-4 w-4 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                />
-              </svg>
-              <font-awesome-icon v-else icon="right-from-bracket" class="text-sm" />
-            </span>
-          </button>
-        </aside>
-
-        <main class="flex-1">
+        <main class="w-full min-w-0 md:flex-1">
           <div
-            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] rounded-3xl overflow-hidden px-6 py-6"
+            class="backdrop-blur-[17.5px] bg-[rgba(255,255,255,0.2)] rounded-3xl overflow-hidden px-4 py-5 md:px-6 md:py-6"
           >
             <RouterView />
           </div>

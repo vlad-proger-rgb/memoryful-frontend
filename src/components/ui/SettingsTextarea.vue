@@ -15,7 +15,8 @@ const emit = defineEmits<{
 
 const attrs = useAttrs()
 
-const baseClass = 'w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none resize-none text-sm'
+const baseClass =
+  'w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none resize-none text-base md:text-sm'
 
 const mergedClass = computed(() => {
   const extra = attrs.class
@@ -31,9 +32,5 @@ const onInput = (e: Event) => {
 </script>
 
 <template>
-  <textarea
-    v-bind="{ ...attrs, class: mergedClass }"
-    :value="modelValue"
-    @input="onInput"
-  />
+  <textarea v-bind="{ ...attrs, class: mergedClass }" :value="modelValue" @input="onInput" />
 </template>
