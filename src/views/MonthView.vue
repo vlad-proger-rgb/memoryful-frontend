@@ -20,6 +20,15 @@ import MediaBackground from '@/components/ui/MediaBackground.vue'
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
 
+function formatDate(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
 function getDaysInMonth(year: number, month: number) {
   // Note: month is 0-indexed (0 = January, 11 = December)
   // Passing 0 as the day parameter gets the last day of the previous month
@@ -150,7 +159,11 @@ const toggleStarred = async (date: string | number) => {
       <div v-for="(day, idx) in days" :key="idx" class="w-full">
         <DayCard>
           <template #image>
-            <DayImage :src="day.mainImage" :alt="day.mainImage" size="small" />
+            <DayImage
+              :src="day.mainImage"
+              :alt="`Main photo for ${formatDate(day.timestamp)}`"
+              size="card"
+            />
           </template>
           <template #info>
             <DayInfo
@@ -173,7 +186,7 @@ const toggleStarred = async (date: string | number) => {
           </template>
           <template #open>
             <MainButton
-              class="ml-4 whitespace-nowrap"
+              class="whitespace-nowrap"
               @click="
                 router.push(
                   `/calendar/${new Date(day.timestamp).getFullYear()}/${

@@ -1,5 +1,16 @@
+<script setup lang="ts">
+import type { DayTrackableProgress } from '@/types/day-trackable-progress'
+import { getIcon } from '@/plugins/fontawesome'
+
+defineProps<{
+  trackableProgresses: DayTrackableProgress[]
+}>()
+</script>
+
 <template>
-  <div class="flex flex-wrap items-center w-[200px] bg-white/30 px-5 py-2 gap-2 rounded-2xl">
+  <div
+    class="flex flex-wrap items-center w-full md:w-[200px] bg-white/30 px-5 py-2 gap-2 rounded-2xl"
+  >
     <div
       v-for="progress in trackableProgresses"
       :key="progress.trackableItem.id"
@@ -15,12 +26,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { DayTrackableProgress } from '@/types/day-trackable-progress'
-import { getIcon } from '@/plugins/fontawesome'
-
-defineProps<{
-  trackableProgresses: DayTrackableProgress[]
-}>()
-</script>

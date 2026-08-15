@@ -50,9 +50,9 @@ const onGrayStarAnimationEnd = () => {
 </script>
 
 <template>
-  <div class="flex items-start justify-between w-full">
-    <div>
-      <div class="text-2xl font-semibold">
+  <div class="flex items-start justify-between w-full gap-2">
+    <div class="min-w-0">
+      <div class="text-2xl font-semibold break-words">
         {{
           new Date(date).toLocaleDateString('en-US', {
             weekday: 'long',
@@ -62,11 +62,13 @@ const onGrayStarAnimationEnd = () => {
           })
         }}
       </div>
-      <div v-if="description" class="text-base mt-1 whitespace-pre-line">{{ description }}</div>
+      <div v-if="description" class="text-base mt-1 whitespace-pre-line break-words">
+        {{ description }}
+      </div>
       <div v-else class="text-base mt-1 whitespace-pre-line">No description</div>
     </div>
     <button
-      class="ml-4 text-white text-2xl hover:cursor-pointer"
+      class="shrink-0 text-white text-2xl hover:cursor-pointer"
       @click="exists ? toggleStarred() : showTooltipForGrayStar()"
     >
       <span class="relative">
