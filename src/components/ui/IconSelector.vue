@@ -3,7 +3,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { far } from '@fortawesome/free-regular-svg-icons'
 import { fab } from '@fortawesome/free-brands-svg-icons'
-import { onKeyStroke, onClickOutside, useEventListener, useDebounceFn } from '@vueuse/core'
+import { onKeyStroke, onClickOutside, useDebounceFn } from '@vueuse/core'
+import { useAnchoredPosition } from '@/composables/useAnchoredPosition'
 import type { IconStyle } from '@/types/fontawesome'
 
 interface IconItem {
@@ -37,7 +38,6 @@ const searchInput = ref<HTMLInputElement | null>(null)
 const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
 const selectedIndex = ref(-1)
-const selectorStyle = ref<Record<string, string>>({})
 
 const updateDebouncedSearch = useDebounceFn(() => {
   debouncedSearchQuery.value = searchQuery.value
@@ -47,7 +47,12 @@ const allIcons = computed<IconItem[]>(() => {
   const icons: IconItem[] = []
 
   Object.values(fas).forEach((icon) => {
-    if (icon && typeof icon === 'object' && 'iconName' in icon && typeof icon.iconName === 'string') {
+    if (
+      icon &&
+      typeof icon === 'object' &&
+      'iconName' in icon &&
+      typeof icon.iconName === 'string'
+    ) {
       icons.push({
         name: icon.iconName,
         icon: icon.iconName,
@@ -58,7 +63,12 @@ const allIcons = computed<IconItem[]>(() => {
   })
 
   Object.values(far).forEach((icon) => {
-    if (icon && typeof icon === 'object' && 'iconName' in icon && typeof icon.iconName === 'string') {
+    if (
+      icon &&
+      typeof icon === 'object' &&
+      'iconName' in icon &&
+      typeof icon.iconName === 'string'
+    ) {
       icons.push({
         name: icon.iconName,
         icon: icon.iconName,
@@ -69,7 +79,12 @@ const allIcons = computed<IconItem[]>(() => {
   })
 
   Object.values(fab).forEach((icon) => {
-    if (icon && typeof icon === 'object' && 'iconName' in icon && typeof icon.iconName === 'string') {
+    if (
+      icon &&
+      typeof icon === 'object' &&
+      'iconName' in icon &&
+      typeof icon.iconName === 'string'
+    ) {
       icons.push({
         name: icon.iconName,
         icon: icon.iconName,
@@ -96,9 +111,8 @@ const filteredIcons = computed(() => {
     return allIcons.value.slice(0, 200)
   }
 
-  return allIcons.value.filter(icon =>
-    icon.name.includes(query) ||
-    icon.displayName.includes(query)
+  return allIcons.value.filter(
+    (icon) => icon.name.includes(query) || icon.displayName.includes(query),
   )
 })
 
@@ -168,36 +182,11 @@ const scrollToSelected = () => {
   }
 }
 
-const updatePosition = () => {
-  const target = props.attachTo
-  if (!target) return
-
-  const rect = target.getBoundingClientRect()
-  const viewportHeight = window.innerHeight
-  const spaceBelow = viewportHeight - rect.bottom
-  const spaceAbove = rect.top
-
-  const selectorHeight = 420
-  const shouldOpenAbove = spaceBelow < selectorHeight && spaceAbove > spaceBelow
-
-  if (shouldOpenAbove) {
-    selectorStyle.value = {
-      position: 'fixed',
-      bottom: `${viewportHeight - rect.top + 4}px`,
-      left: `${rect.left}px`,
-      width: '380px',
-      maxHeight: `${Math.min(400, spaceAbove - 20)}px`,
-    }
-  } else {
-    selectorStyle.value = {
-      position: 'fixed',
-      top: `${rect.bottom + 4}px`,
-      left: `${rect.left}px`,
-      width: '380px',
-      maxHeight: `${Math.min(400, spaceBelow - 20)}px`,
-    }
-  }
-}
+const { style: selectorStyle, updatePosition } = useAnchoredPosition(() => props.attachTo, {
+  width: 380,
+  maxHeight: 420,
+  margin: 16,
+})
 
 onClickOutside(selectorRef, (event) => {
   if (!props.show) return
@@ -209,9 +198,6 @@ onClickOutside(selectorRef, (event) => {
     searchQuery.value = ''
   }
 })
-
-useEventListener('resize', updatePosition)
-useEventListener('scroll', updatePosition, { capture: true })
 
 watch(
   () => props.show,
@@ -247,7 +233,10 @@ watch(debouncedSearchQuery, () => {
     >
       <div class="p-4 border-b border-white/10 bg-black/15">
         <div class="relative flex items-center">
-          <font-awesome-icon icon="search" class="absolute left-3.5 text-white/50 text-sm pointer-events-none" />
+          <font-awesome-icon
+            icon="search"
+            class="absolute left-3.5 text-white/50 text-sm pointer-events-none"
+          />
           <input
             ref="searchInput"
             v-model="searchQuery"
@@ -265,8 +254,13 @@ watch(debouncedSearchQuery, () => {
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 hover:scrollbar-thumb-white/30">
-        <div v-if="filteredIcons.length === 0" class="flex flex-col items-center justify-center py-12 px-4 gap-3">
+      <div
+        class="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 hover:scrollbar-thumb-white/30"
+      >
+        <div
+          v-if="filteredIcons.length === 0"
+          class="flex flex-col items-center justify-center py-12 px-4 gap-3"
+        >
           <font-awesome-icon icon="search" class="text-[2.5rem] text-white/20" />
           <p class="text-white/50 text-sm">No icons found</p>
         </div>
@@ -276,12 +270,19 @@ watch(debouncedSearchQuery, () => {
             v-for="(icon, index) in filteredIcons"
             :key="`${icon.prefix}-${icon.name}-${index}`"
             class="aspect-square flex items-center justify-center bg-black/20 border border-white/10 rounded-lg cursor-pointer transition-all duration-150 relative group hover:bg-blue-400/15 hover:border-blue-400/30 hover:scale-105 active:scale-95"
-            :class="selectedIndex === index ? 'bg-blue-400/20 border-blue-400/40 shadow-[0_0_0_2px_rgba(96,165,250,0.2)]' : ''"
+            :class="
+              selectedIndex === index
+                ? 'bg-blue-400/20 border-blue-400/40 shadow-[0_0_0_2px_rgba(96,165,250,0.2)]'
+                : ''
+            "
             :title="`${icon.displayName} (${icon.prefix})`"
             @click="selectIcon(icon)"
             @mouseenter="selectedIndex = index"
           >
-            <div class="absolute inset-0 rounded-lg bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-150 group-hover:opacity-100" :class="selectedIndex === index ? 'opacity-100' : ''" />
+            <div
+              class="absolute inset-0 rounded-lg bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              :class="selectedIndex === index ? 'opacity-100' : ''"
+            />
             <font-awesome-icon
               :icon="[icon.prefix, icon.icon]"
               class="text-lg text-white/90 transition-colors duration-150 relative z-10 group-hover:text-white"
@@ -291,7 +292,9 @@ watch(debouncedSearchQuery, () => {
         </div>
       </div>
 
-      <div class="flex items-center justify-between py-2.5 px-4 border-t border-white/10 bg-black/15">
+      <div
+        class="flex items-center justify-between py-2.5 px-4 border-t border-white/10 bg-black/15"
+      >
         <span class="text-xs text-white/50">{{ filteredIcons.length }} icons</span>
         <span class="text-xs text-white/50 font-mono">Press ESC to close</span>
       </div>

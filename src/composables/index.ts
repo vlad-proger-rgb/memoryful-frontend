@@ -1,3 +1,4 @@
+export * from './useAnchoredPosition'
 export * from './useApiError'
 export * from './useAuthUtils'
 export * from './useAutocomplete'

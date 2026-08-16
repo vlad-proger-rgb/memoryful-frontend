@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
+import { useAnchoredPosition } from '@/composables/useAnchoredPosition'
 
 type ItemWithId = { id: string | number } & Record<string, unknown>
 
@@ -32,10 +33,29 @@ const emit = defineEmits<{
 }>()
 
 const dropdownRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const searchInput = ref<HTMLInputElement | null>(null)
 const selectedIndex = ref(-1)
-const dropdownStyle = ref<Record<string, string>>({})
+
+const naturalHeight = () => {
+  const listMax = parseInt(props.maxHeight, 10) || 200
+  if (!dropdownRef.value || !menuRef.value) return listMax
+
+  // The menu shrinks to whatever cap the last run applied, so only its scrollHeight
+  // still reports the list's real size; measuring the panel would ratchet downward.
+  const chrome = dropdownRef.value.offsetHeight - menuRef.value.offsetHeight
+  return Math.min(menuRef.value.scrollHeight, listMax) + chrome
+}
+
+const { style: dropdownStyle, updatePosition } = useAnchoredPosition(
+  () => (props.attachTo instanceof HTMLElement ? props.attachTo : containerRef.value),
+  () => ({
+    width: 'anchor',
+    minWidth: parseInt(props.minWidth, 10) || 0,
+    maxHeight: naturalHeight(),
+  }),
+)
 
 const searchQuery = ref('')
 
@@ -98,21 +118,6 @@ const onMouseEnterItem = (index: number) => {
   selectedIndex.value = index
 }
 
-const updatePosition = () => {
-  const target = props.attachTo instanceof HTMLElement ? props.attachTo : containerRef.value
-
-  if (!target) return
-
-  const rect = target.getBoundingClientRect()
-  dropdownStyle.value = {
-    position: 'fixed',
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.left}px`,
-    width: `${rect.width}px`,
-    minWidth: props.minWidth,
-  }
-}
-
 // Close dropdown when clicking outside
 const onClickOutside = (event: MouseEvent) => {
   const targetNode = event.target as Node
@@ -134,6 +139,9 @@ watch(
       searchQuery.value = ''
       await nextTick()
       updatePosition()
+      // The first pass sets the width; only then does scrollHeight reflect the real wrapping.
+      await nextTick()
+      updatePosition()
       selectedIndex.value = -1
       searchInput.value?.focus()
     }
@@ -143,15 +151,11 @@ watch(
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown)
   document.addEventListener('click', onClickOutside, { capture: true })
-  window.addEventListener('resize', updatePosition)
-  window.addEventListener('scroll', updatePosition, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeyDown)
   document.removeEventListener('click', onClickOutside, { capture: true })
-  window.removeEventListener('resize', updatePosition)
-  window.removeEventListener('scroll', updatePosition, true)
 })
 
 defineExpose({
@@ -165,7 +169,7 @@ defineExpose({
     <Teleport to="body">
       <Transition name="autocomplete">
         <div v-if="show" ref="dropdownRef" class="autocomplete-dropdown" :style="dropdownStyle">
-          <div class="autocomplete-menu" :style="{ maxHeight }">
+          <div ref="menuRef" class="autocomplete-menu" :style="{ maxHeight }">
             <div v-if="searchable" class="p-2 border-b border-white/10">
               <input
                 ref="searchInput"
@@ -236,6 +240,9 @@ defineExpose({
 .autocomplete-dropdown {
   transform-origin: top left;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: rgb(31 41 55);
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -247,6 +254,7 @@ defineExpose({
 .autocomplete-menu {
   position: relative;
   width: 100%;
+  min-height: 0;
   max-height: 200px;
   overflow-y: auto;
   border-radius: 0.5rem;
