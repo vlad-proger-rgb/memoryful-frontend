@@ -182,7 +182,7 @@ const buildQueryParams = () => {
   if (endDate.value) params.endDate = endDate.value.toISOString().split('T')[0]
   if (selectedCountry.value) params.countryId = String(selectedCountry.value.id)
   if (selectedCity.value) params.cityId = String(selectedCity.value.id)
-  if (selectedTags.value.length) params.tags = selectedTags.value.map(t => t.name).join(',')
+  if (selectedTags.value.length) params.tags = selectedTags.value.map((t) => t.name).join(',')
   return params
 }
 
@@ -236,14 +236,30 @@ const restoreFiltersFromUrl = async () => {
   if (q.tags) {
     const tagNames = String(q.tags).split(',')
     await fetchTags()
-    selectedTags.value = availableTags.value.filter(t => tagNames.includes(t.name))
+    selectedTags.value = availableTags.value.filter((t) => tagNames.includes(t.name))
   }
 
   // If any filters were present, show settings and trigger search
-  const hasFilters = q.q || q.similarity || q.starred || q.startDate || q.endDate || q.countryId || q.cityId || q.tags
+  const hasFilters =
+    q.q ||
+    q.similarity ||
+    q.starred ||
+    q.startDate ||
+    q.endDate ||
+    q.countryId ||
+    q.cityId ||
+    q.tags
   if (hasFilters) {
     // Show settings if advanced filters are used
-    if (q.similarity || q.starred || q.startDate || q.endDate || q.countryId || q.cityId || q.tags) {
+    if (
+      q.similarity ||
+      q.starred ||
+      q.startDate ||
+      q.endDate ||
+      q.countryId ||
+      q.cityId ||
+      q.tags
+    ) {
       showSettings.value = true
     }
     searchDays()
@@ -252,13 +268,22 @@ const restoreFiltersFromUrl = async () => {
 
 // Watch filters and update URL
 watch(
-  [query, similaritySearch, starredOnly, startDate, endDate, selectedCountry, selectedCity, selectedTags],
+  [
+    query,
+    similaritySearch,
+    starredOnly,
+    startDate,
+    endDate,
+    selectedCountry,
+    selectedCity,
+    selectedTags,
+  ],
   () => {
     if (hasSearched.value) {
       updateUrlParams()
     }
   },
-  { deep: true }
+  { deep: true },
 )
 
 onMounted(async () => {
@@ -283,13 +308,15 @@ onMounted(async () => {
       <!-- Search Box -->
       <div class="w-full max-w-3xl mb-6">
         <div
-          class="glass-pill flex items-center gap-5 px-4 py-3 cursor-text"
+          class="glass-pill flex items-center gap-2 px-3 py-1 cursor-text"
           @click="($refs.searchInput as HTMLInputElement)?.focus()"
         >
           <!-- Settings Gear -->
           <button
             type="button"
-            class="shrink-0 text-white/80 hover:text-white transition-colors"
+            class="shrink-0 size-11 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Search options"
+            :aria-expanded="showSettings"
             @click.stop="toggleSettings"
           >
             <font-awesome-icon icon="gear" class="text-2xl" />
@@ -301,14 +328,15 @@ onMounted(async () => {
             v-model="query"
             type="text"
             placeholder="Quick Search with AI"
-            class="flex-1 bg-transparent outline-none text-white text-xl tracking-wider placeholder-white/60"
+            class="flex-1 min-w-0 bg-transparent outline-none text-white text-xl tracking-wider placeholder-white/60"
             @keyup.enter="handleSubmit"
           />
 
           <!-- Search Button -->
           <button
             type="button"
-            class="shrink-0 text-white/80 hover:text-white transition-colors"
+            class="shrink-0 size-11 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Search"
             @click="handleSubmit"
           >
             <font-awesome-icon icon="magnifying-glass" class="text-2xl" />
@@ -321,7 +349,9 @@ onMounted(async () => {
         <div v-if="showSettings" class="w-full max-w-3xl mb-6">
           <div class="glass-pill-lg flex flex-col gap-3 p-4">
             <!-- Similarity Search Toggle -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+            <div
+              class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
+            >
               <span class="text-xl max-md:text-lg text-white">Similarity Search</span>
               <button
                 type="button"
@@ -334,7 +364,9 @@ onMounted(async () => {
             </div>
 
             <!-- Starred Filter -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+            <div
+              class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
+            >
               <span class="text-xl max-md:text-lg text-white">Starred</span>
               <button
                 type="button"
@@ -347,7 +379,9 @@ onMounted(async () => {
             </div>
 
             <!-- Start Date -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+            <div
+              class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
+            >
               <span class="text-xl max-md:text-lg text-white">Start Date</span>
               <div class="date-picker-wrapper">
                 <VueDatePicker
@@ -363,7 +397,9 @@ onMounted(async () => {
             </div>
 
             <!-- End Date -->
-            <div class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+            <div
+              class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
+            >
               <span class="text-xl max-md:text-lg text-white">End Date</span>
               <div class="date-picker-wrapper">
                 <VueDatePicker
@@ -379,7 +415,9 @@ onMounted(async () => {
             </div>
 
             <!-- Location -->
-            <div class="flex flex-wrap items-start justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
+            <div
+              class="flex flex-wrap items-start justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
+            >
               <span class="text-xl max-md:text-lg text-white">Location</span>
               <div class="w-full max-w-[520px] max-md:max-w-none">
                 <LocationFlow
@@ -445,14 +483,20 @@ onMounted(async () => {
         </div>
 
         <!-- No Results -->
-        <div v-else-if="!days.length && hasSearched" class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm">
+        <div
+          v-else-if="!days.length && hasSearched"
+          class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm"
+        >
           <font-awesome-icon icon="search" class="text-5xl text-white/40 mb-4" />
           <p class="text-white/80 text-xl mb-2">No days found</p>
           <p class="text-white/50">Try adjusting your search or filters</p>
         </div>
 
         <!-- Initial State -->
-        <div v-else-if="!hasSearched" class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm">
+        <div
+          v-else-if="!hasSearched"
+          class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm"
+        >
           <font-awesome-icon icon="wand-magic-sparkles" class="text-5xl text-white/40 mb-4" />
           <p class="text-white/80 text-xl mb-2">Search your memories</p>
           <p class="text-white/50">Use keywords, tags, or filters to find specific days</p>
@@ -468,7 +512,13 @@ onMounted(async () => {
           >
             <!-- Thumbnail -->
             <div class="result-thumbnail">
-              <DayImage v-if="day.mainImage" :src="day.mainImage" alt="Day thumbnail" size="small" class="result-thumbnail-img" />
+              <DayImage
+                v-if="day.mainImage"
+                :src="day.mainImage"
+                alt="Day thumbnail"
+                size="small"
+                class="result-thumbnail-img"
+              />
               <div v-else class="result-thumbnail-placeholder">
                 <font-awesome-icon icon="image" class="text-white/40 text-2xl" />
               </div>
@@ -479,11 +529,7 @@ onMounted(async () => {
               <!-- Header row: date + starred -->
               <div class="result-header">
                 <p class="result-date">{{ formatDate(day.timestamp) }}</p>
-                <font-awesome-icon
-                  v-if="day.starred"
-                  icon="star"
-                  class="result-star"
-                />
+                <font-awesome-icon v-if="day.starred" icon="star" class="result-star" />
               </div>
 
               <p class="result-description">
@@ -517,10 +563,7 @@ onMounted(async () => {
                   />
                   <span class="result-trackable-value">{{ progress.value }}</span>
                 </span>
-                <span
-                  v-if="day.trackableProgresses.length > 4"
-                  class="result-trackable-more"
-                >
+                <span v-if="day.trackableProgresses.length > 4" class="result-trackable-more">
                   +{{ day.trackableProgresses.length - 4 }}
                 </span>
               </div>

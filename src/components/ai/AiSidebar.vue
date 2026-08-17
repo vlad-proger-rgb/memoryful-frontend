@@ -162,7 +162,7 @@ onBeforeUnmount(cancelPress)
       <div class="flex items-center gap-1">
         <button
           type="button"
-          class="size-7 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          class="size-11 md:size-7 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
           aria-label="New chat"
           title="New chat"
           @click="startNewChat"
@@ -171,7 +171,7 @@ onBeforeUnmount(cancelPress)
         </button>
         <button
           type="button"
-          class="size-7 rounded-lg flex items-center justify-center transition-colors"
+          class="size-11 md:size-7 rounded-lg flex items-center justify-center transition-colors"
           :class="
             isSearching
               ? 'text-white bg-white/15'
@@ -192,7 +192,7 @@ onBeforeUnmount(cancelPress)
         type="text"
         autofocus
         placeholder="Search chats..."
-        class="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-white/40 outline-none focus:border-white/25"
+        class="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 md:py-1.5 text-base md:text-xs text-white placeholder:text-white/40 outline-none focus:border-white/25"
       />
     </div>
 
@@ -235,7 +235,7 @@ onBeforeUnmount(cancelPress)
         >
           <button
             type="button"
-            class="flex-1 min-w-0 truncate text-left pl-3 py-2 touch:select-none"
+            class="flex-1 min-w-0 truncate text-left pl-3 py-3 md:py-2 touch:select-none"
             @click="openChat(chat)"
             @dblclick.stop="startRename(chat, $event)"
             @pointerdown="startPress(chat, $event)"

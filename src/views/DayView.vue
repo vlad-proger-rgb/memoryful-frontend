@@ -712,7 +712,7 @@ onUnmounted(() => {
         <div class="flex items-center gap-3 ml-auto shrink-0">
           <button
             @click="toggleStarred"
-            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            class="size-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             :class="{ 'text-yellow-400': day.starred, 'text-white/60': !day.starred }"
             :aria-label="day.starred ? 'Remove from favorites' : 'Add to favorites'"
             :aria-pressed="!!day.starred"
@@ -874,7 +874,7 @@ onUnmounted(() => {
         <BaseBox class="mb-8">
           <button
             @click="showTrackables = !showTrackables"
-            class="w-full flex items-center justify-between text-left group"
+            class="w-full min-h-11 md:min-h-0 flex items-center justify-between text-left group"
           >
             <h3
               class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
@@ -921,7 +921,7 @@ onUnmounted(() => {
         <BaseBox class="mb-8">
           <button
             @click="showInsights = !showInsights"
-            class="w-full flex items-center justify-between text-left group"
+            class="w-full min-h-11 md:min-h-0 flex items-center justify-between text-left group"
           >
             <h3
               class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
@@ -1063,7 +1063,7 @@ onUnmounted(() => {
               <h2 class="text-xl font-semibold text-white">Edit Day - {{ date }}</h2>
               <button
                 @click="showModal = false"
-                class="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
+                class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
                 aria-label="Close modal"
               >
                 <font-awesome-icon icon="times" class="w-5 h-5" />
@@ -1109,7 +1109,7 @@ onUnmounted(() => {
                 <input
                   v-model="editForm.description"
                   type="text"
-                  class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Add a short description"
                 />
               </div>
@@ -1218,7 +1218,7 @@ onUnmounted(() => {
                         ref="trackableTypeInputRef"
                         v-model="trackableTypeSearchQuery"
                         type="text"
-                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         :placeholder="
                           isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'
                         "
@@ -1248,7 +1248,7 @@ onUnmounted(() => {
                         ref="trackableItemInputRef"
                         v-model="trackableItemSearchQuery"
                         type="text"
-                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         :placeholder="
                           !selectedTrackableTypeId
                             ? 'Select type first'
@@ -1282,7 +1282,7 @@ onUnmounted(() => {
                         v-model.number="newTrackableValue"
                         type="number"
                         step="any"
-                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Enter value"
                       />
                     </div>
@@ -1294,7 +1294,7 @@ onUnmounted(() => {
                       <input
                         v-model="newTrackableDescription"
                         type="text"
-                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Optional"
                       />
                     </div>
@@ -1406,7 +1406,7 @@ onUnmounted(() => {
                 >
                   Additional Images
                 </label>
-                <div class="grid grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   <div
                     v-for="(image, index) in editForm.images"
                     :key="index"
@@ -1417,7 +1417,7 @@ onUnmounted(() => {
                       type="button"
                       @click="removeImage(index)"
                       :aria-label="`Remove image ${index + 1}`"
-                      class="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
+                      class="absolute top-1 right-1 size-8 md:size-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
                     >
                       <font-awesome-icon icon="times" class="text-white" />
                     </button>

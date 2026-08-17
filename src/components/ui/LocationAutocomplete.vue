@@ -143,16 +143,14 @@ defineExpose({
         :pattern="pattern"
         :class="[
           props.variant === 'auth'
-            ? 'w-full pl-10 pr-4 py-2 bg-white/20 rounded-xl focus-within:ring-1 transition'
+            ? 'w-full pl-10 pr-4 py-2.5 md:py-2 bg-white/20 rounded-xl focus-within:ring-1 transition'
             : props.variant === 'settings'
-              ? 'w-full pl-10 pr-4 py-2 bg-black/20 border border-white/15 rounded-xl'
-              : 'w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg',
+              ? 'w-full pl-10 pr-4 py-2.5 md:py-2 bg-black/20 border border-white/15 rounded-xl'
+              : 'w-full pl-10 pr-4 py-2.5 md:py-2 bg-white/5 border border-white/20 rounded-lg',
           props.variant === 'auth'
             ? 'text-white !placeholder-white/80 focus:outline-none focus:ring-white'
             : 'text-white placeholder-white/30 focus:outline-none focus:ring-2',
-          props.variant === 'auth'
-            ? ''
-            : 'focus:ring-blue-500 focus:border-transparent',
+          props.variant === 'auth' ? '' : 'focus:ring-blue-500 focus:border-transparent',
           { 'pl-10': icon, 'opacity-50': disabled },
         ]"
         @input="handleInput"
@@ -188,9 +186,7 @@ defineExpose({
         </div>
       </template>
       <template #empty>
-        <div class="p-2 text-center text-white/50">
-          No results found
-        </div>
+        <div class="p-2 text-center text-white/50">No results found</div>
       </template>
     </BaseAutocomplete>
   </div>

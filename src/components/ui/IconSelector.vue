@@ -242,7 +242,7 @@ watch(debouncedSearchQuery, () => {
             v-model="searchQuery"
             type="text"
             placeholder="Search icons..."
-            class="w-full py-2.5 px-10 bg-black/25 border border-white/15 rounded-xl text-white text-sm outline-none transition-all duration-200 placeholder:text-white/40 focus:bg-black/30 focus:border-blue-400/50 focus:ring-[3px] focus:ring-blue-400/10"
+            class="w-full py-2.5 px-10 bg-black/25 border border-white/15 rounded-xl text-white text-base md:text-sm outline-none transition-all duration-200 placeholder:text-white/40 focus:bg-black/30 focus:border-blue-400/50 focus:ring-[3px] focus:ring-blue-400/10"
           />
           <button
             v-if="searchQuery"

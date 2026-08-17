@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const attrs = useAttrs()
 
 const baseClass =
-  'w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none text-base md:text-sm'
+  'w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2.5 md:py-2 outline-none text-base md:text-sm'
 
 const mergedClass = computed(() => {
   const extra = attrs.class

@@ -130,15 +130,19 @@ const handleLogout = async () => {
             :country-input-id="countryInputId"
             :city-input-id="cityInputId"
             variant="auth"
-            @update:country="(val) => {
-              setSelectedCountry(val)
-              setSelectedCity(null)
-              userStore.errorMessage = ''
-            }"
-            @update:city="(val) => {
-              setSelectedCity(val)
-              userStore.errorMessage = ''
-            }"
+            @update:country="
+              (val) => {
+                setSelectedCountry(val)
+                setSelectedCity(null)
+                userStore.errorMessage = ''
+              }
+            "
+            @update:city="
+              (val) => {
+                setSelectedCity(val)
+                userStore.errorMessage = ''
+              }
+            "
           />
         </div>
       </div>
@@ -155,7 +159,7 @@ const handleLogout = async () => {
       <textarea
         v-model="bioDraft"
         rows="4"
-        class="w-full bg-white/20 rounded-xl px-4 py-2 outline-none resize-none text-sm text-white !placeholder-white/80 focus:ring-1 focus:ring-white transition"
+        class="w-full bg-white/20 rounded-xl px-4 py-2 outline-none resize-none text-base md:text-sm text-white !placeholder-white/80 focus:ring-1 focus:ring-white transition"
         placeholder="Bio (optional)"
         @input="userStore.errorMessage = ''"
       />
@@ -181,7 +185,7 @@ const handleLogout = async () => {
     </AuthButton>
 
     <div class="flex w-full">
-      <AuthButton variant="link" @click="handleLogout"> Cancel & Log Out </AuthButton>
+      <AuthButton variant="link" @click="handleLogout">Cancel & Log Out</AuthButton>
     </div>
   </AuthCard>
 </template>

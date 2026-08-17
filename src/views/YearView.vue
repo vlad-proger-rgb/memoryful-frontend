@@ -454,7 +454,7 @@ const submitMonth = async () => {
         </h3>
         <button
           @click="closeModal"
-          class="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
+          class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
           aria-label="Close modal"
         >
           <font-awesome-icon icon="times" class="w-5 h-5" />
@@ -473,7 +473,7 @@ const submitMonth = async () => {
               :id="monthDescriptionInputId"
               v-model="currentMonthRecord.description"
               type="text"
-              class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Add a short description"
             />
           </div>
@@ -486,7 +486,7 @@ const submitMonth = async () => {
               :id="topDayInputId"
               v-model="topDayNumber"
               type="text"
-              class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter day number (1-31)"
             />
           </div>

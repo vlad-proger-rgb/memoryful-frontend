@@ -210,7 +210,7 @@ onUnmounted(() => {
         <input
           v-model="createFormName"
           type="text"
-          class="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          class="w-full px-3 py-2 md:py-1.5 bg-white/5 border border-white/10 rounded-md text-white text-base md:text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="Tag name"
         />
 
@@ -219,7 +219,7 @@ onUnmounted(() => {
           <input
             v-model="createFormColor"
             type="color"
-            class="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/20"
+            class="size-11 md:size-7 rounded cursor-pointer bg-transparent border border-white/20"
           />
           <button
             v-if="createFormColor"
@@ -297,7 +297,11 @@ onUnmounted(() => {
       <template #item="{ item: tag }">
         <div v-if="tag.id === CREATE_ID" class="flex items-center gap-2 text-blue-300">
           <font-awesome-icon icon="plus" class="shrink-0 text-xs" />
-          <span>Create "<strong>{{ tag.name }}</strong>"</span>
+          <span>
+            Create "
+            <strong>{{ tag.name }}</strong>
+            "
+          </span>
         </div>
         <div v-else class="flex items-center justify-between w-full">
           <div class="flex items-center gap-2">

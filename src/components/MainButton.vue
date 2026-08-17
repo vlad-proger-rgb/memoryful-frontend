@@ -4,24 +4,24 @@ import { computed } from 'vue'
 const props = defineProps({
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   hasError: {
     type: Boolean,
-    default: false
+    default: false,
   },
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   variant: {
     type: String,
-    default: 'primary'
+    default: 'primary',
   },
   hideText: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['click'])
@@ -38,14 +38,14 @@ const buttonClass = computed(() => {
   }
 
   if (props.loading) {
-    return 'flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600/10 to-blue-500/10 text-white font-semibold text-lg px-6 py-2 rounded-xl transition cursor-not-allowed'
+    return 'flex items-center justify-center gap-2 min-h-11 bg-gradient-to-r from-blue-600/10 to-blue-500/10 text-white font-semibold text-lg px-6 py-2 rounded-xl transition cursor-not-allowed'
   }
 
   if (props.hasError) {
-    return 'flex items-center justify-center gap-2 bg-gradient-to-r from-red-600/20 to-red-500/20 text-white font-semibold text-lg px-6 py-2 rounded-xl hover:from-red-700 hover:to-red-600 transition hover:cursor-pointer'
+    return 'flex items-center justify-center gap-2 min-h-11 bg-gradient-to-r from-red-600/20 to-red-500/20 text-white font-semibold text-lg px-6 py-2 rounded-xl hover:from-red-700 hover:to-red-600 transition hover:cursor-pointer'
   }
 
-  return 'flex items-center justify-center gap-2 bg-gradient-to-r from-white/30 to-white/20 text-white font-semibold text-lg px-6 py-2 rounded-xl hover:from-white/40 hover:to-white/30 transition hover:cursor-pointer'
+  return 'flex items-center justify-center gap-2 min-h-11 bg-gradient-to-r from-white/30 to-white/20 text-white font-semibold text-lg px-6 py-2 rounded-xl hover:from-white/40 hover:to-white/30 transition hover:cursor-pointer'
 })
 </script>
 

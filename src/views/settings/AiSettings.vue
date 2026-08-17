@@ -42,7 +42,9 @@ const privacySummary = computed(() => {
     allowSearch.value ? 'Search' : null,
   ].filter(Boolean)
 
-  return allowed.length ? `AI can access: ${allowed.join(', ')}` : 'AI access restricted: no data sources enabled'
+  return allowed.length
+    ? `AI can access: ${allowed.join(', ')}`
+    : 'AI access restricted: no data sources enabled'
 })
 </script>
 
@@ -55,7 +57,9 @@ const privacySummary = computed(() => {
       </p>
     </div>
 
-    <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-200 text-sm">
+    <div
+      class="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-200 text-sm"
+    >
       <font-awesome-icon icon="triangle-exclamation" class="text-yellow-400 shrink-0" />
       <span>Not implemented yet — this page is a design template only. Settings here have no effect. Stay tuned!</span>
     </div>
@@ -71,7 +75,7 @@ const privacySummary = computed(() => {
           <button
             ref="modelButtonRef"
             type="button"
-            class="w-full text-left bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-4 py-2.5 pr-10 outline-none text-sm transition-colors focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
+            class="w-full text-left bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-4 py-3 md:py-2.5 pr-10 outline-none text-sm transition-colors focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
             :aria-expanded="isModelDropdownOpen"
             aria-haspopup="listbox"
             @click="isModelDropdownOpen = true"
@@ -80,8 +84,20 @@ const privacySummary = computed(() => {
           </button>
 
           <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/70">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 7.5L10 12.5L15 7.5"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
 
@@ -96,14 +112,19 @@ const privacySummary = computed(() => {
             <template #item="{ item }">
               <div class="flex items-center justify-between w-full">
                 <span>{{ item.label }}</span>
-                <font-awesome-icon v-if="item.id === selectedModel" icon="check" class="text-emerald-300" />
+                <font-awesome-icon
+                  v-if="item.id === selectedModel"
+                  icon="check"
+                  class="text-emerald-300"
+                />
               </div>
             </template>
           </BaseAutocomplete>
         </div>
 
         <p class="text-xs opacity-70">
-          Currently: <span class="font-medium">{{ selectedModel }}</span>
+          Currently:
+          <span class="font-medium">{{ selectedModel }}</span>
         </p>
       </section>
 
@@ -113,17 +134,17 @@ const privacySummary = computed(() => {
           <p class="text-sm opacity-80">Restrict what data AI is allowed to use.</p>
         </div>
 
-        <label class="flex items-center justify-between gap-3 text-sm">
+        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
           <span>Calendar</span>
-          <input v-model="allowCalendar" type="checkbox" class="accent-white" />
+          <input v-model="allowCalendar" type="checkbox" class="size-5 md:size-auto accent-white" />
         </label>
-        <label class="flex items-center justify-between gap-3 text-sm">
+        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
           <span>Days</span>
-          <input v-model="allowDays" type="checkbox" class="accent-white" />
+          <input v-model="allowDays" type="checkbox" class="size-5 md:size-auto accent-white" />
         </label>
-        <label class="flex items-center justify-between gap-3 text-sm">
+        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
           <span>Search</span>
-          <input v-model="allowSearch" type="checkbox" class="accent-white" />
+          <input v-model="allowSearch" type="checkbox" class="size-5 md:size-auto accent-white" />
         </label>
 
         <p class="text-xs opacity-70">{{ privacySummary }}</p>
@@ -144,7 +165,10 @@ const privacySummary = computed(() => {
           </div>
         </div>
 
-        <button class="bg-white/15 rounded-full px-4 py-2 text-sm w-fit" disabled>
+        <button
+          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit"
+          disabled
+        >
           Open Chats Manager
         </button>
       </section>
@@ -158,13 +182,14 @@ const privacySummary = computed(() => {
         <div class="text-sm opacity-80">
           Coming soon:
           <div class="text-xs opacity-70 mt-1">
-            - Rebuild embeddings
-            - Index status
-            - Exclude data sources
+            - Rebuild embeddings - Index status - Exclude data sources
           </div>
         </div>
 
-        <button class="bg-white/15 rounded-full px-4 py-2 text-sm w-fit" disabled>
+        <button
+          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit"
+          disabled
+        >
           Manage Embeddings
         </button>
       </section>

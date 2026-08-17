@@ -119,7 +119,7 @@ const emit = defineEmits<{ (e: 'suggestion', text: string): void }>()
             v-for="s in suggestions"
             :key="s"
             type="button"
-            class="text-left text-sm text-white/80 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 transition-colors"
+            class="flex items-center text-left text-sm text-white/80 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 min-h-11 md:min-h-0 transition-colors"
             @click="emit('suggestion', s)"
           >
             {{ s }}

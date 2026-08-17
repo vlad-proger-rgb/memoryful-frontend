@@ -68,7 +68,9 @@ const onGrayStarAnimationEnd = () => {
       <div v-else class="text-base mt-1 whitespace-pre-line">No description</div>
     </div>
     <button
-      class="shrink-0 text-white text-2xl hover:cursor-pointer"
+      class="shrink-0 -mr-2 -mt-2 size-11 flex items-center justify-center text-white text-2xl hover:cursor-pointer"
+      :aria-label="exists ? (starred ? 'Unstar this day' : 'Star this day') : 'Not created yet'"
+      :aria-pressed="exists ? !!starred : undefined"
       @click="exists ? toggleStarred() : showTooltipForGrayStar()"
     >
       <span class="relative">

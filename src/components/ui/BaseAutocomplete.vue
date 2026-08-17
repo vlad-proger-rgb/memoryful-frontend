@@ -176,7 +176,7 @@ defineExpose({
                 v-model="searchQuery"
                 type="text"
                 placeholder="Search models..."
-                class="w-full bg-white/10 text-white placeholder:text-white/40 text-xs rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-fuchsia-400"
+                class="w-full bg-white/10 text-white placeholder:text-white/40 text-base md:text-xs rounded px-2 py-2 md:py-1.5 outline-none focus:ring-1 focus:ring-fuchsia-400"
                 @click.stop
               />
             </div>
