@@ -1,7 +1,13 @@
 import axios from '@/api/client'
 import type { ApiResponse } from '@/types'
+import { viaDevProxy } from '@/utils/storageUrl'
 
-export type StorageUploadIntent = 'avatar' | 'day_main' | 'day_image' | 'month_image' | 'workspace_asset'
+export type StorageUploadIntent =
+  | 'avatar'
+  | 'day_main'
+  | 'day_image'
+  | 'month_image'
+  | 'workspace_asset'
 
 export interface PresignPutRequest {
   intent: StorageUploadIntent
@@ -27,11 +33,15 @@ export interface PresignGetResponse {
 }
 
 export const storageApi = {
-  presignPut(body: PresignPutRequest): Promise<ApiResponse<PresignPutResponse>> {
-    return axios.post('/storage/presign-put', body)
+  async presignPut(body: PresignPutRequest): Promise<ApiResponse<PresignPutResponse>> {
+    const res: ApiResponse<PresignPutResponse> = await axios.post('/storage/presign-put', body)
+    if (res.data) res.data.uploadUrl = viaDevProxy(res.data.uploadUrl)
+    return res
   },
-  presignGet(body: PresignGetRequest): Promise<ApiResponse<PresignGetResponse>> {
-    return axios.post('/storage/presign-get', body)
+  async presignGet(body: PresignGetRequest): Promise<ApiResponse<PresignGetResponse>> {
+    const res: ApiResponse<PresignGetResponse> = await axios.post('/storage/presign-get', body)
+    if (res.data) res.data.downloadUrl = viaDevProxy(res.data.downloadUrl)
+    return res
   },
 }
 
