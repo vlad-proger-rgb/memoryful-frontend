@@ -183,7 +183,9 @@ const trackablesLoading = ref(false)
 const trackableTypes = ref<TrackableType[]>([])
 const trackableTypesLoading = ref(false)
 
-const trackableTypeDrafts = ref<Record<string, { name: string; description: string; valueType: string }>>({})
+const trackableTypeDrafts = ref<
+  Record<string, { name: string; description: string; valueType: string }>
+>({})
 
 const newTrackableTypeName = ref('')
 const newTrackableTypeDescription = ref('')
@@ -234,7 +236,11 @@ const ensureTrackableTypeDraft = (tt: TrackableType) => {
   return trackableTypeDrafts.value[tt.id]
 }
 
-const setTrackableTypeIcon = (tt: TrackableType, iconName: string, iconStyle: IconStyle = 'fas') => {
+const setTrackableTypeIcon = (
+  tt: TrackableType,
+  iconName: string,
+  iconStyle: IconStyle = 'fas',
+) => {
   if (iconName.trim()) {
     tt.icon = { name: iconName, style: iconStyle }
   } else {
@@ -345,7 +351,11 @@ const createTrackable = async () => {
   }
 }
 
-const setTrackableIcon = (trackable: TrackableInDB, iconName: string, iconStyle: IconStyle = 'fas') => {
+const setTrackableIcon = (
+  trackable: TrackableInDB,
+  iconName: string,
+  iconStyle: IconStyle = 'fas',
+) => {
   if (iconName.trim()) {
     trackable.icon = { name: iconName, style: iconStyle }
   } else {
@@ -456,8 +466,10 @@ onMounted(async () => {
           <button
             ref="newTagIconButtonRef"
             type="button"
-            class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
-            :class="!newTagName.trim() ? 'opacity-60 cursor-not-allowed hover:scale-100 hover:ring-0' : ''"
+            class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
+            :class="
+              !newTagName.trim() ? 'opacity-60 cursor-not-allowed hover:scale-100 hover:ring-0' : ''
+            "
             :disabled="!newTagName.trim()"
             aria-label="Pick an icon"
             title="Pick an icon"
@@ -478,14 +490,16 @@ onMounted(async () => {
           </button>
           <IconSelector
             :show="newTagIconSelectorOpen"
-            @update:show="(v) => newTagIconSelectorOpen = v"
+            @update:show="(v) => (newTagIconSelectorOpen = v)"
             :model-value="getIconName(newTagIcon)"
-            @select="(iconName, iconStyle) => newTagIcon = { name: iconName, style: iconStyle }"
+            @select="(iconName, iconStyle) => (newTagIcon = { name: iconName, style: iconStyle })"
             :attach-to="newTagIconButtonRef"
           />
           <label
-            class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus-within:ring-2 focus-within:ring-blue-400/50"
-            :class="!newTagName.trim() ? 'opacity-60 cursor-not-allowed hover:scale-100 hover:ring-0' : ''"
+            class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus-within:ring-2 focus-within:ring-blue-400/50"
+            :class="
+              !newTagName.trim() ? 'opacity-60 cursor-not-allowed hover:scale-100 hover:ring-0' : ''
+            "
             title="Pick a color"
           >
             <span
@@ -503,7 +517,7 @@ onMounted(async () => {
           <input
             v-model="newTagColor"
             type="text"
-            class="flex-1 min-w-[160px] border border-white/15 rounded-xl px-3 py-2 outline-none text-sm"
+            class="flex-1 min-w-[160px] border border-white/15 rounded-xl px-3 py-2.5 md:py-2 outline-none text-base md:text-sm"
             :style="{
               backgroundColor: normalizeHexColor(newTagColor) || 'rgba(0,0,0,0.2)',
               color: getReadableTextColor(newTagColor) || '',
@@ -538,9 +552,13 @@ onMounted(async () => {
               <p class="text-xs opacity-70 mb-1">Icon & Color</p>
               <div class="flex gap-2">
                 <button
-                  :ref="(el) => { if (el) tagIconButtonRefs[t.id] = el as HTMLElement }"
+                  :ref="
+                    (el) => {
+                      if (el) tagIconButtonRefs[t.id] = el as HTMLElement
+                    }
+                  "
                   type="button"
-                  class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
+                  class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center bg-black/20"
                   aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="tagIconSelectorOpen[t.id] = true"
@@ -560,25 +578,32 @@ onMounted(async () => {
                 </button>
                 <IconSelector
                   :show="tagIconSelectorOpen[t.id] || false"
-                  @update:show="(v) => tagIconSelectorOpen[t.id] = v"
+                  @update:show="(v) => (tagIconSelectorOpen[t.id] = v)"
                   :model-value="getIconName(t.icon)"
                   @select="(iconName, iconStyle) => setTagIcon(t, iconName, iconStyle)"
                   :attach-to="tagIconButtonRefs[t.id]"
                 />
                 <label
-                  class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus-within:ring-2 focus-within:ring-blue-400/50"
+                  class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 overflow-hidden cursor-pointer transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus-within:ring-2 focus-within:ring-blue-400/50"
                   title="Pick a color"
                 >
                   <span
                     class="absolute inset-0 transition-[filter] duration-150 ease-out group-hover:brightness-110"
-                    :style="{ backgroundColor: normalizeHexColor(t.color || '') || 'rgba(0,0,0,0.2)' }"
+                    :style="{
+                      backgroundColor: normalizeHexColor(t.color || '') || 'rgba(0,0,0,0.2)',
+                    }"
                   />
-                  <input v-model="t.color" type="color" aria-label="Pick a color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <input
+                    v-model="t.color"
+                    type="color"
+                    aria-label="Pick a color"
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
                 </label>
                 <input
                   v-model="t.color"
                   type="text"
-                  class="w-full border border-white/15 rounded-xl px-3 py-2 outline-none text-sm"
+                  class="w-full border border-white/15 rounded-xl px-3 py-2.5 md:py-2 outline-none text-base md:text-sm"
                   :style="{
                     backgroundColor: normalizeHexColor(t.color || '') || 'rgba(0,0,0,0.2)',
                     color: getReadableTextColor(t.color || '') || '',
@@ -590,7 +615,13 @@ onMounted(async () => {
           </div>
           <div class="flex items-center justify-end gap-2">
             <SettingsButton preset="pill" label="Save" icon="floppy-disk" @click="updateTag(t)" />
-            <SettingsButton preset="pill" tone="danger" label="Delete" icon="trash" @click="deleteTag(t)" />
+            <SettingsButton
+              preset="pill"
+              tone="danger"
+              label="Delete"
+              icon="trash"
+              @click="deleteTag(t)"
+            />
           </div>
         </div>
       </div>
@@ -603,7 +634,11 @@ onMounted(async () => {
           <p class="text-lg font-semibold">Trackable types</p>
           <p class="text-xs opacity-80">Create and manage your personal trackable types.</p>
         </div>
-        <SettingsButton preset="refresh" :disabled="trackableTypesLoading" @click="loadTrackableTypes" />
+        <SettingsButton
+          preset="refresh"
+          :disabled="trackableTypesLoading"
+          @click="loadTrackableTypes"
+        />
       </div>
 
       <div class="flex flex-col gap-3">
@@ -625,7 +660,7 @@ onMounted(async () => {
                 <button
                   ref="newTrackableTypeIconButtonRef"
                   type="button"
-                  class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
                   aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="newTrackableTypeIconSelectorOpen = true"
@@ -635,17 +670,16 @@ onMounted(async () => {
                     :icon="[newTrackableTypeIcon.style || 'fas', newTrackableTypeIcon.name]"
                     class="text-base"
                   />
-                  <font-awesome-icon
-                    v-else
-                    icon="icons"
-                    class="text-base opacity-50"
-                  />
+                  <font-awesome-icon v-else icon="icons" class="text-base opacity-50" />
                 </button>
                 <IconSelector
                   :show="newTrackableTypeIconSelectorOpen"
-                  @update:show="(v) => newTrackableTypeIconSelectorOpen = v"
+                  @update:show="(v) => (newTrackableTypeIconSelectorOpen = v)"
                   :model-value="getIconName(newTrackableTypeIcon)"
-                  @select="(iconName, iconStyle) => newTrackableTypeIcon = { name: iconName, style: iconStyle }"
+                  @select="
+                    (iconName, iconStyle) =>
+                      (newTrackableTypeIcon = { name: iconName, style: iconStyle })
+                  "
                   :attach-to="newTrackableTypeIconButtonRef"
                 />
               </div>
@@ -681,7 +715,9 @@ onMounted(async () => {
         </div>
 
         <div v-if="trackableTypesLoading" class="text-sm opacity-80">Loading…</div>
-        <div v-else-if="!trackableTypes.length" class="text-sm opacity-80">No trackable types yet.</div>
+        <div v-else-if="!trackableTypes.length" class="text-sm opacity-80">
+          No trackable types yet.
+        </div>
         <div v-else class="flex flex-col gap-2">
           <div
             v-for="tt in trackableTypes"
@@ -693,12 +729,14 @@ onMounted(async () => {
                 preset="pill"
                 label="Save"
                 icon="floppy-disk"
-                @click="updateTrackableType(tt.id, {
-                  name: ensureTrackableTypeDraft(tt).name.trim() || undefined,
-                  description: ensureTrackableTypeDraft(tt).description.trim() || undefined,
-                  valueType: ensureTrackableTypeDraft(tt).valueType.trim() || undefined,
-                  icon: tt.icon,
-                })"
+                @click="
+                  updateTrackableType(tt.id, {
+                    name: ensureTrackableTypeDraft(tt).name.trim() || undefined,
+                    description: ensureTrackableTypeDraft(tt).description.trim() || undefined,
+                    valueType: ensureTrackableTypeDraft(tt).valueType.trim() || undefined,
+                    icon: tt.icon,
+                  })
+                "
               />
               <SettingsButton
                 preset="pill"
@@ -713,9 +751,13 @@ onMounted(async () => {
               <div>
                 <p class="text-xs opacity-70 mb-1">Icon</p>
                 <button
-                  :ref="(el) => { if (el) trackableTypeIconButtonRefs[tt.id] = el as HTMLElement }"
+                  :ref="
+                    (el) => {
+                      if (el) trackableTypeIconButtonRefs[tt.id] = el as HTMLElement
+                    }
+                  "
                   type="button"
-                  class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
                   aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="trackableTypeIconSelectorOpen[tt.id] = true"
@@ -725,15 +767,11 @@ onMounted(async () => {
                     :icon="[tt.icon.style || 'fas', tt.icon.name]"
                     class="text-base"
                   />
-                  <font-awesome-icon
-                    v-else
-                    icon="icons"
-                    class="text-base opacity-50"
-                  />
+                  <font-awesome-icon v-else icon="icons" class="text-base opacity-50" />
                 </button>
                 <IconSelector
                   :show="trackableTypeIconSelectorOpen[tt.id] || false"
-                  @update:show="(v) => trackableTypeIconSelectorOpen[tt.id] = v"
+                  @update:show="(v) => (trackableTypeIconSelectorOpen[tt.id] = v)"
                   :model-value="getIconName(tt.icon)"
                   @select="(iconName, iconStyle) => setTrackableTypeIcon(tt, iconName, iconStyle)"
                   :attach-to="trackableTypeIconButtonRefs[tt.id]"
@@ -787,7 +825,7 @@ onMounted(async () => {
               <button
                 ref="newTrackableIconButtonRef"
                 type="button"
-                class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
                 aria-label="Pick an icon"
                 title="Pick an icon"
                 @click="newTrackableIconSelectorOpen = true"
@@ -807,9 +845,11 @@ onMounted(async () => {
               </button>
               <IconSelector
                 :show="newTrackableIconSelectorOpen"
-                @update:show="(v) => newTrackableIconSelectorOpen = v"
+                @update:show="(v) => (newTrackableIconSelectorOpen = v)"
                 :model-value="getIconName(newTrackableIcon)"
-                @select="(iconName, iconStyle) => newTrackableIcon = { name: iconName, style: iconStyle }"
+                @select="
+                  (iconName, iconStyle) => (newTrackableIcon = { name: iconName, style: iconStyle })
+                "
                 :attach-to="newTrackableIconButtonRef"
               />
             </div>
@@ -820,11 +860,13 @@ onMounted(async () => {
                 <button
                   ref="addTypeButtonRef"
                   type="button"
-                  class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none text-sm flex items-center justify-between gap-2"
+                  class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 min-h-11 md:min-h-0 outline-none text-sm flex items-center justify-between gap-2"
                   @click="addTypeDropdownOpen = !addTypeDropdownOpen"
                 >
                   <span class="truncate">
-                    {{ trackableTypes.find((x) => x.id === newTrackableTypeId)?.name || 'Select type' }}
+                    {{
+                      trackableTypes.find((x) => x.id === newTrackableTypeId)?.name || 'Select type'
+                    }}
                   </span>
                   <font-awesome-icon icon="chevron-down" class="opacity-70" />
                 </button>
@@ -836,10 +878,12 @@ onMounted(async () => {
                   item-key="id"
                   item-label="name"
                   class="z-50"
-                  @select="(tt) => {
-                    newTrackableTypeId = tt.id
-                    addTypeDropdownOpen = false
-                  }"
+                  @select="
+                    (tt) => {
+                      newTrackableTypeId = tt.id
+                      addTypeDropdownOpen = false
+                    }
+                  "
                 />
               </div>
             </div>
@@ -877,17 +921,32 @@ onMounted(async () => {
         >
           <div class="flex flex-col md:flex-row gap-3 md:items-end">
             <div class="shrink-0 flex items-center gap-2 md:order-2 md:ml-auto">
-              <SettingsButton preset="pill" label="Save" icon="floppy-disk" @click="saveTrackableDraft(t)" />
-              <SettingsButton preset="pill" tone="danger" label="Delete" icon="trash" @click="deleteTrackable(t)" />
+              <SettingsButton
+                preset="pill"
+                label="Save"
+                icon="floppy-disk"
+                @click="saveTrackableDraft(t)"
+              />
+              <SettingsButton
+                preset="pill"
+                tone="danger"
+                label="Delete"
+                icon="trash"
+                @click="deleteTrackable(t)"
+              />
             </div>
 
             <div class="flex-1 flex flex-wrap items-end gap-3">
               <div>
                 <p class="text-xs opacity-70 mb-1">Icon</p>
                 <button
-                  :ref="(el) => { if (el) trackableIconButtonRefs[t.id] = el as HTMLElement }"
+                  :ref="
+                    (el) => {
+                      if (el) trackableIconButtonRefs[t.id] = el as HTMLElement
+                    }
+                  "
                   type="button"
-                  class="group relative w-10 h-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
+                  class="group relative size-11 md:size-10 shrink-0 rounded-xl border border-white/15 bg-black/20 cursor-pointer transition-all duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-white/30 active:scale-[0.98] focus:ring-2 focus:ring-blue-400/50 flex items-center justify-center"
                   aria-label="Pick an icon"
                   title="Pick an icon"
                   @click="trackableIconSelectorOpen[t.id] = true"
@@ -907,7 +966,7 @@ onMounted(async () => {
                 </button>
                 <IconSelector
                   :show="trackableIconSelectorOpen[t.id] || false"
-                  @update:show="(v) => trackableIconSelectorOpen[t.id] = v"
+                  @update:show="(v) => (trackableIconSelectorOpen[t.id] = v)"
                   :model-value="getIconName(t.icon)"
                   @select="(iconName, iconStyle) => setTrackableIcon(t, iconName, iconStyle)"
                   :attach-to="trackableIconButtonRefs[t.id]"
@@ -919,11 +978,14 @@ onMounted(async () => {
                 <div class="relative">
                   <button
                     type="button"
-                    class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 outline-none text-sm flex items-center justify-between gap-2"
+                    class="w-full bg-black/20 border border-white/15 rounded-xl px-3 py-2 min-h-11 md:min-h-0 outline-none text-sm flex items-center justify-between gap-2"
                     @click="trackableTypeDropdownOpen[t.id] = true"
                   >
                     <span class="truncate">
-                      {{ trackableTypes.find((x) => x.id === ensureTrackableItemTypeDraft(t))?.name || 'Select type' }}
+                      {{
+                        trackableTypes.find((x) => x.id === ensureTrackableItemTypeDraft(t))
+                          ?.name || 'Select type'
+                      }}
                     </span>
                     <font-awesome-icon icon="chevron-down" class="opacity-70" />
                   </button>
@@ -935,10 +997,12 @@ onMounted(async () => {
                     item-key="id"
                     item-label="name"
                     class="z-50"
-                    @select="(tt) => {
-                      trackableItemTypeDrafts[t.id] = tt.id
-                      trackableTypeDropdownOpen[t.id] = false
-                    }"
+                    @select="
+                      (tt) => {
+                        trackableItemTypeDrafts[t.id] = tt.id
+                        trackableTypeDropdownOpen[t.id] = false
+                      }
+                    "
                   />
                 </div>
               </div>
@@ -957,7 +1021,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <p class="text-xs opacity-70">Tip: You can change a trackable`s type and click Save to apply.</p>
+      <p class="text-xs opacity-70">
+        Tip: You can change a trackable`s type and click Save to apply.
+      </p>
     </section>
   </div>
 </template>
