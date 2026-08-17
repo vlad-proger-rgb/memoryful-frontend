@@ -196,24 +196,33 @@ onActivated(() => {
           >
             <h2 class="section-title">Productivity Week</h2>
 
-            <div class="mt-8 flex items-center justify-center gap-12 flex-wrap">
+            <div class="mt-8 flex items-center justify-center flex-wrap gap-x-4 gap-y-6 sm:gap-12">
               <div class="stat-col">
                 <font-awesome-icon
                   icon="person-walking"
-                  class="text-[44px] text-lime-400 drop-shadow"
+                  class="text-[34px] sm:text-[44px] text-lime-400 drop-shadow"
                 />
                 <div class="stat-val">+32%</div>
               </div>
               <div class="stat-col">
-                <font-awesome-icon icon="code" class="text-[44px] text-blue-500 drop-shadow" />
+                <font-awesome-icon
+                  icon="code"
+                  class="text-[34px] sm:text-[44px] text-blue-500 drop-shadow"
+                />
                 <div class="stat-val">+38%</div>
               </div>
               <div class="stat-col">
-                <font-awesome-icon icon="book" class="text-[44px] text-cyan-300 drop-shadow" />
+                <font-awesome-icon
+                  icon="book"
+                  class="text-[34px] sm:text-[44px] text-cyan-300 drop-shadow"
+                />
                 <div class="stat-val">+27%</div>
               </div>
               <div class="stat-col">
-                <font-awesome-icon icon="gamepad" class="text-[44px] text-red-500 drop-shadow" />
+                <font-awesome-icon
+                  icon="gamepad"
+                  class="text-[34px] sm:text-[44px] text-red-500 drop-shadow"
+                />
                 <div class="stat-val">-11%</div>
               </div>
             </div>
@@ -408,7 +417,7 @@ onActivated(() => {
                   </button>
                   <button
                     type="button"
-                    class="text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
+                    class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
                     @click="showAiModal = false"
                     aria-label="Close modal"
                   >
@@ -583,6 +592,7 @@ onActivated(() => {
   justify-content: center;
   gap: 10px;
   width: 100%;
+  min-height: 44px;
   padding: 8px 12px;
   font-size: 20px;
   border-radius: 50px;
@@ -638,6 +648,24 @@ onActivated(() => {
 @media (max-width: 640px) {
   .glass-card {
     border-radius: 32px;
+  }
+
+  .section-title {
+    font-size: 22px;
+  }
+
+  /* A fixed 138px never fits two per row at 375px, so the card grew to four stacked rows. */
+  .stat-col {
+    width: calc(50% - 8px);
+    height: auto;
+  }
+
+  .stat-val {
+    font-size: 22px;
+  }
+
+  .pill-button {
+    font-size: 17px;
   }
 
   .pill-button-sm {
