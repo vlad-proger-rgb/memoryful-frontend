@@ -105,6 +105,8 @@ const showModal = ref(false)
 const isSaving = ref(false)
 const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
+const mainCameraInput = ref<HTMLInputElement | null>(null)
+const additionalCameraInput = ref<HTMLInputElement | null>(null)
 const dayExists = ref(false)
 const showInsights = ref(false)
 const showTrackables = ref(false)
@@ -1392,8 +1394,24 @@ onUnmounted(() => {
                       <span class="text-white/40 text-sm">Upload</span>
                     </template>
                   </div>
-                  <div class="text-sm text-white/60">
+                  <div class="flex flex-col gap-2 text-sm text-white/60">
                     <p>Upload a main image for this day</p>
+                    <button
+                      type="button"
+                      class="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors w-fit min-h-11"
+                      @click="mainCameraInput?.click()"
+                    >
+                      <font-awesome-icon icon="camera" class="text-xs" />
+                      <span>Take photo</span>
+                    </button>
+                    <input
+                      type="file"
+                      ref="mainCameraInput"
+                      accept="image/*"
+                      capture="environment"
+                      class="hidden"
+                      @change="handleMainImageUpload"
+                    />
                   </div>
                 </div>
               </div>
@@ -1423,7 +1441,7 @@ onUnmounted(() => {
                     </button>
                   </div>
                   <div
-                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
                     @click="triggerImageUpload"
                   >
                     <span class="text-white/40">+ Add Image</span>
@@ -1432,6 +1450,21 @@ onUnmounted(() => {
                       ref="imageInput"
                       multiple
                       accept="image/*"
+                      class="hidden"
+                      @change="handleImageUpload"
+                    />
+                  </div>
+                  <div
+                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors gap-1"
+                    @click="additionalCameraInput?.click()"
+                  >
+                    <font-awesome-icon icon="camera" class="text-white/40" />
+                    <span class="text-white/40 text-xs">Take photo</span>
+                    <input
+                      type="file"
+                      ref="additionalCameraInput"
+                      accept="image/*"
+                      capture="environment"
                       class="hidden"
                       @change="handleImageUpload"
                     />
