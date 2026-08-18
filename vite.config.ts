@@ -11,7 +11,7 @@ export default defineConfig({
     port: 3000,
     host: true,
     proxy: {
-      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces|chat-models|ai)':
+      '^/(auth|days|months|countries|cities|insights|suggestions|tags|trackables|trackable-types|storage|workspaces|ai)/':
         {
           target: 'http://localhost:8000',
           changeOrigin: true,
