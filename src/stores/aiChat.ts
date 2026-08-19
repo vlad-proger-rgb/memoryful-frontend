@@ -289,6 +289,8 @@ export const useAiChatStore = defineStore('aiChat', () => {
     isSidebarOpen.value = !isSidebarOpen.value
   }
 
+  const draft = ref('')
+
   // The rename editor lives on the sidebar row, so the header asks for it rather than
   // owning a second one. Bumped per request so renaming the same chat twice re-triggers.
   const renameRequest = ref<{ id: string; seq: number } | null>(null)
@@ -299,6 +301,7 @@ export const useAiChatStore = defineStore('aiChat', () => {
   }
 
   return {
+    draft,
     renameRequest,
     requestRename,
     isOpen,

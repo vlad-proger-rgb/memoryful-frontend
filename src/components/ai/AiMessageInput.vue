@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref, computed } from 'vue'
 import { useAiChatStore } from '@/stores/aiChat'
 
 const store = useAiChatStore()
 const emit = defineEmits<{
   (e: 'attach'): void
 }>()
-const text = ref('')
+
+const text = computed({
+  get: () => store.draft,
+  set: (v: string) => {
+    store.draft = v
+  },
+})
+
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const MAX_HEIGHT = 140
@@ -17,6 +24,10 @@ const autoGrow = () => {
   el.style.height = 'auto'
   el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`
 }
+
+onMounted(() => {
+  if (text.value) nextTick(autoGrow)
+})
 
 const send = async () => {
   const value = text.value
