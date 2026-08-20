@@ -32,10 +32,6 @@ const bioDraft = ref('')
 
 // Initialize form with user data if available
 onMounted(() => {
-  if (!userStore.isAuthenticated) {
-    router.push('/login')
-  }
-
   if (userStore.isProfileComplete) {
     router.push('/dashboard')
   }

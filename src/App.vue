@@ -6,7 +6,7 @@ import AiChatPanel from '@/components/ai/AiChatPanel.vue'
 import useUiStore from '@/stores/ui.ts'
 import { useUserStore } from '@/stores/user'
 import useWorkspaceStore from '@/stores/workspace'
-import { computed, onMounted, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const uiStore = useUiStore()
@@ -15,10 +15,6 @@ const workspaceStore = useWorkspaceStore()
 const route = useRoute()
 
 const showAppShell = computed(() => route.meta.appShell !== false)
-
-onMounted(() => {
-  userStore.initializeFromStorage()
-})
 
 watch(
   () => userStore.isAuthenticated,

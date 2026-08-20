@@ -16,9 +16,6 @@ onMounted(() => {
   if (!userStore.user.email) {
     router.push('/login')
   }
-  if (userStore.isAuthenticated) {
-    router.push('/dashboard')
-  }
 })
 
 const handleConfirm = async () => {

@@ -3,7 +3,8 @@ import { createPinia } from 'pinia'
 
 import App from '@/App.vue'
 import router from '@/router'
-import { setAuthToken } from '@/api/client'
+import { setAuthFailureHandler, setAuthToken } from '@/api/client'
+import { useUserStore } from '@/stores/user'
 
 import './assets/main.css'
 
@@ -20,5 +21,10 @@ const accessToken = sessionStorage.getItem('accessToken')
 if (accessToken) {
   setAuthToken(accessToken)
 }
+
+setAuthFailureHandler(() => {
+  useUserStore().clearUser()
+  router.replace({ name: 'landing' })
+})
 
 app.mount('#app')

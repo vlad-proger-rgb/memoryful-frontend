@@ -1,4 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    public?: boolean
+    appShell?: boolean
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,6 +17,7 @@ const router = createRouter({
       component: () => import('@/views/LandingView.vue'),
       meta: {
         appShell: false,
+        public: true,
       },
     },
     {
@@ -23,6 +32,7 @@ const router = createRouter({
       redirect: '/login/welcome',
       meta: {
         appShell: false,
+        public: true,
       },
       children: [
         {
@@ -42,6 +52,9 @@ const router = createRouter({
         {
           path: 'details',
           component: () => import('@/views/auth/ProfileForm.vue'),
+          meta: {
+            public: false,
+          },
         },
       ],
     },
@@ -115,6 +128,14 @@ const router = createRouter({
       ],
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  const userStore = useUserStore()
+  await userStore.restoreSession()
+
+  if (to.meta.public && userStore.isAuthenticated) return { name: 'dashboard' }
+  if (!to.meta.public && !userStore.isAuthenticated) return { name: 'landing' }
 })
 
 export default router

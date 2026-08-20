@@ -5,13 +5,8 @@ import { setAuthToken } from '@/api/client'
 import { useApiError } from '@/composables'
 import type { User, Token } from '@/types'
 
-const publicRoutes = new Set(['/', '/login', '/login/welcome', '/login/code-verification', '/login/details'])
-
-const redirectToLandingPage = () => {
-  if (typeof window === 'undefined') return
-  if (publicRoutes.has(window.location.pathname)) return
-  window.location.assign('/')
-}
+// Outlives sessionStorage, so a cold load knows whether a refresh cookie is worth asking for.
+const SESSION_HINT_KEY = 'hasSession'
 
 export const useUserStore = defineStore('user', () => {
   const { errorMessage, isLoading, withLoading } = useApiError()
@@ -45,6 +40,7 @@ export const useUserStore = defineStore('user', () => {
   function setToken(tokenData: Token) {
     token.value = tokenData
     sessionStorage.setItem('accessToken', tokenData.accessToken)
+    localStorage.setItem(SESSION_HINT_KEY, '1')
     setAuthToken(tokenData.accessToken)
   }
 
@@ -70,6 +66,7 @@ export const useUserStore = defineStore('user', () => {
     }
     token.value = null
     sessionStorage.removeItem('accessToken')
+    localStorage.removeItem(SESSION_HINT_KEY)
     setAuthToken(null)
   }
 
@@ -201,14 +198,18 @@ export const useUserStore = defineStore('user', () => {
 
   async function initializeFromStorage() {
     const storedToken = sessionStorage.getItem('accessToken')
+
     if (storedToken) {
       setToken({
         accessToken: storedToken,
         tokenType: 'bearer',
       })
-      await fetchUserDetails()
+      if (await fetchUserDetails()) return
+      clearUser()
       return
     }
+
+    if (localStorage.getItem(SESSION_HINT_KEY) !== '1') return
 
     try {
       const refreshed = await authApi.refresh()
@@ -217,14 +218,20 @@ export const useUserStore = defineStore('user', () => {
           accessToken: refreshed.data.accessToken,
           tokenType: refreshed.data.tokenType ?? 'bearer',
         })
-        await fetchUserDetails()
-        return
+        if (await fetchUserDetails()) return
       }
     } catch {
-      redirectToLandingPage()
+      // No usable refresh cookie.
     }
 
-    redirectToLandingPage()
+    clearUser()
+  }
+
+  let sessionReady: Promise<void> | null = null
+
+  function restoreSession() {
+    if (!sessionReady) sessionReady = initializeFromStorage()
+    return sessionReady
   }
 
   const isAuthenticated = computed(() => !!token.value)
@@ -243,7 +250,7 @@ export const useUserStore = defineStore('user', () => {
     fetchUserDetails,
     updateUserProfile,
     logout,
-    initializeFromStorage,
+    restoreSession,
     isAuthenticated,
     isProfileComplete,
   }

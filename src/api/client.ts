@@ -6,20 +6,15 @@ axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || ''
 axios.defaults.withCredentials = true
 
 let refreshPromise: Promise<string> | null = null
-const publicRoutes = new Set(['/', '/login', '/login/welcome', '/login/code-verification', '/login/details'])
+let onAuthFailure: (() => void) | null = null
 
-const redirectToLandingPage = () => {
-  if (typeof window === 'undefined') return
-  if (publicRoutes.has(window.location.pathname)) return
-  window.location.assign('/')
+export const setAuthFailureHandler = (handler: () => void) => {
+  onAuthFailure = handler
 }
 
-const clearAuthStorage = (redirect = false) => {
+const clearAuthStorage = () => {
   sessionStorage.removeItem('accessToken')
   setAuthToken(null)
-  if (redirect) {
-    redirectToLandingPage()
-  }
 }
 
 const getHeader = (headers: unknown, key: string): unknown => {
@@ -79,8 +74,10 @@ axios.interceptors.response.use(
   async (error: AxiosError) => {
     const status = error.response?.status
     const originalRequest = error.config
+    const isRefreshCall = originalRequest?.url === '/auth/refresh'
+    const alreadyRetried = (originalRequest as unknown as { _retry?: boolean } | undefined)?._retry
 
-    if (status === 401 && originalRequest && !(originalRequest as unknown as { _retry?: boolean })._retry) {
+    if (status === 401 && originalRequest && !isRefreshCall && !alreadyRetried) {
       ;(originalRequest as unknown as { _retry?: boolean })._retry = true
 
       try {
@@ -94,7 +91,8 @@ axios.interceptors.response.use(
         originalRequest.headers = setHeader(originalRequest.headers, 'Authorization', `Bearer ${newAccessToken}`) as unknown as AxiosRequestHeaders
         return axios(originalRequest)
       } catch {
-        clearAuthStorage(true)
+        clearAuthStorage()
+        onAuthFailure?.()
       }
     }
 

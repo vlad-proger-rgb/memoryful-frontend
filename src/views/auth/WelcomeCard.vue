@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAuthUtils, useShake } from '@/composables'
@@ -11,14 +10,6 @@ const userStore = useUserStore()
 const router = useRouter()
 const { isValidEmail } = useAuthUtils()
 const { shakeElement } = useShake()
-
-onMounted(async () => {
-  await userStore.initializeFromStorage()
-
-  if (userStore.isAuthenticated) {
-    await router.push('/dashboard')
-  }
-})
 
 const handleContinue = async () => {
   userStore.errorMessage = ''
