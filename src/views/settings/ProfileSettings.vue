@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import { useLocation } from '@/composables'
@@ -39,20 +39,27 @@ const hydrateLocationFromUser = () => {
   }
 }
 
-onMounted(() => {
+// A session restore can fill the store after this view mounts, so seed once, whenever it lands.
+let draftsHydrated = false
+
+const hydrateDraftsFromUser = () => {
+  if (draftsHydrated || !userStore.user.id) return
+  draftsHydrated = true
+
   displayNameDraft.value = userStore.user.firstName || ''
   ageDraft.value = typeof userStore.user.age === 'number' ? userStore.user.age : null
   bioDraft.value = userStore.user.bio || ''
-  hydrateLocationFromUser()
-})
+}
 
 watch(
   [
+    () => userStore.user.id,
     () => userStore.user.city?.id,
     () => userStore.user.city?.country?.id,
     () => userStore.user.country?.id,
   ],
   () => {
+    hydrateDraftsFromUser()
     hydrateLocationFromUser()
   },
   { immediate: true },
