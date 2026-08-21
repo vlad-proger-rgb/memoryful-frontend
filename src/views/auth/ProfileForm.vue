@@ -49,41 +49,35 @@ onMounted(() => {
 })
 
 const handleUpdateProfile = async () => {
+  if (!userStore.user.firstName?.trim()) {
+    userStore.errorMessage = 'Please enter your first name'
+    shakeElement(nameInputId.value)
+    return
+  }
+
+  if (!selectedCountry.value?.id) {
+    userStore.errorMessage = 'Please select your country'
+    shakeElement(countryInputId)
+    return
+  }
+
+  const city = selectedCity.value
+  if (!city?.id) {
+    userStore.errorMessage = 'Please select your city'
+    shakeElement(cityInputId)
+    return
+  }
+
   try {
     userStore.isLoading = true
     userStore.errorMessage = ''
 
-    if (selectedCity.value) {
-      userStore.setUser({
-        city: selectedCity.value,
-        country: selectedCity.value.country,
-      })
-    } else if (selectedCountry.value) {
-      userStore.setUser({
-        city: {
-          id: '',
-          name: '',
-          country: {
-            id: '',
-            name: '',
-            code: '',
-          },
-        },
-        country: selectedCountry.value,
-      })
-    }
-
     userStore.setUser({
+      city,
+      country: city.country,
       age: ageDraft.value,
       bio: bioDraft.value || undefined,
     })
-
-    // Update user data
-    userStore.user = {
-      ...userStore.user,
-      firstName: userStore.user.firstName,
-      lastName: userStore.user.lastName,
-    }
 
     await userStore.updateUserProfile()
     router.push('/dashboard')

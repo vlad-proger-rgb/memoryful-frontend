@@ -236,7 +236,7 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!token.value)
   const isProfileComplete = computed(
-    () => !!user.value.firstName && !!user.value.city,
+    () => !!user.value.firstName && !!user.value.city?.id,
   )
 
   return {
