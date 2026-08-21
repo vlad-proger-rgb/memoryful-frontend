@@ -10,6 +10,10 @@ export const authApi = {
     return axios.post('/auth/verify-code', { email, code })
   },
 
+  signInWithGoogle(credential: string): Promise<ApiResponse<AuthResponse>> {
+    return axios.post('/auth/google', { credential })
+  },
+
   getUserDetails(): Promise<ApiResponse<User>> {
     return axios.get('/auth/me')
   },

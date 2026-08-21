@@ -5,6 +5,7 @@ import { useAuthUtils, useShake } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
 import AuthButton from '@/components/auth/AuthButton.vue'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -32,6 +33,18 @@ const handleContinue = async () => {
   } else {
     shakeElement('email-input-container')
   }
+}
+
+const handleGoogleCredential = async (credential: string) => {
+  const [success, isNewUser] = await userStore.signInWithGoogle(credential)
+  if (!success) return
+
+  if (isNewUser || !userStore.isProfileComplete) {
+    await router.push('/login/details')
+    return
+  }
+
+  await router.push('/dashboard')
 }
 </script>
 
@@ -67,11 +80,7 @@ const handleContinue = async () => {
       </template>
     </AuthButton>
 
-    <p class="text-white/70">Or Sign In with</p>
-    <div class="flex gap-6 text-3xl">
-      <font-awesome-icon :icon="['fab', 'google']" />
-      <font-awesome-icon :icon="['fab', 'microsoft']" />
-      <font-awesome-icon :icon="['fab', 'apple']" />
-    </div>
+    <p class="text-white/70">Or sign in with</p>
+    <GoogleSignInButton @credential="handleGoogleCredential" />
   </AuthCard>
 </template>

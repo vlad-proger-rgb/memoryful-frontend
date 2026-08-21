@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import authApi from '@/api/auth'
 import { setAuthToken } from '@/api/client'
-import { useApiError } from '@/composables'
+import { useApiError, googleSignOut } from '@/composables'
 import type { User, Token } from '@/types'
 
 // Outlives sessionStorage, so a cold load knows whether a refresh cookie is worth asking for.
@@ -68,6 +68,7 @@ export const useUserStore = defineStore('user', () => {
     sessionStorage.removeItem('accessToken')
     localStorage.removeItem(SESSION_HINT_KEY)
     setAuthToken(null)
+    googleSignOut()
   }
 
   async function requestVerificationCode() {
@@ -116,6 +117,40 @@ export const useUserStore = defineStore('user', () => {
     return result
   }
 
+  async function signInWithGoogle(credential: string): Promise<[boolean, boolean]> {
+    const result = await withLoading(async () => {
+      const response = await authApi.signInWithGoogle(credential)
+
+      if ((response.code === 201 || response.code === 200) && response.data) {
+        const accessToken = response.data.tokens?.accessToken
+        if (!accessToken) {
+          errorMessage.value = 'Sign-in succeeded but no access token was returned'
+          return [false, false] as [boolean, boolean]
+        }
+
+        setToken({
+          accessToken,
+          tokenType: response.data.tokens.tokenType,
+        })
+        user.value.id = response.data.userId
+
+        // The email is never typed on this path, so it arrives with the rest of the profile.
+        await fetchUserDetails()
+
+        return [true, response.data.isNewUser] as [boolean, boolean]
+      } else {
+        errorMessage.value = response.msg || 'Google sign-in failed'
+        return [false, false] as [boolean, boolean]
+      }
+    })
+
+    if (result === false) {
+      return [false, false]
+    }
+
+    return result
+  }
+
   async function fetchUserDetails() {
     if (!token.value) return false
 
@@ -124,24 +159,20 @@ export const useUserStore = defineStore('user', () => {
       if (response.code === 200 && response.data) {
         const normalized = {
           ...response.data,
-          city:
-            (response.data as unknown as { city?: User['city'] | null }).city ??
-            {
-              id: '',
-              name: '',
-              country: {
-                id: '',
-                name: '',
-                code: '',
-              },
-            },
-          country:
-            (response.data as unknown as { country?: User['country'] | null }).country ??
-            {
+          city: (response.data as unknown as { city?: User['city'] | null }).city ?? {
+            id: '',
+            name: '',
+            country: {
               id: '',
               name: '',
               code: '',
             },
+          },
+          country: (response.data as unknown as { country?: User['country'] | null }).country ?? {
+            id: '',
+            name: '',
+            code: '',
+          },
         } as User
 
         setUser(normalized)
@@ -166,7 +197,9 @@ export const useUserStore = defineStore('user', () => {
         userData.age = user.value.age
       }
 
-      const resolvedCountry = user.value.city?.country?.id ? user.value.city.country : user.value.country
+      const resolvedCountry = user.value.city?.country?.id
+        ? user.value.city.country
+        : user.value.country
       if (resolvedCountry?.id) {
         userData.country = resolvedCountry
       }
@@ -235,9 +268,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const isAuthenticated = computed(() => !!token.value)
-  const isProfileComplete = computed(
-    () => !!user.value.firstName && !!user.value.city?.id,
-  )
+  const isProfileComplete = computed(() => !!user.value.firstName && !!user.value.city?.id)
 
   return {
     user,
@@ -247,6 +278,7 @@ export const useUserStore = defineStore('user', () => {
     clearUser,
     requestVerificationCode,
     verifyCode,
+    signInWithGoogle,
     fetchUserDetails,
     updateUserProfile,
     logout,
