@@ -364,6 +364,13 @@ const repoLinks = [
             </div>
           </div>
         </div>
+
+        <div
+          class="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-400"
+        >
+          <RouterLink to="/privacy" class="transition hover:text-white">Privacy Policy</RouterLink>
+          <RouterLink to="/terms" class="transition hover:text-white">Terms of Service</RouterLink>
+        </div>
       </section>
     </main>
   </div>

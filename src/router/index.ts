@@ -62,6 +62,24 @@ const router = createRouter({
       ],
     },
     {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/LegalView.vue'),
+      meta: {
+        appShell: false,
+        public: true,
+      },
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: () => import('@/views/LegalView.vue'),
+      meta: {
+        appShell: false,
+        public: true,
+      },
+    },
+    {
       path: '/search',
       name: 'search',
       component: () => import('@/views/SearchView.vue'),
