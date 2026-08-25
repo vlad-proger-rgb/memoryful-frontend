@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean
+    guestOnly?: boolean
     appShell?: boolean
   }
 }
@@ -33,6 +34,7 @@ const router = createRouter({
       meta: {
         appShell: false,
         public: true,
+        guestOnly: true,
       },
       children: [
         {
@@ -54,6 +56,7 @@ const router = createRouter({
           component: () => import('@/views/auth/ProfileForm.vue'),
           meta: {
             public: false,
+            guestOnly: false,
           },
         },
       ],
@@ -134,7 +137,7 @@ router.beforeEach(async (to) => {
   const userStore = useUserStore()
   await userStore.restoreSession()
 
-  if (to.meta.public && userStore.isAuthenticated) return { name: 'dashboard' }
+  if (to.meta.guestOnly && userStore.isAuthenticated) return { name: 'dashboard' }
   if (!to.meta.public && !userStore.isAuthenticated) return { name: 'landing' }
 })
 

@@ -83,6 +83,7 @@ const repoLinks = [
 
         <nav class="flex items-center gap-3">
           <RouterLink
+            v-if="!userStore.isAuthenticated"
             to="/login/welcome"
             class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
           >
