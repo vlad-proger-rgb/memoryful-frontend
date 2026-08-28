@@ -8,3 +8,7 @@ export interface AuthResponse {
   isNewUser: boolean
   userId: string
 }
+
+export interface GoogleNonce {
+  nonce: string
+}

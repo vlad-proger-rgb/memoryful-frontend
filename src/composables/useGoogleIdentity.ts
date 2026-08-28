@@ -18,6 +18,7 @@ export interface GoogleAccountsId {
     callback: (response: GoogleCredentialResponse) => void
     ux_mode?: 'popup' | 'redirect'
     auto_select?: boolean
+    nonce?: string
   }): void
   renderButton(parent: HTMLElement, options: GoogleButtonOptions): void
   disableAutoSelect(): void

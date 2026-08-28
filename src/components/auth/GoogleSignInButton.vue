@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { loadGoogleIdentity } from '@/composables'
 import type { GoogleCredentialResponse } from '@/composables'
+import { authApi } from '@/api/auth'
 
 const emit = defineEmits<{
   (e: 'credential', credential: string): void
@@ -49,11 +50,17 @@ onMounted(async () => {
   }
 
   try {
-    const gsi = await loadGoogleIdentity()
+    const [gsi, issued] = await Promise.all([loadGoogleIdentity(), authApi.requestGoogleNonce()])
+
+    // Without a nonce the backend rejects the sign-in, so treat it as unavailable here.
+    const nonce = issued.data?.nonce
+    if (!nonce) throw new Error('No Google sign-in nonce was issued')
+
     gsi.initialize({
       client_id: clientId,
       callback: handleCredential,
       ux_mode: 'popup',
+      nonce,
     })
     render()
 

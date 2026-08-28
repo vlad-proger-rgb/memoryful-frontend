@@ -1,5 +1,5 @@
 import axios from '@/api/client'
-import type { ApiResponse, User, AuthResponse } from '@/types'
+import type { ApiResponse, User, AuthResponse, GoogleNonce } from '@/types'
 
 export const authApi = {
   requestVerificationCode(email: string): Promise<ApiResponse<null>> {
@@ -8,6 +8,10 @@ export const authApi = {
 
   verifyCode(email: string, code: string): Promise<ApiResponse<AuthResponse>> {
     return axios.post('/auth/verify-code', { email, code })
+  },
+
+  requestGoogleNonce(): Promise<ApiResponse<GoogleNonce>> {
+    return axios.post('/auth/google/nonce')
   },
 
   signInWithGoogle(credential: string): Promise<ApiResponse<AuthResponse>> {
