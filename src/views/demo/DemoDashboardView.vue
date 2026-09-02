@@ -22,6 +22,7 @@ import ModalWindow from '@/components/ModalWindow.vue'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 import { useResolvedStorageMedia } from '@/composables'
+import { markScrollReady } from '@/utils/scrollReady'
 import { getIcon } from '@/plugins/fontawesome'
 import useAiChatStore from '@/stores/aiChat'
 import useUiStore from '@/stores/ui'
@@ -246,6 +247,9 @@ const loadFirstPage = async () => {
   } finally {
     isLoading.value = false
   }
+
+  await nextTick()
+  markScrollReady()
 }
 
 const loadMore = async () => {

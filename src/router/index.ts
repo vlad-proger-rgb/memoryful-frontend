@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { resetScrollReady, waitForScrollReady } from '@/utils/scrollReady'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUserStore } from '@/stores/user'
 
@@ -8,11 +9,21 @@ declare module 'vue-router' {
     guestOnly?: boolean
     appShell?: boolean
     header?: 'demo'
+    waitsForContent?: boolean
   }
 }
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  async scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      if (to.meta.waitsForContent) await waitForScrollReady()
+      return savedPosition
+    }
+    if (to.path === from.path) return false
+    if (to.hash) return { el: to.hash }
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -92,6 +103,7 @@ const router = createRouter({
       component: () => import('@/views/demo/DemoDashboardView.vue'),
       meta: {
         header: 'demo',
+        waitsForContent: true,
       },
     },
     {
@@ -162,6 +174,8 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  resetScrollReady()
+
   const userStore = useUserStore()
   await userStore.restoreSession()
 
