@@ -6,6 +6,8 @@ declare module 'vue-router' {
     public?: boolean
     guestOnly?: boolean
     appShell?: boolean
+    /** Swaps the desktop header for a route-specific one; see App.vue. */
+    header?: 'demo'
   }
 }
 
@@ -83,6 +85,15 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: () => import('@/views/SearchView.vue'),
+    },
+    {
+      // Prototype of the merged central view; nothing else routes here yet.
+      path: '/demo/dashboard',
+      name: 'demo-dashboard',
+      component: () => import('@/views/demo/DemoDashboardView.vue'),
+      meta: {
+        header: 'demo',
+      },
     },
     {
       path: '/ai',

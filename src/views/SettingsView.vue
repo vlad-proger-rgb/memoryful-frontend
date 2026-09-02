@@ -129,7 +129,7 @@ const handleLogout = async () => {
       <div
         class="md:sticky md:top-[var(--app-header-height)] z-20 pt-4 pb-4 md:pt-6 flex items-center justify-between pointer-events-none"
       >
-        <div class="flex items-center gap-4 min-w-0">
+        <div class="welcome-header flex items-center gap-4 min-w-0">
           <div class="w-20 h-20 md:w-[120px] md:h-[120px] shrink-0 rounded-full overflow-hidden">
             <input
               ref="fileInput"
@@ -215,3 +215,12 @@ const handleLogout = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Paired with the demo dashboard's welcome card: when that view starts a view transition,
+   the browser tweens the card into this header instead of cutting between pages. Inert
+   otherwise — nothing else calls startViewTransition. */
+.welcome-header {
+  view-transition-name: welcome-card;
+}
+</style>
