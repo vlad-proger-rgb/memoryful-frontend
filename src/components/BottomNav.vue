@@ -3,18 +3,15 @@ import { computed, onBeforeUnmount, onMounted, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import AiOrbButton from '@/components/ai/AiOrbButton.vue'
-import {
-  isDestinationActive,
-  navDestinations,
-  NAV_ICON_COLORS_ENABLED,
-  type NavDestination,
-} from '@/config/navigation'
+import { isDestinationActive, navDestinations, type NavDestination } from '@/config/navigation'
+import useFeatureFlagsStore from '@/stores/featureFlags'
 
 defineOptions({
   name: 'BottomNav',
 })
 
 const route = useRoute()
+const featureFlags = useFeatureFlagsStore()
 
 // Two on each side of the raised centre orb.
 const leftDestinations = computed(() => navDestinations.slice(0, 2))
@@ -23,9 +20,9 @@ const rightDestinations = computed(() => navDestinations.slice(2))
 const isActive = (to: string) =>
   isDestinationActive(navDestinations.find((d) => d.to === to)!, route.path)
 
-const iconColors = NAV_ICON_COLORS_ENABLED
+const iconColors = computed(() => featureFlags.isEnabled('navIconColors'))
 const iconStyle = (destination: NavDestination) =>
-  iconColors ? { color: destination.color } : undefined
+  iconColors.value ? { color: destination.color } : undefined
 
 const pillRef = ref<HTMLElement | null>(null)
 const lensStyle = ref<Record<string, string>>({ opacity: '0' })

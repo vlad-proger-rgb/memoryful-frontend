@@ -5,7 +5,7 @@ export interface FeatureFlag {
   default: boolean
 }
 
-export type FeatureFlagId = 'demoUi' | 'orbPet'
+export type FeatureFlagId = 'demoUi' | 'orbPet' | 'navIconColors'
 
 export const FEATURE_FLAGS: FeatureFlag[] = [
   {
@@ -13,6 +13,13 @@ export const FEATURE_FLAGS: FeatureFlag[] = [
     label: 'Demo UI',
     description:
       'The merged dashboard: today, search and the calendar in one page, with a simpler header. Layout only — your days and every request stay the same.',
+    default: false,
+  },
+  {
+    id: 'navIconColors',
+    label: 'Tinted nav icons',
+    description:
+      'Give each destination in the bottom bar its own color instead of rendering every icon flat white.',
     default: false,
   },
   {

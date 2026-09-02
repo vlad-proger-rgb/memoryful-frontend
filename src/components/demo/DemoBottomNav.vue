@@ -5,14 +5,20 @@ import { RouterLink, useRoute } from 'vue-router'
 import AiOrbButton from '@/components/ai/AiOrbButton.vue'
 import DemoDashboardIcon from '@/components/demo/DemoDashboardIcon.vue'
 import { navDestinations } from '@/config/navigation'
+import useFeatureFlagsStore from '@/stores/featureFlags'
 
 defineOptions({
   name: 'DemoBottomNav',
 })
 
 const route = useRoute()
+const featureFlags = useFeatureFlagsStore()
 
+const dashboard = navDestinations.find((d) => d.key === 'dashboard')!
 const settings = navDestinations.find((d) => d.key === 'settings')!
+
+const iconColors = computed(() => featureFlags.isEnabled('navIconColors'))
+const iconStyle = (color: string) => (iconColors.value ? { color } : undefined)
 
 const isDashboard = computed(() => route.path.startsWith('/demo/dashboard'))
 const isSettings = computed(() => route.path.startsWith(settings.to))
@@ -24,7 +30,8 @@ const isSettings = computed(() => route.path.startsWith(settings.to))
       <RouterLink
         to="/demo/dashboard"
         class="bottom-nav-item"
-        :class="{ 'is-active': isDashboard }"
+        :class="{ 'is-active': isDashboard, 'has-color': iconColors }"
+        :style="iconStyle(dashboard.color)"
         aria-label="Dashboard"
         :aria-current="isDashboard ? 'page' : undefined"
       >
@@ -39,7 +46,8 @@ const isSettings = computed(() => route.path.startsWith(settings.to))
       <RouterLink
         :to="settings.to"
         class="bottom-nav-item"
-        :class="{ 'is-active': isSettings }"
+        :class="{ 'is-active': isSettings, 'has-color': iconColors }"
+        :style="iconStyle(settings.color)"
         :aria-label="settings.label"
         :aria-current="isSettings ? 'page' : undefined"
       >
@@ -115,6 +123,14 @@ const isSettings = computed(() => route.path.startsWith(settings.to))
 .bottom-nav-item.is-active {
   color: white;
   transform: translateY(-1px) scale(1.08);
+}
+
+.bottom-nav-item.has-color {
+  opacity: 0.7;
+}
+
+.bottom-nav-item.has-color.is-active {
+  opacity: 1;
 }
 
 .bottom-nav-item:active {

@@ -3,16 +3,9 @@ export interface NavDestination {
   to: string
   label: string
   icon: string
-  /** Only used when `NAV_ICON_COLORS_ENABLED` is on. */
+  /** Only used while the `navIconColors` experiment is on. */
   color: string
 }
-
-/**
- * Tint the bottom-bar icons per destination instead of rendering them flat white.
- * Kept as a plain constant on purpose — it exists so the two treatments can be compared
- * side by side before deciding which one ships.
- */
-export const NAV_ICON_COLORS_ENABLED = false
 
 /** The app's top-level destinations, shared by the desktop header and the mobile bottom bar. */
 export const navDestinations: NavDestination[] = [
