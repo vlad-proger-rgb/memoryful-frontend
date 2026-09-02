@@ -1,13 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import logo from '@/assets/img/memoryful-ai-brain.webp'
 import { useAiChatStore } from '@/stores/aiChat'
 
-withDefaults(defineProps<{ size?: number; ringSpread?: number }>(), {
-  size: 60,
-  // How far the halo reaches past the logo. The header default keeps it inside the bar;
-  // the bottom bar passes a wider one so the rotation is actually readable.
-  ringSpread: 1.2333,
-})
+const props = withDefaults(
+  defineProps<{
+    size?: number
+    ringSpread?: number
+    outerRingSpread?: number
+    outerRingHeightSpread?: number
+  }>(),
+  {
+    size: 60,
+    // How far the halo reaches past the logo. The header default keeps it inside the bar;
+    // the bottom bar passes a wider one so the rotation is actually readable.
+    ringSpread: 1.2333,
+    // A second, wider and fainter ring set. 0 leaves the orb single-ringed; anything above
+    // 1 also grows the button itself, so the outer ring is part of the target.
+    outerRingSpread: 0,
+    // Lets the outer set be an ellipse — wide to the sides without growing taller than a
+    // bar it has to live in. 0 keeps it circular.
+    outerRingHeightSpread: 0,
+  },
+)
+
+const outerHeightSpread = computed(() => props.outerRingHeightSpread || props.outerRingSpread)
 
 const aiChatStore = useAiChatStore()
 const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
@@ -17,19 +35,30 @@ const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
   <button
     type="button"
     class="ai-logo-orbit rounded-full transition-transform duration-150 hover:scale-105"
-    :class="{ 'is-open': isAiChatOpen }"
-    :style="{ '--orb-size': `${size}px`, '--orb-ring-spread': ringSpread }"
+    :class="{ 'is-open': isAiChatOpen, 'has-outer-ring': props.outerRingSpread > 0 }"
+    :style="{
+      '--orb-size': `${size}px`,
+      '--orb-ring-spread': ringSpread,
+      '--orb-outer-ring-spread': props.outerRingSpread,
+      '--orb-outer-ring-height-spread': outerHeightSpread,
+    }"
     title="MemoryfulAI"
     aria-label="Open MemoryfulAI"
     @click="toggleAiChat()"
   >
+    <span v-if="props.outerRingSpread > 0" class="orbit-rings orbit-rings-outer" aria-hidden="true">
+      <span class="circle"></span>
+      <span class="circle"></span>
+      <span class="circle"></span>
+    </span>
     <span class="orbit-rings" aria-hidden="true">
       <span class="circle"></span>
       <span class="circle"></span>
       <span class="circle"></span>
       <span class="circle"></span>
     </span>
-    <img :src="logo" class="orbit-logo rounded-full" alt="" />
+    <!-- draggable=false, or the browser lifts the logo as a file ghost on any drag. -->
+    <img :src="logo" class="orbit-logo rounded-full" alt="" draggable="false" />
   </button>
 </template>
 
@@ -42,6 +71,13 @@ const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
   display: inline-grid;
   place-items: center;
   isolation: isolate;
+  cursor: pointer;
+}
+
+/* The button grows to the outer ring so the whole halo is clickable, not just the logo. */
+.ai-logo-orbit.has-outer-ring {
+  width: calc(var(--orb-size) * var(--orb-outer-ring-spread));
+  height: calc(var(--orb-size) * var(--orb-outer-ring-height-spread));
 }
 
 .orbit-logo {
@@ -139,6 +175,39 @@ const { isOpen: isAiChatOpen, toggle: toggleAiChat } = aiChatStore
 .ai-logo-orbit:hover .orbit-rings .circle:nth-of-type(4),
 .ai-logo-orbit.is-open .orbit-rings .circle:nth-of-type(4) {
   box-shadow: inset 0 0 8px 0 magenta;
+}
+
+/* The outer set: wider, fainter, slower — it reads as the same object seen further out. */
+.orbit-rings-outer {
+  width: calc(var(--orb-size) * var(--orb-outer-ring-spread));
+  height: calc(var(--orb-size) * var(--orb-outer-ring-height-spread));
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.orbit-rings-outer .circle:nth-of-type(1) {
+  width: 99%;
+  height: 78%;
+  animation: orbit-rt 18s infinite linear;
+  box-shadow: inset 0 0 8px 0 blueviolet;
+}
+.orbit-rings-outer .circle:nth-of-type(2) {
+  width: 78%;
+  height: 99%;
+  animation: orbit-rt 24s infinite linear reverse;
+  box-shadow: inset 0 0 8px 0 darkmagenta;
+}
+.orbit-rings-outer .circle:nth-of-type(3) {
+  width: 92%;
+  height: 92%;
+  animation: orbit-rt 30s infinite linear;
+  box-shadow: inset 0 0 8px 0 darkviolet;
+}
+
+.ai-logo-orbit:hover .orbit-rings-outer,
+.ai-logo-orbit.is-open .orbit-rings-outer {
+  opacity: 0.65;
+  transform: translate(-50%, -50%) scaleX(1.1);
 }
 
 @keyframes orbit-rt {

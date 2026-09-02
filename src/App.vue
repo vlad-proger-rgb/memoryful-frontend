@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Navbar from '@/components/Navbar.vue'
+import DemoNavbar from '@/components/demo/DemoNavbar.vue'
+import DemoBottomNav from '@/components/demo/DemoBottomNav.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import AppToast from '@/components/ui/AppToast.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
@@ -15,6 +17,8 @@ const workspaceStore = useWorkspaceStore()
 const route = useRoute()
 
 const showAppShell = computed(() => route.meta.appShell !== false)
+// A route can ask for its own desktop header; the bottom bar stays shared.
+const usesDemoHeader = computed(() => route.meta.header === 'demo')
 
 watch(
   () => userStore.isAuthenticated,
@@ -29,8 +33,13 @@ watch(
 
 <template>
   <div class="min-h-dvh md:h-screen" :class="{ 'md:overflow-hidden': uiStore.disableScroll }">
-    <Navbar v-if="showAppShell" class="fixed top-0 left-0 w-full z-50 hidden md:flex" />
-    <BottomNav v-if="showAppShell" class="md:hidden" />
+    <DemoNavbar
+      v-if="showAppShell && usesDemoHeader"
+      class="fixed top-0 left-0 w-full z-50 hidden md:flex"
+    />
+    <Navbar v-else-if="showAppShell" class="fixed top-0 left-0 w-full z-50 hidden md:flex" />
+    <DemoBottomNav v-if="showAppShell && usesDemoHeader" class="md:hidden" />
+    <BottomNav v-else-if="showAppShell" class="md:hidden" />
     <AiChatPanel v-if="showAppShell" />
     <AppToast />
     <div
