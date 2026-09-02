@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUserStore } from '@/stores/user'
 
 declare module 'vue-router' {
@@ -6,7 +7,6 @@ declare module 'vue-router' {
     public?: boolean
     guestOnly?: boolean
     appShell?: boolean
-    /** Swaps the desktop header for a route-specific one; see App.vue. */
     header?: 'demo'
   }
 }
@@ -87,7 +87,6 @@ const router = createRouter({
       component: () => import('@/views/SearchView.vue'),
     },
     {
-      // Prototype of the merged central view; nothing else routes here yet.
       path: '/demo/dashboard',
       name: 'demo-dashboard',
       component: () => import('@/views/demo/DemoDashboardView.vue'),
@@ -168,6 +167,9 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && userStore.isAuthenticated) return { name: 'dashboard' }
   if (!to.meta.public && !userStore.isAuthenticated) return { name: 'landing' }
+
+  const featureFlags = useFeatureFlagsStore()
+  if (featureFlags.demoUi && to.name === 'dashboard') return { name: 'demo-dashboard' }
 })
 
 export default router

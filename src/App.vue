@@ -5,6 +5,7 @@ import DemoBottomNav from '@/components/demo/DemoBottomNav.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import AppToast from '@/components/ui/AppToast.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
+import useFeatureFlagsStore from '@/stores/featureFlags'
 import useUiStore from '@/stores/ui.ts'
 import { useUserStore } from '@/stores/user'
 import useWorkspaceStore from '@/stores/workspace'
@@ -12,13 +13,13 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const uiStore = useUiStore()
+const featureFlags = useFeatureFlagsStore()
 const userStore = useUserStore()
 const workspaceStore = useWorkspaceStore()
 const route = useRoute()
 
 const showAppShell = computed(() => route.meta.appShell !== false)
-// A route can ask for its own desktop header; the bottom bar stays shared.
-const usesDemoHeader = computed(() => route.meta.header === 'demo')
+const usesDemoHeader = computed(() => featureFlags.demoUi || route.meta.header === 'demo')
 
 watch(
   () => userStore.isAuthenticated,

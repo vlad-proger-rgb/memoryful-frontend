@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import SettingsButton from '@/components/ui/SettingsButton.vue'
+import { FEATURE_FLAGS } from '@/config/featureFlags'
+import useFeatureFlagsStore from '@/stores/featureFlags'
 import useUiStore from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
 import { useMediaPlaceholder, useStorageUpload } from '@/composables'
@@ -11,6 +13,7 @@ import type { WorkspacePageKey } from '@/types/workspace'
 
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
+const featureFlags = useFeatureFlagsStore()
 
 const { uploadToStorage } = useStorageUpload()
 const { generatePlaceholder } = useMediaPlaceholder()
@@ -220,5 +223,78 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+
+    <section
+      class="flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-[17.5px]"
+    >
+      <div>
+        <p class="text-xl font-semibold">Experiments</p>
+        <p class="text-sm opacity-80">
+          Designs still being built. They change how the app looks, never what it does — and the
+          choice lives in this browser only.
+        </p>
+      </div>
+
+      <label
+        v-for="flag in FEATURE_FLAGS"
+        :key="flag.id"
+        class="flex cursor-pointer items-start justify-between gap-4 rounded-xl bg-white/10 p-4"
+      >
+        <span class="min-w-0">
+          <span class="block font-semibold">{{ flag.label }}</span>
+          <span class="block text-sm opacity-70">{{ flag.description }}</span>
+        </span>
+
+        <button
+          type="button"
+          role="switch"
+          class="experiment-switch shrink-0"
+          :class="{ 'is-on': featureFlags.isEnabled(flag.id) }"
+          :aria-checked="featureFlags.isEnabled(flag.id)"
+          :aria-label="flag.label"
+          @click="featureFlags.setFlag(flag.id, !featureFlags.isEnabled(flag.id))"
+        >
+          <span class="experiment-knob" />
+        </button>
+      </label>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.experiment-switch {
+  width: 52px;
+  height: 30px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.experiment-switch.is-on {
+  background: rgba(139, 92, 246, 0.75);
+  border-color: rgba(196, 162, 255, 0.9);
+}
+
+.experiment-knob {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.experiment-switch.is-on .experiment-knob {
+  transform: translateX(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experiment-knob {
+    transition: none;
+  }
+}
+</style>
