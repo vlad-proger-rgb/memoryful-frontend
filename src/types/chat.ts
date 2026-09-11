@@ -52,3 +52,13 @@ export interface CompletionResult {
   title: string
   message: ChatMessage
 }
+
+/**
+ * Something the user pinned to the next message. Shown as a chip above the input;
+ * `content` is prefixed to what they send.
+ */
+export interface ChatAttachment {
+  label: string
+  icon: string
+  content: string
+}

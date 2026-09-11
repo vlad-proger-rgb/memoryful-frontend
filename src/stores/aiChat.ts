@@ -4,7 +4,13 @@ import { defineStore } from 'pinia'
 import { aiApi, chatModelsApi } from '@/api'
 import { useApiError } from '@/composables'
 import { useUiStore } from '@/stores/ui'
-import type { ChatDetail, ChatListItem, ChatMessage, ChatModelOption } from '@/types/chat'
+import type {
+  ChatAttachment,
+  ChatDetail,
+  ChatListItem,
+  ChatMessage,
+  ChatModelOption,
+} from '@/types/chat'
 
 const MODEL_STORAGE_KEY = 'ai:selectedModelId'
 const PENDING_CHAT_ID = 'pending'
@@ -291,6 +297,17 @@ export const useAiChatStore = defineStore('aiChat', () => {
 
   const draft = ref('')
 
+  /** Context carried alongside the draft: shown as a chip, sent as a prefix. */
+  const attachment = ref<ChatAttachment | null>(null)
+
+  function attach(next: ChatAttachment) {
+    attachment.value = next
+  }
+
+  function clearAttachment() {
+    attachment.value = null
+  }
+
   // The rename editor lives on the sidebar row, so the header asks for it rather than
   // owning a second one. Bumped per request so renaming the same chat twice re-triggers.
   const renameRequest = ref<{ id: string; seq: number } | null>(null)
@@ -302,6 +319,9 @@ export const useAiChatStore = defineStore('aiChat', () => {
 
   return {
     draft,
+    attachment,
+    attach,
+    clearAttachment,
     renameRequest,
     requestRename,
     isOpen,

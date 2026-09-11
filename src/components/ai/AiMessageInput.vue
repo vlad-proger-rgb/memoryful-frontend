@@ -32,9 +32,14 @@ onMounted(() => {
 const send = async () => {
   const value = text.value
   if (!value.trim() || store.isSending) return
+
+  const pinned = store.attachment
+  const message = pinned ? `${pinned.content}\n\n${value}` : value
+
   text.value = ''
+  store.clearAttachment()
   nextTick(autoGrow)
-  await store.sendMessage(value)
+  await store.sendMessage(message)
 }
 
 const onKeydown = (e: KeyboardEvent) => {
@@ -57,6 +62,33 @@ defineExpose({
 
 <template>
   <div class="px-3 pt-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-3 shrink-0">
+    <Transition
+      enter-active-class="transition duration-150 ease-out"
+      leave-active-class="transition duration-100 ease-in"
+      enter-from-class="opacity-0 translate-y-1"
+      leave-to-class="opacity-0 translate-y-1"
+    >
+      <div v-if="store.attachment" class="mb-1.5 flex">
+        <span
+          class="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/8 py-1.5 pr-1.5 pl-2.5 text-xs text-white/70"
+        >
+          <font-awesome-icon
+            :icon="store.attachment.icon"
+            class="shrink-0 text-[11px] text-white/40"
+          />
+          <span class="truncate">{{ store.attachment.label }}</span>
+          <button
+            type="button"
+            class="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-white/35 transition hover:bg-white/10 hover:text-white"
+            aria-label="Remove attachment"
+            @click="store.clearAttachment()"
+          >
+            <font-awesome-icon icon="xmark" class="text-[10px]" />
+          </button>
+        </span>
+      </div>
+    </Transition>
+
     <div
       class="flex items-end gap-2 bg-white/10 hover:bg-white/[0.13] focus-within:bg-white/[0.13] backdrop-blur-md border border-white/10 focus-within:border-white/25 rounded-2xl px-2 py-2 transition-colors"
     >
