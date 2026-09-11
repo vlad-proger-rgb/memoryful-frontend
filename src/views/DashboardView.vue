@@ -8,6 +8,7 @@ import { insightsApi } from '@/api'
 import type { InsightInDB } from '@/types'
 import { getIcon } from '@/plugins/fontawesome'
 import ModalWindow from '@/components/ModalWindow.vue'
+import { dayPath } from '@/utils/routes'
 
 const workspaceStore = useWorkspaceStore()
 const uiStore = useUiStore()
@@ -16,13 +17,7 @@ uiStore.disableScroll = true
 
 const background = computed(() => workspaceStore.backgrounds.dashboard)
 
-const todayPath = computed(() => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const day = now.getDate()
-  return `/calendar/${year}/${month}/${day}`
-})
+const todayPath = computed(() => dayPath(new Date()))
 
 const rawInsights = ref<InsightInDB[]>([])
 const rawSuggestions = ref<InsightInDB[]>([])

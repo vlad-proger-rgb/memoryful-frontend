@@ -7,8 +7,6 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import citiesApi from '@/api/cities'
 import countriesApi from '@/api/countries'
 import daysApi from '@/api/days'
-import insightsApi from '@/api/insights'
-import suggestionsApi from '@/api/suggestions'
 import tagsApi from '@/api/tags'
 import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
 import DayCard from '@/components/day/DayCard.vue'
@@ -17,26 +15,20 @@ import DayInfo from '@/components/day/DayInfo.vue'
 import DayStats from '@/components/day/DayStats.vue'
 import DayTrackables from '@/components/day/DayTrackables.vue'
 import TagSelector from '@/components/day/TagSelector.vue'
+import DigestSheet from '@/components/digest/DigestSheet.vue'
 import MainButton from '@/components/MainButton.vue'
 import ModalWindow from '@/components/ModalWindow.vue'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
-import { useResolvedStorageMedia } from '@/composables'
+import { useResolvedStorageMedia, type DigestMode } from '@/composables'
+import { endOfDay, latestFinishedWeek, startOfDay, toIsoDate, toTimestamp } from '@/utils/dates'
+import { dayPath } from '@/utils/routes'
 import { markScrollReady } from '@/utils/scrollReady'
-import { getIcon } from '@/plugins/fontawesome'
 import useAiChatStore from '@/stores/aiChat'
 import useUiStore from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
 import useWorkspaceStore from '@/stores/workspace'
-import type {
-  CityDetail,
-  Country,
-  DayFilters,
-  DayListItem,
-  InsightInDB,
-  SuggestionInDB,
-  Tag,
-} from '@/types'
+import type { CityDetail, Country, DayFilters, DayListItem, Tag } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,20 +39,6 @@ const workspaceStore = useWorkspaceStore()
 
 const PAGE_SIZE = 5
 const DAY_MS = 24 * 60 * 60 * 1000
-const DIGEST_DAYS = 7
-const DIGEST_WEEKS = 8
-
-const startOfDay = (date: Date) => {
-  const copy = new Date(date)
-  copy.setHours(0, 0, 0, 0)
-  return copy
-}
-
-const endOfDay = (date: Date) => {
-  const copy = new Date(date)
-  copy.setHours(23, 59, 59, 999)
-  return copy
-}
 
 const parseDate = (value: unknown): Date | null => {
   if (!value) return null
@@ -68,19 +46,8 @@ const parseDate = (value: unknown): Date | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-const toIsoDate = (date: Date) => {
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-const toTimestamp = (date: Date) => Math.floor(date.getTime() / 1000)
-
 const formatShort = (value: number) =>
   new Date(value).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
-
-const formatDayLabel = (value: number) =>
-  new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
 const query = ref(String(route.query.q ?? ''))
 const appliedQuery = ref(query.value)
@@ -293,11 +260,6 @@ const clearFilters = async () => {
   syncUrl()
 }
 
-const dayPath = (timestamp: number) => {
-  const date = new Date(timestamp)
-  return `/calendar/${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`
-}
-
 const toggleStarred = async (timestamp: string | number) => {
   const day = days.value.find((item) => item.timestamp === timestamp)
   if (!day) return
@@ -369,7 +331,7 @@ const restoreFiltersFromUrl = async () => {
 /* ---------- today, and the AI blocks behind it ---------- */
 
 const todayTimestamp = computed(() => startOfDay(new Date()).getTime())
-const todayPath = computed(() => dayPath(todayTimestamp.value))
+const todayPath = computed(() => dayPath(new Date(todayTimestamp.value)))
 const todayLabel = computed(() =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
 )
@@ -397,71 +359,10 @@ const loadToday = async () => {
   }
 }
 
-type AiModalMode = 'today' | 'week'
+const showDigest = ref(false)
+const digestMode = ref<DigestMode>('today')
 
-const showAiModal = ref(false)
-const aiModalMode = ref<AiModalMode>('today')
-const insights = ref<InsightInDB[]>([])
-const suggestions = ref<SuggestionInDB[]>([])
-const isLoadingAi = ref(false)
-const hasLoadedAi = ref(false)
-const expandedIds = ref(new Set<string>())
-
-const digestDays = ref<DayListItem[]>([])
-const isLoadingDigest = ref(false)
-
-const onlyDate = (value: string) => value.slice(0, 10)
-
-interface DigestWeek {
-  start: Date
-  end: Date
-  startIso: string
-  endIso: string
-  label: string
-}
-
-const startOfWeek = (date: Date) => {
-  const copy = startOfDay(date)
-  // Monday-first, so a "week" matches how the digest is meant to be generated.
-  const weekday = (copy.getDay() + 6) % 7
-  copy.setDate(copy.getDate() - weekday)
-  return copy
-}
-
-// Only weeks that have finished: the digest is written once, after the week is over.
-const digestWeeks = computed<DigestWeek[]>(() => {
-  const thisWeek = startOfWeek(new Date())
-  return Array.from({ length: DIGEST_WEEKS }, (_, index) => {
-    const start = new Date(thisWeek)
-    start.setDate(start.getDate() - (index + 1) * DIGEST_DAYS)
-    const end = new Date(start)
-    end.setDate(end.getDate() + (DIGEST_DAYS - 1))
-    return {
-      start,
-      end,
-      startIso: toIsoDate(start),
-      endIso: toIsoDate(end),
-      // The month repeats only when the week straddles two of them.
-      label: `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(
-        'en-US',
-        start.getMonth() === end.getMonth()
-          ? { day: 'numeric' }
-          : { month: 'short', day: 'numeric' },
-      )}`,
-    }
-  })
-})
-
-const selectedWeekIndex = ref(0)
-const selectedWeek = computed(() => digestWeeks.value[selectedWeekIndex.value])
-
-const windowStartIso = computed(() =>
-  aiModalMode.value === 'today' ? toIsoDate(new Date()) : selectedWeek.value.startIso,
-)
-
-const windowEndIso = computed(() =>
-  aiModalMode.value === 'today' ? toIsoDate(new Date()) : selectedWeek.value.endIso,
-)
+const latestWeek = latestFinishedWeek()
 
 /* The unread mark. There is no digest table yet, so "have I read the newest one" lives in
    this browser; swap the two helpers for `viewed_at` once the backend writes digests. */
@@ -486,132 +387,12 @@ const markDigestSeen = (weekStartIso: string) => {
   }
 }
 
-const hasUnreadDigest = computed(() => lastSeenWeek.value !== digestWeeks.value[0]?.startIso)
+const hasUnreadDigest = computed(() => lastSeenWeek.value !== latestWeek.startIso)
 
-const LATEST_FALLBACK = 5
-
-const windowInsights = computed(() =>
-  insights.value.filter(
-    (i) =>
-      onlyDate(i.dateBegin) >= windowStartIso.value && onlyDate(i.dateBegin) <= windowEndIso.value,
-  ),
-)
-
-const windowSuggestions = computed(() =>
-  suggestions.value.filter(
-    (s) => onlyDate(s.date) >= windowStartIso.value && onlyDate(s.date) <= windowEndIso.value,
-  ),
-)
-
-// Days go quiet for a while and the window comes back empty; the last few still say
-// something, so show them rather than a dead end — labeled, so the dates stay honest.
-const showingLatestInsights = computed(
-  () => !windowInsights.value.length && insights.value.length > 0,
-)
-const showingLatestSuggestions = computed(
-  () => !windowSuggestions.value.length && suggestions.value.length > 0,
-)
-
-const modalInsights = computed(() =>
-  showingLatestInsights.value ? insights.value.slice(0, LATEST_FALLBACK) : windowInsights.value,
-)
-
-const modalSuggestions = computed(() =>
-  showingLatestSuggestions.value
-    ? suggestions.value.slice(0, LATEST_FALLBACK)
-    : windowSuggestions.value,
-)
-
-const digestStats = computed(() => ({
-  entries: digestDays.value.length,
-  starred: digestDays.value.filter((d) => d.starred).length,
-  steps: digestDays.value.reduce((total, d) => total + (d.steps || 0), 0),
-  tracked: digestDays.value.reduce(
-    (total, d) => total + (d.trackableProgresses?.reduce((sum, p) => sum + (p.value || 0), 0) ?? 0),
-    0,
-  ),
-}))
-
-const aiModalTitle = computed(() =>
-  aiModalMode.value === 'today' ? "Today's AI summary" : 'Weekly digest',
-)
-
-const insightIcon = (item: InsightInDB): [string, string] =>
-  item.icon ? (getIcon(item.icon) as [string, string]) : ['fas', 'lightbulb']
-
-const suggestionIcon = (item: SuggestionInDB): [string, string] =>
-  item.icon ? (getIcon(item.icon) as [string, string]) : ['fas', 'wand-magic-sparkles']
-
-const isExpanded = (id: string) => expandedIds.value.has(id)
-
-const toggleExpanded = (id: string) => {
-  const next = new Set(expandedIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  expandedIds.value = next
-}
-
-const loadAiContent = async () => {
-  if (hasLoadedAi.value) return
-  isLoadingAi.value = true
-  try {
-    const [ins, sug] = await Promise.all([
-      insightsApi.getInsights({ limit: 50, offset: 0 }),
-      suggestionsApi.getSuggestions({ limit: 50, offset: 0 }),
-    ])
-    insights.value = ins.data || []
-    suggestions.value = sug.data || []
-    hasLoadedAi.value = true
-  } catch (e: unknown) {
-    const maybeErr = e as { msg?: string }
-    uiStore.showToast(maybeErr?.msg || 'Failed to load AI content', 'error')
-  } finally {
-    isLoadingAi.value = false
-  }
-}
-
-const loadDigestDays = async () => {
-  isLoadingDigest.value = true
-  try {
-    const week = selectedWeek.value
-    const response = await daysApi.getDays({
-      limit: 50,
-      sortField: 'timestamp',
-      sortOrder: 'desc',
-      filters: {
-        createdAfter: toTimestamp(startOfDay(week.start)),
-        createdBefore: toTimestamp(endOfDay(week.end)),
-      },
-    })
-    digestDays.value = (response.data ?? []).map((day) => ({
-      ...day,
-      timestamp: day.timestamp * 1000,
-      exists: true,
-    }))
-  } catch {
-    digestDays.value = []
-  } finally {
-    isLoadingDigest.value = false
-  }
-}
-
-const openAiModal = (mode: AiModalMode) => {
-  aiModalMode.value = mode
-  expandedIds.value = new Set()
-  showAiModal.value = true
-  loadAiContent()
-  if (mode === 'week') {
-    selectedWeekIndex.value = 0
-    markDigestSeen(digestWeeks.value[0].startIso)
-    loadDigestDays()
-  }
-}
-
-const selectDigestWeek = (index: number) => {
-  if (index === selectedWeekIndex.value) return
-  selectedWeekIndex.value = index
-  expandedIds.value = new Set()
-  loadDigestDays()
+const openDigest = (mode: DigestMode) => {
+  digestMode.value = mode
+  showDigest.value = true
+  if (mode === 'week') markDigestSeen(latestWeek.startIso)
 }
 
 const discussToday = () => {
@@ -704,7 +485,7 @@ const goToNewEntry = () => {
   if (!newEntryDate.value) return
   const target = startOfDay(newEntryDate.value).getTime()
   showNewEntry.value = false
-  router.push(dayPath(target))
+  router.push(dayPath(new Date(target)))
 }
 
 /* ---------- pointer spotlight ---------- */
@@ -836,7 +617,7 @@ onBeforeUnmount(() => {
                   Discuss
                   <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
                 </button>
-                <button type="button" class="row-button" @click="openAiModal('today')">
+                <button type="button" class="row-button" @click="openDigest('today')">
                   <font-awesome-icon icon="lightbulb" class="text-white/60" />
                   AI summary
                   <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
@@ -862,7 +643,7 @@ onBeforeUnmount(() => {
             </template>
           </div>
 
-          <button type="button" class="cta-digest" @click="openAiModal('week')">
+          <button type="button" class="cta-digest" @click="openDigest('week')">
             <span class="flex w-full items-center gap-3">
               <span class="relative flex">
                 <font-awesome-icon icon="wand-magic-sparkles" class="text-lg" />
@@ -873,9 +654,7 @@ onBeforeUnmount(() => {
                   Weekly digest
                   <span v-if="hasUnreadDigest" class="sr-only">(unread)</span>
                 </span>
-                <span class="text-[11px] text-white/70">
-                  {{ digestWeeks[0].label }}, summarized
-                </span>
+                <span class="text-[11px] text-white/70">Your week, summarized</span>
               </span>
               <font-awesome-icon icon="angle-right" class="ml-auto" />
             </span>
@@ -1137,7 +916,7 @@ onBeforeUnmount(() => {
                   <template #open>
                     <MainButton
                       class="whitespace-nowrap"
-                      @click="router.push(dayPath(day.timestamp))"
+                      @click="router.push(dayPath(new Date(day.timestamp)))"
                     >
                       <template #default>Open</template>
                       <template #icon-right>
@@ -1173,145 +952,8 @@ onBeforeUnmount(() => {
       </button>
     </Transition>
 
-    <!-- Insights and suggestions, the two dashboard blocks folded into one window -->
-    <ModalWindow v-model="showAiModal" max-width="2xl">
-      <template #header>
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-white">{{ aiModalTitle }}</h2>
-          <button
-            type="button"
-            class="flex size-9 shrink-0 items-center justify-center rounded-lg text-white/60 transition hover:text-white"
-            aria-label="Close"
-            @click="showAiModal = false"
-          >
-            <font-awesome-icon icon="times" />
-          </button>
-        </div>
-      </template>
-
-      <div class="space-y-5">
-        <!-- Each digest belongs to one finished week, so the older ones live right here. -->
-        <div v-if="aiModalMode === 'week'" class="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-          <button
-            v-for="(week, index) in digestWeeks"
-            :key="week.startIso"
-            type="button"
-            class="week-chip"
-            :class="{ 'is-selected': index === selectedWeekIndex }"
-            @click="selectDigestWeek(index)"
-          >
-            {{ index === 0 ? 'Last week' : week.label }}
-          </button>
-        </div>
-
-        <div v-if="aiModalMode === 'week'" class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div class="stat-tile">
-            <span class="stat-value">{{ isLoadingDigest ? '—' : digestStats.entries }}</span>
-            <span class="stat-label">entries</span>
-          </div>
-          <div class="stat-tile">
-            <span class="stat-value">{{ isLoadingDigest ? '—' : digestStats.starred }}</span>
-            <span class="stat-label">starred</span>
-          </div>
-          <div class="stat-tile">
-            <span class="stat-value">
-              {{ isLoadingDigest ? '—' : digestStats.steps.toLocaleString() }}
-            </span>
-            <span class="stat-label">steps</span>
-          </div>
-          <div class="stat-tile">
-            <span class="stat-value">{{ isLoadingDigest ? '—' : digestStats.tracked }}</span>
-            <span class="stat-label">tracked min</span>
-          </div>
-        </div>
-
-        <div v-if="isLoadingAi" class="py-8 text-center">
-          <font-awesome-icon icon="spinner" class="animate-spin text-2xl text-white/80" />
-        </div>
-
-        <template v-else>
-          <section>
-            <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-              <p class="field-label">Insights</p>
-              <p v-if="showingLatestInsights" class="text-[11px] text-white/45">
-                nothing {{ aiModalMode === 'today' ? 'today' : 'that week' }} — showing the latest
-              </p>
-            </div>
-            <p v-if="!modalInsights.length" class="text-sm text-white/50">
-              Nothing yet — write a day and mark it complete to generate.
-            </p>
-            <div v-else class="flex flex-col gap-2">
-              <div v-for="item in modalInsights" :key="item.id">
-                <button type="button" class="ai-row" @click="toggleExpanded(item.id)">
-                  <font-awesome-icon :icon="insightIcon(item)" class="text-white/70" />
-                  <span class="min-w-0 flex-1 text-left text-sm">{{ item.description }}</span>
-                  <span class="shrink-0 text-[11px] text-white/40">
-                    {{ onlyDate(item.dateBegin) }}
-                  </span>
-                  <font-awesome-icon
-                    icon="angle-down"
-                    class="shrink-0 text-white/50 transition-transform"
-                    :class="isExpanded(item.id) ? 'rotate-180' : ''"
-                  />
-                </button>
-                <div v-if="isExpanded(item.id)" class="ai-body">{{ item.content }}</div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-              <p class="field-label">Suggestions</p>
-              <p v-if="showingLatestSuggestions" class="text-[11px] text-white/45">
-                nothing {{ aiModalMode === 'today' ? 'today' : 'that week' }} — showing the latest
-              </p>
-            </div>
-            <p v-if="!modalSuggestions.length" class="text-sm text-white/50">Nothing yet.</p>
-            <div v-else class="flex flex-col gap-2">
-              <div v-for="item in modalSuggestions" :key="item.id">
-                <button type="button" class="ai-row" @click="toggleExpanded(item.id)">
-                  <font-awesome-icon :icon="suggestionIcon(item)" class="text-white/70" />
-                  <span class="min-w-0 flex-1 text-left text-sm">{{ item.description }}</span>
-                  <span class="shrink-0 text-[11px] text-white/40">{{ onlyDate(item.date) }}</span>
-                  <font-awesome-icon
-                    icon="angle-down"
-                    class="shrink-0 text-white/50 transition-transform"
-                    :class="isExpanded(item.id) ? 'rotate-180' : ''"
-                  />
-                </button>
-                <div v-if="isExpanded(item.id)" class="ai-body">{{ item.content }}</div>
-              </div>
-            </div>
-          </section>
-
-          <section v-if="aiModalMode === 'week'">
-            <p class="field-label mb-2">Days in {{ selectedWeek.label }}</p>
-            <p v-if="!digestDays.length && !isLoadingDigest" class="text-sm text-white/50">
-              No entries in {{ selectedWeek.label }}.
-            </p>
-            <div v-else class="flex flex-col gap-1.5">
-              <RouterLink
-                v-for="day in digestDays"
-                :key="day.timestamp"
-                :to="dayPath(day.timestamp)"
-                class="ai-row"
-                @click="showAiModal = false"
-              >
-                <font-awesome-icon
-                  :icon="day.starred ? 'star' : 'calendar-day'"
-                  :class="day.starred ? 'text-yellow-400' : 'text-white/60'"
-                />
-                <span class="shrink-0 text-sm">{{ formatDayLabel(day.timestamp) }}</span>
-                <span class="min-w-0 flex-1 truncate text-sm text-white/60">
-                  {{ day.description || 'No description' }}
-                </span>
-                <font-awesome-icon icon="angle-right" class="shrink-0 text-white/40" />
-              </RouterLink>
-            </div>
-          </section>
-        </template>
-      </div>
-    </ModalWindow>
+    <!-- Today's summary and the weekly digest, one sheet with two faces -->
+    <DigestSheet v-model="showDigest" :mode="digestMode" :today="todayEntry" />
 
     <!-- Picks the date, then hands over to the day editor that already exists -->
     <ModalWindow v-model="showNewEntry" max-width="sm">
@@ -1709,29 +1351,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px rgba(10, 10, 16, 0.6);
 }
 
-.week-chip {
-  flex: 0 0 auto;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.week-chip:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.week-chip.is-selected {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
 .load-more {
   display: inline-flex;
   align-items: center;
@@ -1801,58 +1420,6 @@ onBeforeUnmount(() => {
     left: calc(50% + 22rem);
     transform: translateY(-50%);
   }
-}
-
-/* ---------- modal content ---------- */
-
-.stat-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.stat-value {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.stat-label {
-  font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.ai-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.ai-row:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.ai-body {
-  margin-top: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.8);
-  white-space: pre-line;
 }
 
 .new-entry-picker :deep(.dp__theme_dark) {

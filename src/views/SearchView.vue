@@ -18,6 +18,7 @@ import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
+import { dayPath } from '@/utils/routes'
 
 const router = useRouter()
 const route = useRoute()
@@ -155,13 +156,7 @@ const clearAllFilters = () => {
   router.replace({ query: {} })
 }
 
-const getDayUrl = (timestamp: number) => {
-  const date = new Date(timestamp)
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `/calendar/${year}/${month}/${day}`
-}
+const getDayUrl = (timestamp: number) => dayPath(new Date(timestamp))
 
 const formatDate = (timestamp: number) => {
   const date = new Date(timestamp)

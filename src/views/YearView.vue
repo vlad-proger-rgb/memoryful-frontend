@@ -16,6 +16,7 @@ import MediaBackground from '@/components/ui/MediaBackground.vue'
 
 import { useShake, useStorageUpload, useMediaPlaceholder } from '@/composables'
 import { isVideoFile } from '@/utils/media'
+import { dayPath, monthPath, yearPath } from '@/utils/routes'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,6 +39,15 @@ const errorMessage = ref('')
 const topDayNumber = ref('')
 const currentYearNumber = ref(new Date().getFullYear())
 const currentMonthNumber = ref(new Date().getMonth() + 1)
+
+// Empty until a month with entries loads; Number('') would resolve to the month before.
+const topDayPath = computed(() =>
+  topDayNumber.value
+    ? dayPath(
+        new Date(currentYearNumber.value, currentMonthNumber.value - 1, Number(topDayNumber.value)),
+      )
+    : monthPath(currentYearNumber.value, currentMonthNumber.value),
+)
 const currentMonthRecord = ref<Month>({
   year: currentYearNumber.value,
   month: currentMonthNumber.value,
@@ -249,7 +259,7 @@ async function handleMonthSelect(monthNumber: number) {
   if (fileInput.value) fileInput.value.value = ''
 
   await router.push({
-    path: `/calendar/${currentYearNumber.value}`,
+    path: yearPath(currentYearNumber.value),
     query: { month: monthNumber.toString() },
   })
 
@@ -401,7 +411,7 @@ const submitMonth = async () => {
         <div class="order-3 md:order-2 basis-full md:basis-auto">
           <YearSlider
             class="w-fit"
-            @click="router.push(`/calendar/${currentYearNumber}`)"
+            @click="router.push(yearPath(currentYearNumber))"
             @prev="currentYearNumber--"
             @next="currentYearNumber++"
             :year="currentYearNumber"
@@ -423,7 +433,7 @@ const submitMonth = async () => {
 
       <div class="md:absolute md:bottom-18 md:left-0 md:right-0 z-30 flex justify-between p-4">
         <div>
-          <MainButton @click="router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}`)">
+          <MainButton @click="router.push(monthPath(currentYearNumber, currentMonthNumber))">
             <template #default>Open</template>
             <template #icon-right>
               <font-awesome-icon icon="arrow-right-long" />
@@ -431,11 +441,7 @@ const submitMonth = async () => {
           </MainButton>
         </div>
         <div>
-          <MainButton
-            @click="
-              router.push(`/calendar/${currentYearNumber}/${currentMonthNumber}/${topDayNumber}`)
-            "
-          >
+          <MainButton @click="router.push(topDayPath)">
             <template #default>Top Day</template>
             <template #icon-right>
               <font-awesome-icon icon="arrow-right-long" />

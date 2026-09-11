@@ -16,6 +16,7 @@ import DayStats from '@/components/day/DayStats.vue'
 import DayTrackables from '@/components/day/DayTrackables.vue'
 import MainButton from '@/components/MainButton.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
+import { dayPath } from '@/utils/routes'
 
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
@@ -187,13 +188,7 @@ const toggleStarred = async (date: string | number) => {
           <template #open>
             <MainButton
               class="whitespace-nowrap"
-              @click="
-                router.push(
-                  `/calendar/${new Date(day.timestamp).getFullYear()}/${
-                    new Date(day.timestamp).getMonth() + 1
-                  }/${new Date(day.timestamp).getDate()}`,
-                )
-              "
+              @click="router.push(dayPath(new Date(day.timestamp)))"
             >
               <template #default>Open</template>
               <template #icon-right>
