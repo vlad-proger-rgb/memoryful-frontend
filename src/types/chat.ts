@@ -1,3 +1,10 @@
+/** Just enough of a model to name it in the UI. */
+export interface ChatModelRef {
+  id: string
+  label: string
+  provider: string
+}
+
 export interface ChatModelOption {
   id: string
   label: string

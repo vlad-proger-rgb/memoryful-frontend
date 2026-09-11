@@ -4,8 +4,8 @@ import useUiStore from '@/stores/ui'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 import { computed, onActivated, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { insightsApi, suggestionsApi } from '@/api'
-import type { InsightInDB, SuggestionInDB } from '@/types'
+import { insightsApi } from '@/api'
+import type { InsightInDB } from '@/types'
 import { getIcon } from '@/plugins/fontawesome'
 import ModalWindow from '@/components/ModalWindow.vue'
 
@@ -25,7 +25,7 @@ const todayPath = computed(() => {
 })
 
 const rawInsights = ref<InsightInDB[]>([])
-const rawSuggestions = ref<SuggestionInDB[]>([])
+const rawSuggestions = ref<InsightInDB[]>([])
 const isLoadingAi = ref(false)
 
 const todayIso = computed(() => {
@@ -36,11 +36,13 @@ const todayIso = computed(() => {
   return `${yyyy}-${mm}-${dd}`
 })
 
+const dayIsoOf = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(0, 10)
+
 const todaysInsightsRaw = computed(() =>
-  rawInsights.value.filter((i) => i.dateBegin === todayIso.value),
+  rawInsights.value.filter((i) => dayIsoOf(i.timestamp) === todayIso.value),
 )
 const todaysSuggestionsRaw = computed(() =>
-  rawSuggestions.value.filter((s) => s.date === todayIso.value),
+  rawSuggestions.value.filter((s) => dayIsoOf(s.timestamp) === todayIso.value),
 )
 
 const insightsPreview = computed(() => todaysInsightsRaw.value.slice(0, 3))
@@ -52,7 +54,7 @@ const getInsightIcon = (item: InsightInDB): [string, string] => {
     : (['fas', 'lightbulb'] as [string, string])
 }
 
-const getSuggestionIcon = (item: SuggestionInDB): [string, string] => {
+const getSuggestionIcon = (item: InsightInDB): [string, string] => {
   return item.icon
     ? (getIcon(item.icon) as [string, string])
     : (['fas', 'wand-magic-sparkles'] as [string, string])
@@ -158,8 +160,8 @@ const loadAi = async () => {
   isLoadingAi.value = true
   try {
     const [ins, sug] = await Promise.all([
-      insightsApi.getInsights({ limit: 50, offset: 0 }),
-      suggestionsApi.getSuggestions({ limit: 50, offset: 0 }),
+      insightsApi.getInsights({ limit: 50, offset: 0, kind: 'observation' }),
+      insightsApi.getInsights({ limit: 50, offset: 0, kind: 'suggestion' }),
     ])
     rawInsights.value = ins.data || []
     rawSuggestions.value = sug.data || []
@@ -481,7 +483,7 @@ onActivated(() => {
 
                   <div v-else class="flex flex-col gap-3">
                     <div
-                      v-for="item in aiModalItems as SuggestionInDB[]"
+                      v-for="item in aiModalItems as InsightInDB[]"
                       :key="item.id"
                       class="flex flex-col gap-3"
                     >

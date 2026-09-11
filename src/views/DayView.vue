@@ -19,7 +19,6 @@ import type {
   TrackableInDB,
   TrackableType,
   InsightInDB,
-  SuggestionInDB,
 } from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
@@ -98,7 +97,6 @@ const day = ref<DayDetail>({
   trackableProgresses: [],
   starred: false,
   insights: [],
-  suggestions: [],
 })
 
 const showModal = ref(false)
@@ -425,11 +423,18 @@ const handleModalOpen = () => {
   onModalOpen()
 }
 
-const handleDiscuss = (item: InsightInDB | SuggestionInDB, type: 'insight' | 'suggestion') => {
+const handleDiscuss = (item: InsightInDB, type: 'insight' | 'suggestion') => {
   console.log(`Discuss ${type}:`, item)
   // TODO: Implement discuss functionality
   uiStore.showToast(`Discuss feature coming soon for ${type}`, 'info')
 }
+
+const dayObservations = computed(
+  () => day.value.insights?.filter((item) => item.kind === 'observation') ?? [],
+)
+const daySuggestions = computed(
+  () => day.value.insights?.filter((item) => item.kind === 'suggestion') ?? [],
+)
 
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -666,7 +671,6 @@ const loadDay = async () => {
       trackableProgresses: [],
       starred: false,
       insights: [],
-      suggestions: [],
     }
     dayExists.value = false
 
@@ -947,7 +951,7 @@ onUnmounted(() => {
           >
             <div v-show="showInsights" class="mt-6 space-y-6">
               <!-- Insights Section -->
-              <div v-if="day.insights?.length">
+              <div v-if="dayObservations.length">
                 <h4
                   class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
                 >
@@ -960,7 +964,7 @@ onUnmounted(() => {
                 </div>
                 <div class="space-y-3">
                   <div
-                    v-for="insight in day.insights"
+                    v-for="insight in dayObservations"
                     :key="insight.id"
                     class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
                   >
@@ -990,7 +994,7 @@ onUnmounted(() => {
               <div v-else class="text-white/50 text-sm">No insights available for this day</div>
 
               <!-- Suggestions Section -->
-              <div v-if="day.suggestions?.length">
+              <div v-if="daySuggestions.length">
                 <h4
                   class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
                 >
@@ -1003,7 +1007,7 @@ onUnmounted(() => {
                 </div>
                 <div class="space-y-3">
                   <div
-                    v-for="suggestion in day.suggestions"
+                    v-for="suggestion in daySuggestions"
                     :key="suggestion.id"
                     class="bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all relative group"
                   >
