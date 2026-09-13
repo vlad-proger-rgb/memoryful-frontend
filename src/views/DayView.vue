@@ -19,6 +19,7 @@ import type {
   TrackableInDB,
   TrackableType,
   InsightInDB,
+  ChatModelRef,
 } from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
@@ -34,6 +35,7 @@ import LocationAutocomplete from '@/components/ui/LocationAutocomplete.vue'
 import DayImage from '@/components/day/DayImage.vue'
 import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
+import AiProviderIcon from '@/components/ai/AiProviderIcon.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -434,6 +436,11 @@ const dayObservations = computed(
 )
 const daySuggestions = computed(
   () => day.value.insights?.filter((item) => item.kind === 'suggestion') ?? [],
+)
+
+// A day's items all come from one run, so the first one names the author.
+const dayAuthorModel = computed<ChatModelRef | null>(
+  () => day.value.insights?.[0]?.chatModel ?? null,
 )
 
 const scrollToTop = () => {
@@ -923,20 +930,27 @@ onUnmounted(() => {
           </Transition>
         </BaseBox>
 
-        <!-- Insights & Suggestions -->
+        <!-- Insights -->
         <BaseBox class="mb-8">
           <button
             @click="showInsights = !showInsights"
-            class="w-full min-h-11 md:min-h-0 flex items-center justify-between text-left group"
+            class="w-full min-h-11 md:min-h-0 grid grid-cols-[1fr_auto] md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-left group"
           >
             <h3
-              class="text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
+              class="col-start-1 row-start-1 text-white/70 text-sm font-medium group-hover:text-white/90 transition-colors"
             >
-              View Insights & Suggestions
+              View Insights
             </h3>
+            <span
+              v-if="dayAuthorModel"
+              class="col-span-2 row-start-2 justify-self-center md:col-span-1 md:col-start-2 md:row-start-1 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-sm text-white/85"
+            >
+              <AiProviderIcon :provider="dayAuthorModel.provider" class="text-sm" />
+              {{ dayAuthorModel.label }}
+            </span>
             <font-awesome-icon
               :icon="showInsights ? 'chevron-up' : 'chevron-down'"
-              class="text-white/50 group-hover:text-white/70 transition-colors"
+              class="col-start-2 row-start-1 md:col-start-3 justify-self-end text-white/50 group-hover:text-white/70 transition-colors"
             />
           </button>
 
