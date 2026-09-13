@@ -1,51 +1,42 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
+import { computed, onMounted } from 'vue'
 
-const modelKey = 'ai:selectedModel'
-const allowCalendarKey = 'ai:allowCalendar'
-const allowSearchKey = 'ai:allowSearch'
-const allowDaysKey = 'ai:allowDays'
+import AiPurposeModelField from '@/components/ai/AiPurposeModelField.vue'
+import useAiPreferencesStore from '@/stores/aiPreferences'
+import { useAiChatStore } from '@/stores/aiChat'
+import useUiStore from '@/stores/ui'
+import type { AnalysisPurpose } from '@/types/ai'
 
-const availableModels = [
-  { id: 'auto', label: 'Auto (recommended)' },
-  { id: 'gpt-4o-mini', label: 'GPT-4o mini (fast)' },
-  { id: 'gpt-4o', label: 'GPT-4o (best quality)' },
-  { id: 'local', label: 'Local model (future)' },
-]
+const preferences = useAiPreferencesStore()
+const chatStore = useAiChatStore()
+const uiStore = useUiStore()
 
-const selectedModel = ref<string>(localStorage.getItem(modelKey) || 'auto')
-const isModelDropdownOpen = ref(false)
-const modelButtonRef = ref<HTMLElement | null>(null)
-
-const selectedModelLabel = computed(() => {
-  return availableModels.find((m) => m.id === selectedModel.value)?.label || selectedModel.value
-})
-
-const selectModel = (m: { id: string; label: string }) => {
-  selectedModel.value = m.id
-  isModelDropdownOpen.value = false
+const purposeCopy: Record<AnalysisPurpose, { label: string; description: string }> = {
+  day: {
+    label: 'Daily insights and suggestions',
+    description: 'Runs on one day at a time — a light, cheap model is usually enough.',
+  },
+  week: {
+    label: 'Weekly digest',
+    description: 'Reads a whole week at once, so a stronger model earns its cost here.',
+  },
 }
-const allowCalendar = ref<boolean>((localStorage.getItem(allowCalendarKey) || 'true') === 'true')
-const allowSearch = ref<boolean>((localStorage.getItem(allowSearchKey) || 'true') === 'true')
-const allowDays = ref<boolean>((localStorage.getItem(allowDaysKey) || 'true') === 'true')
 
-watch(selectedModel, (v) => localStorage.setItem(modelKey, v))
-watch(allowCalendar, (v) => localStorage.setItem(allowCalendarKey, String(v)))
-watch(allowSearch, (v) => localStorage.setItem(allowSearchKey, String(v)))
-watch(allowDays, (v) => localStorage.setItem(allowDaysKey, String(v)))
+const purposes = computed(() => Object.keys(purposeCopy) as AnalysisPurpose[])
 
-const privacySummary = computed(() => {
-  const allowed = [
-    allowCalendar.value ? 'Calendar' : null,
-    allowDays.value ? 'Days' : null,
-    allowSearch.value ? 'Search' : null,
-  ].filter(Boolean)
-
-  return allowed.length
-    ? `AI can access: ${allowed.join(', ')}`
-    : 'AI access restricted: no data sources enabled'
+onMounted(() => {
+  preferences.fetchModelPreferences()
+  if (!chatStore.chatModels.length) chatStore.fetchChatModels()
 })
+
+const applyModel = async (purpose: AnalysisPurpose, modelId: string | null) => {
+  const ok = await preferences.setPurposeModel(purpose, modelId)
+  if (!ok) {
+    uiStore.showToast(preferences.errorMessage || 'Failed to save the model', 'error')
+    return
+  }
+  uiStore.showToast(`${purposeCopy[purpose].label} updated`, 'success')
+}
 </script>
 
 <template>
@@ -53,104 +44,56 @@ const privacySummary = computed(() => {
     <div>
       <p class="text-xl font-semibold">AI Settings</p>
       <p class="text-sm opacity-80">
-        Manage model selection, chats, privacy controls, and embeddings/similarity search.
+        Choose which model writes your summaries. Chats, privacy controls and embeddings are still
+        on the way.
       </p>
     </div>
 
-    <div
-      class="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-200 text-sm"
-    >
-      <font-awesome-icon icon="triangle-exclamation" class="text-yellow-400 shrink-0" />
-      <span>Not implemented yet — this page is a design template only. Settings here have no effect. Stay tuned!</span>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none select-none">
-      <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-4">
         <div>
-          <p class="font-semibold">Model</p>
-          <p class="text-sm opacity-80">Choose which model is used to answer.</p>
+          <p class="font-semibold">Generation models</p>
+          <p class="text-sm opacity-80">
+            Each kind of summary picks its own model. Leave one on the default and it follows
+            whatever Memoryful recommends.
+          </p>
         </div>
 
-        <div class="relative">
-          <button
-            ref="modelButtonRef"
-            type="button"
-            class="w-full text-left bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-4 py-3 md:py-2.5 pr-10 outline-none text-sm transition-colors focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/20"
-            :aria-expanded="isModelDropdownOpen"
-            aria-haspopup="listbox"
-            @click="isModelDropdownOpen = true"
-          >
-            <span class="block truncate">{{ selectedModelLabel }}</span>
-          </button>
-
-          <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/70">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 7.5L10 12.5L15 7.5"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-
-          <BaseAutocomplete
-            v-model:show="isModelDropdownOpen"
-            :items="availableModels"
-            :attach-to="modelButtonRef"
-            item-key="id"
-            item-label="label"
-            @select="selectModel"
-          >
-            <template #item="{ item }">
-              <div class="flex items-center justify-between w-full">
-                <span>{{ item.label }}</span>
-                <font-awesome-icon
-                  v-if="item.id === selectedModel"
-                  icon="check"
-                  class="text-emerald-300"
-                />
-              </div>
-            </template>
-          </BaseAutocomplete>
-        </div>
+        <AiPurposeModelField
+          v-for="purpose in purposes"
+          :key="purpose"
+          :label="purposeCopy[purpose].label"
+          :description="purposeCopy[purpose].description"
+          :models="chatStore.chatModels"
+          :selection="preferences.modelPreferences?.[purpose] ?? null"
+          :saving="preferences.savingPurpose === purpose"
+          @select="applyModel(purpose, $event)"
+          @reset="applyModel(purpose, null)"
+        />
 
         <p class="text-xs opacity-70">
-          Currently:
-          <span class="font-medium">{{ selectedModel }}</span>
+          A change applies to the next summary generated; anything already written keeps the model
+          that wrote it.
         </p>
       </section>
 
-      <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
+      <section
+        class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3 opacity-60"
+      >
         <div>
-          <p class="font-semibold">Privacy & Data Access</p>
+          <p class="font-semibold">Privacy &amp; Data Access</p>
           <p class="text-sm opacity-80">Restrict what data AI is allowed to use.</p>
         </div>
 
-        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
-          <span>Calendar</span>
-          <input v-model="allowCalendar" type="checkbox" class="size-5 md:size-auto accent-white" />
-        </label>
-        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
-          <span>Days</span>
-          <input v-model="allowDays" type="checkbox" class="size-5 md:size-auto accent-white" />
-        </label>
-        <label class="flex items-center justify-between gap-3 min-h-11 md:min-h-0 text-sm">
-          <span>Search</span>
-          <input v-model="allowSearch" type="checkbox" class="size-5 md:size-auto accent-white" />
-        </label>
-
-        <p class="text-xs opacity-70">{{ privacySummary }}</p>
+        <div class="text-sm opacity-80">
+          Coming soon:
+          <div class="text-xs opacity-70 mt-1">- Calendar - Days - Search</div>
+        </div>
       </section>
 
-      <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
+      <section
+        class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3 opacity-60"
+      >
         <div>
           <p class="font-semibold">Chats</p>
           <p class="text-sm opacity-80">Manage stored chats and conversation history.</p>
@@ -159,21 +102,21 @@ const privacySummary = computed(() => {
         <div class="text-sm opacity-80">
           Coming soon:
           <div class="text-xs opacity-70 mt-1">
-            - List conversations
-            - Delete conversation
-            - Export conversation
+            - List conversations - Delete conversation - Export conversation
           </div>
         </div>
 
         <button
-          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit"
+          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit cursor-not-allowed"
           disabled
         >
           Open Chats Manager
         </button>
       </section>
 
-      <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3">
+      <section
+        class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl p-4 flex flex-col gap-3 opacity-60"
+      >
         <div>
           <p class="font-semibold">Embeddings / Similarity Search</p>
           <p class="text-sm opacity-80">Control indexing and similarity search behavior.</p>
@@ -187,7 +130,7 @@ const privacySummary = computed(() => {
         </div>
 
         <button
-          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit"
+          class="bg-white/15 rounded-full px-4 py-2 min-h-11 md:min-h-0 text-sm w-fit cursor-not-allowed"
           disabled
         >
           Manage Embeddings
