@@ -9,6 +9,7 @@ import countriesApi from '@/api/countries'
 import daysApi from '@/api/days'
 import tagsApi from '@/api/tags'
 import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
+import DayPickerDropdown from '@/components/dashboard/DayPickerDropdown.vue'
 import DayCard from '@/components/day/DayCard.vue'
 import DayImage from '@/components/day/DayImage.vue'
 import DayInfo from '@/components/day/DayInfo.vue'
@@ -17,7 +18,6 @@ import DayTrackables from '@/components/day/DayTrackables.vue'
 import TagSelector from '@/components/day/TagSelector.vue'
 import DigestSheet from '@/components/digest/DigestSheet.vue'
 import MainButton from '@/components/MainButton.vue'
-import ModalWindow from '@/components/ModalWindow.vue'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 import { useResolvedStorageMedia, type DigestMode } from '@/composables'
@@ -455,37 +455,8 @@ const collapseLeave = (el: Element) => {
 
 /* ---------- picking a day: write it, or just go there ---------- */
 
-type DayPickerMode = 'write' | 'jump'
-
-const showNewEntry = ref(false)
-const dayPickerMode = ref<DayPickerMode>('write')
-const newEntryDate = ref<Date | null>(new Date())
-
-const openDayPicker = (mode: DayPickerMode, date?: Date) => {
-  dayPickerMode.value = mode
-  newEntryDate.value = date ?? new Date()
-  showNewEntry.value = true
-}
-
-const dayPickerTitle = computed(() =>
-  dayPickerMode.value === 'write' ? 'New entry' : 'Go to date',
-)
-
-const dayPickerPrompt = computed(() =>
-  dayPickerMode.value === 'write' ? 'Which day are you writing?' : 'Which day do you want to see?',
-)
-
-const dayPickerAction = computed(() =>
-  dayPickerMode.value === 'write' ? 'Write this day' : 'Open this day',
-)
-
-// DayView opens its own edit modal for a day that does not exist yet and the day itself
-// when it does — which is why writing and reading are the same jump with different words.
-const goToNewEntry = () => {
-  if (!newEntryDate.value) return
-  const target = startOfDay(newEntryDate.value).getTime()
-  showNewEntry.value = false
-  router.push(dayPath(new Date(target)))
+const goToDay = (date: Date) => {
+  router.push(dayPath(date))
 }
 
 /* ---------- pointer spotlight ---------- */
@@ -584,15 +555,12 @@ onBeforeUnmount(() => {
 
           <!-- Two peer CTAs shout at each other on an empty day, so only one of them is
                ever the loud one: today's, until today is written. -->
-          <button
-            v-if="todayEntry"
-            type="button"
-            class="cta-primary"
-            @click="openDayPicker('write')"
-          >
-            <font-awesome-icon icon="plus" />
-            New entry
-          </button>
+          <DayPickerDropdown v-if="todayEntry" prompt="Which day are you writing?" @pick="goToDay">
+            <button type="button" class="cta-primary">
+              <font-awesome-icon icon="plus" />
+              New entry
+            </button>
+          </DayPickerDropdown>
 
           <div class="panel p-3">
             <div class="flex items-center justify-between">
@@ -637,9 +605,9 @@ onBeforeUnmount(() => {
                 <font-awesome-icon icon="plus" />
                 Create today's entry
               </button>
-              <button type="button" class="quiet-link mt-2" @click="openDayPicker('write')">
-                or write another day…
-              </button>
+              <DayPickerDropdown class="mt-2" prompt="Which day are you writing?" @pick="goToDay">
+                <button type="button" class="quiet-link">or write another day…</button>
+              </DayPickerDropdown>
             </template>
           </div>
 
@@ -853,10 +821,12 @@ onBeforeUnmount(() => {
                 {{ hasFilters ? 'Search results' : 'Latest days' }}
               </h1>
               <!-- The merged view lost the calendar's "jump to a specific day"; this is it. -->
-              <button type="button" class="text-button" @click="openDayPicker('jump')">
-                <font-awesome-icon icon="calendar-day" class="mr-1.5 text-[11px]" />
-                Go to date
-              </button>
+              <DayPickerDropdown align="end" prompt="Which day do you want to see?" @pick="goToDay">
+                <button type="button" class="text-button">
+                  <font-awesome-icon icon="calendar-day" class="mr-1.5 text-[11px]" />
+                  Go to date
+                </button>
+              </DayPickerDropdown>
             </div>
 
             <div v-if="errorMessage" class="panel border border-red-400/40 px-4 py-3 text-sm">
@@ -954,46 +924,6 @@ onBeforeUnmount(() => {
 
     <!-- Today's summary and the weekly digest, one sheet with two faces -->
     <DigestSheet v-model="showDigest" :mode="digestMode" :today="todayEntry" />
-
-    <!-- Picks the date, then hands over to the day editor that already exists -->
-    <ModalWindow v-model="showNewEntry" max-width="sm">
-      <template #header>
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-white">{{ dayPickerTitle }}</h2>
-          <button
-            type="button"
-            class="flex size-9 shrink-0 items-center justify-center rounded-lg text-white/60 transition hover:text-white"
-            aria-label="Close"
-            @click="showNewEntry = false"
-          >
-            <font-awesome-icon icon="times" />
-          </button>
-        </div>
-      </template>
-
-      <div class="flex flex-col items-center gap-3">
-        <p class="text-sm text-white/60">{{ dayPickerPrompt }}</p>
-        <div class="new-entry-picker">
-          <VueDatePicker
-            v-model="newEntryDate"
-            :time-config="{ enableTimePicker: false }"
-            inline
-            auto-apply
-            dark
-          />
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex w-full items-center justify-end gap-2">
-          <button type="button" class="text-button" @click="showNewEntry = false">Cancel</button>
-          <button type="button" class="cta-primary !w-auto px-4" @click="goToNewEntry">
-            <font-awesome-icon :icon="dayPickerMode === 'write' ? 'pen' : 'arrow-right-long'" />
-            {{ dayPickerAction }}
-          </button>
-        </div>
-      </template>
-    </ModalWindow>
   </div>
 </template>
 
@@ -1420,18 +1350,6 @@ onBeforeUnmount(() => {
     left: calc(50% + 22rem);
     transform: translateY(-50%);
   }
-}
-
-.new-entry-picker :deep(.dp__theme_dark) {
-  --dp-background-color: rgba(20, 20, 36, 0.9);
-  --dp-text-color: #fff;
-  --dp-hover-color: rgba(255, 255, 255, 0.12);
-  --dp-hover-text-color: #fff;
-  --dp-primary-color: #8b5cf6;
-  --dp-primary-text-color: #fff;
-  --dp-border-color: rgba(255, 255, 255, 0.2);
-  --dp-menu-border-color: rgba(255, 255, 255, 0.2);
-  --dp-icon-color: rgba(255, 255, 255, 0.7);
 }
 
 /* ---------- date range ---------- */
