@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive, watch, computed, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
@@ -72,6 +72,14 @@ const userStore = useUserStore()
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
 const { shakeElement } = useShake()
+const route = useRoute()
+const router = useRouter()
+
+// vue-router only sets `back` for in-app navigation
+const goBack = () => {
+  if (window.history.state?.back) router.back()
+  else router.push('/dashboard')
+}
 
 const background = computed(() => workspaceStore.backgrounds.day)
 
@@ -606,7 +614,6 @@ const removeImage = (index: number) => {
 
 // Load day data
 const loadDay = async () => {
-  const route = useRoute()
   const [year_, month_, dayDate] = route.path.split('/').slice(2)
 
   const timestamp = new Date(Number(year_), Number(month_) - 1, Number(dayDate) + 1).setUTCHours(
@@ -719,9 +726,17 @@ onUnmounted(() => {
     <div class="relative z-10 pt-24 pb-24 px-4 max-w-2xl mx-auto w-full space-y-6">
       <!-- Header with date and actions -->
       <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-3 mb-6">
-        <h1 class="text-2xl font-bold text-white min-w-0">
+        <h1 class="basis-full md:basis-auto text-2xl font-bold text-white min-w-0">
           {{ day.timestamp ? date : 'Loading...' }}
         </h1>
+        <button
+          type="button"
+          class="md:hidden size-11 shrink-0 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+          aria-label="Back"
+          @click="goBack"
+        >
+          <font-awesome-icon icon="chevron-left" class="text-xl" />
+        </button>
         <div class="flex items-center gap-3 ml-auto shrink-0">
           <button
             @click="toggleStarred"
@@ -736,13 +751,14 @@ onUnmounted(() => {
 
           <button
             type="button"
-            class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80 whitespace-nowrap"
+            class="size-11 flex items-center justify-center md:inline-block md:size-auto md:p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80 whitespace-nowrap"
             :class="{ 'opacity-50 cursor-not-allowed': isCompletingDay || !dayExists }"
             :disabled="isCompletingDay || !dayExists"
+            aria-label="Complete Day"
             :title="dayExists ? 'Mark day as complete (generate insights)' : 'Save the day first'"
             @click="completeDay"
           >
-            Complete Day
+            <span class="hidden md:inline mr-1">Complete Day</span>
             <font-awesome-icon v-if="isCompletingDay" icon="spinner" spin class="text-xl" />
             <font-awesome-icon v-else icon="check" class="text-xl" />
           </button>
