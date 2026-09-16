@@ -49,6 +49,20 @@ const props = defineProps({
     validator: (value: string) =>
       ['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full'].includes(value),
   },
+  // For content that pads and scrolls itself, like a rail beside a scrolling pane.
+  flush: {
+    type: Boolean,
+    default: false,
+  },
+  // Holds the desktop card at 82dvh instead of fitting it to the content.
+  fixedHeight: {
+    type: Boolean,
+    default: false,
+  },
+  footerMobileOnly: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const desktopWidthClass = computed(() => DESKTOP_MAX_WIDTHS[props.maxWidth])
@@ -167,8 +181,8 @@ onBeforeUnmount(() => {
           aria-modal="true"
           :aria-labelledby="title ? titleId : undefined"
           tabindex="-1"
-          class="relative flex max-h-[92dvh] w-full flex-col overflow-clip rounded-t-2xl border border-b-0 border-white/10 bg-[#0b0b0f]/95 text-left text-white shadow-2xl shadow-black/80 backdrop-blur-2xl focus:outline-none md:max-h-[90dvh] md:rounded-2xl md:border-b"
-          :class="desktopWidthClass"
+          class="relative flex max-h-[92dvh] w-full flex-col overflow-clip rounded-t-2xl border border-b-0 border-white/10 bg-[#0b0b0f]/95 text-left text-white shadow-2xl shadow-black/80 backdrop-blur-2xl focus:outline-none md:rounded-2xl md:border-b"
+          :class="[desktopWidthClass, fixedHeight ? 'md:h-[82dvh]' : 'md:max-h-[90dvh]']"
           :style="dragStyle"
         >
           <header
@@ -194,11 +208,17 @@ onBeforeUnmount(() => {
                 <h2 :id="titleId" class="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
                   {{ title }}
                 </h2>
+                <slot name="subtitle" />
               </slot>
             </div>
           </header>
 
+          <div v-if="flush" class="flex min-h-0 flex-1 flex-col">
+            <slot />
+          </div>
+
           <div
+            v-else
             class="modal-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6"
             :class="{
               'pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] md:pb-5': !$slots.footer,
@@ -210,6 +230,7 @@ onBeforeUnmount(() => {
           <footer
             v-if="$slots.footer"
             class="shrink-0 border-t border-white/8 px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-6 md:pb-3"
+            :class="{ 'md:hidden': footerMobileOnly }"
           >
             <slot name="footer" />
           </footer>
