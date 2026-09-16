@@ -401,6 +401,7 @@ const toggleStarred = async () => {
     uiStore.showToast(updatedDay.starred ? 'Starred' : 'Unstarred', 'success')
   } catch (error) {
     console.error('Error toggling star:', error)
+    uiStore.showToast((error as { msg?: string })?.msg || 'Failed to update the star', 'error')
   }
 }
 
