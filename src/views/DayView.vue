@@ -545,6 +545,7 @@ const saveDay = async () => {
       showModal.value = false
     } catch (error) {
       console.error('Error saving day:', error)
+      uiStore.showToast((error as { msg?: string })?.msg || 'Could not save the day', 'error')
     }
   } finally {
     isSaving.value = false
@@ -1098,6 +1099,7 @@ onUnmounted(() => {
           maxWidth="2xl"
           eyebrow="Edit day"
           :title="date"
+          :busy="isSaving"
           @close="handleModalClose"
         >
           <template #default>
@@ -1505,7 +1507,8 @@ onUnmounted(() => {
             <div class="flex gap-2 md:justify-end">
               <button
                 type="button"
-                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white md:flex-none"
+                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-default disabled:opacity-40 md:flex-none"
+                :disabled="isSaving"
                 @click="handleModalClose"
               >
                 Cancel

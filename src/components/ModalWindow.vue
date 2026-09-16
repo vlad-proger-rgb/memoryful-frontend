@@ -63,6 +63,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // Work in flight, like a save: the close button spins and every way out is held shut.
+  busy: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const desktopWidthClass = computed(() => DESKTOP_MAX_WIDTHS[props.maxWidth])
@@ -78,6 +83,7 @@ const { focused } = useFocus(modalRef)
 const scrollLock = useScrollLock(document.body)
 
 const closeModal = () => {
+  if (props.busy) return
   emit('update:modelValue', false)
   emit('close')
 }
@@ -87,7 +93,7 @@ const isDesktop = useMediaQuery('(min-width: 768px)')
 const { style: dragStyle, handlers: dragHandlers } = useDragToDismiss({
   isOpen: () => isOpen.value,
   onDismiss: closeModal,
-  enabled: () => !isDesktop.value,
+  enabled: () => !isDesktop.value && !props.busy,
 })
 
 watch(
@@ -180,6 +186,7 @@ onBeforeUnmount(() => {
           role="dialog"
           aria-modal="true"
           :aria-labelledby="title ? titleId : undefined"
+          :aria-busy="busy"
           tabindex="-1"
           class="relative flex max-h-[92dvh] w-full flex-col overflow-clip rounded-t-2xl border border-b-0 border-white/10 bg-[#0b0b0f]/95 text-left text-white shadow-2xl shadow-black/80 backdrop-blur-2xl focus:outline-none md:rounded-2xl md:border-b"
           :class="[desktopWidthClass, fixedHeight ? 'md:h-[82dvh]' : 'md:max-h-[90dvh]']"
@@ -193,11 +200,29 @@ onBeforeUnmount(() => {
 
             <button
               type="button"
-              class="absolute top-2 right-3 inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white md:top-4 md:right-4 md:size-8"
+              class="group absolute top-2 right-3 inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white active:scale-90 disabled:cursor-default disabled:bg-transparent disabled:text-white/60 motion-reduce:transition-none md:top-4 md:right-4 md:size-8"
               aria-label="Close"
+              :disabled="busy"
               @click="closeModal"
             >
-              <font-awesome-icon icon="xmark" />
+              <Transition
+                mode="out-in"
+                enter-active-class="transition duration-150 ease-out motion-reduce:transition-none"
+                leave-active-class="transition duration-100 ease-in motion-reduce:transition-none"
+                enter-from-class="scale-50 opacity-0"
+                leave-to-class="scale-50 opacity-0"
+              >
+                <span v-if="busy" key="busy" class="flex">
+                  <font-awesome-icon icon="spinner" class="animate-spin" />
+                </span>
+                <!-- The wrapper takes the swap, the icon the hover turn; one element can't hold both transitions. -->
+                <span v-else key="close" class="flex">
+                  <font-awesome-icon
+                    icon="xmark"
+                    class="transition-transform duration-200 group-hover:rotate-90 motion-reduce:transition-none"
+                  />
+                </span>
+              </Transition>
             </button>
 
             <div class="pr-12 md:pr-10">
