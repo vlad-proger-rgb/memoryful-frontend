@@ -24,21 +24,9 @@
       :close-on-esc="true"
       :max-width="'7xl'"
       class="bg-black/90"
+      title="Image gallery"
       @close="closeModal"
     >
-      <template #header>
-        <div class="flex items-center justify-between w-full">
-          <h3 class="text-lg font-medium text-white">Image Gallery</h3>
-          <button
-            @click="closeModal"
-            class="text-white/70 hover:text-white transition-colors"
-            aria-label="Close gallery"
-          >
-            <font-awesome-icon icon="times" class="h-5 w-5" />
-          </button>
-        </div>
-      </template>
-
       <template #default>
         <div class="relative w-full h-full flex items-center justify-center">
           <div class="relative w-full h-full flex items-center justify-center group">

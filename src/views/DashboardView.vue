@@ -391,36 +391,24 @@ onActivated(() => {
             <template #header>
               <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-white">{{ aiModalTitle }}</h2>
-                <div class="flex items-center gap-3">
-                  <button
-                    v-if="aiModalItems.length"
-                    type="button"
-                    class="pill-button pill-button-sm !w-auto"
-                    @click="
-                      aiModalMode === 'insights' ? toggleAllInsights() : toggleAllSuggestions()
-                    "
-                  >
-                    <span>
-                      {{
-                        aiModalMode === 'insights'
-                          ? areAllTodaysInsightsExpanded
-                            ? 'Collapse all'
-                            : 'Expand all'
-                          : areAllTodaysSuggestionsExpanded
-                            ? 'Collapse all'
-                            : 'Expand all'
-                      }}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
-                    @click="showAiModal = false"
-                    aria-label="Close modal"
-                  >
-                    <font-awesome-icon icon="times" class="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  v-if="aiModalItems.length"
+                  type="button"
+                  class="pill-button pill-button-sm !w-auto"
+                  @click="aiModalMode === 'insights' ? toggleAllInsights() : toggleAllSuggestions()"
+                >
+                  <span>
+                    {{
+                      aiModalMode === 'insights'
+                        ? areAllTodaysInsightsExpanded
+                          ? 'Collapse all'
+                          : 'Expand all'
+                        : areAllTodaysSuggestionsExpanded
+                          ? 'Collapse all'
+                          : 'Expand all'
+                    }}
+                  </span>
+                </button>
               </div>
             </template>
 

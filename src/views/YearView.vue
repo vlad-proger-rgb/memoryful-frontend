@@ -452,22 +452,13 @@ const submitMonth = async () => {
     </div>
   </div>
 
-  <ModalWindow v-model="isModalOpen" maxWidth="xl" @close="closeModal">
-    <template #header>
-      <div class="flex items-center justify-between">
-        <h3 class="text-xl font-semibold text-white">
-          Month Settings - {{ getMonthName(currentMonthNumber - 1) }}
-        </h3>
-        <button
-          @click="closeModal"
-          class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
-          aria-label="Close modal"
-        >
-          <font-awesome-icon icon="times" class="w-5 h-5" />
-        </button>
-      </div>
-    </template>
-
+  <ModalWindow
+    v-model="isModalOpen"
+    maxWidth="xl"
+    eyebrow="Month settings"
+    :title="getMonthName(currentMonthNumber - 1)"
+    @close="closeModal"
+  >
     <div class="p-3 overflow-y-auto max-h-[60dvh] bg-gray-800/30">
       <form @submit.prevent="submitMonth" class="space-y-6">
         <div class="space-y-4">

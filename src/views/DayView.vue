@@ -1093,20 +1093,13 @@ onUnmounted(() => {
         </div>
 
         <!-- Modal window -->
-        <ModalWindow v-model="showModal" maxWidth="2xl" @close="handleModalClose">
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-white">Edit Day - {{ date }}</h2>
-              <button
-                @click="showModal = false"
-                class="size-11 md:size-8 shrink-0 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none"
-                aria-label="Close modal"
-              >
-                <font-awesome-icon icon="times" class="w-5 h-5" />
-              </button>
-            </div>
-          </template>
-
+        <ModalWindow
+          v-model="showModal"
+          maxWidth="2xl"
+          eyebrow="Edit day"
+          :title="date"
+          @close="handleModalClose"
+        >
           <template #default>
             <form @submit.prevent="saveDay" class="space-y-4">
               <!-- Starred Toggle -->
@@ -1509,13 +1502,23 @@ onUnmounted(() => {
           </template>
 
           <template #footer>
-            <div class="flex justify-between w-full">
-              <MainButton type="button" variant="secondary" @click="handleModalClose">
+            <div class="flex gap-2 md:justify-end">
+              <button
+                type="button"
+                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white md:flex-none"
+                @click="handleModalClose"
+              >
                 Cancel
-              </MainButton>
-              <MainButton type="button" @click="saveDay" :loading="isSaving" class="bg-blue-600">
-                Save Changes
-              </MainButton>
+              </button>
+              <button
+                type="button"
+                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-medium text-[#0b0b0f] transition hover:bg-white/85 disabled:cursor-default disabled:opacity-60 md:flex-none"
+                :disabled="isSaving"
+                @click="saveDay"
+              >
+                <font-awesome-icon v-if="isSaving" icon="spinner" class="animate-spin text-xs" />
+                Save changes
+              </button>
             </div>
           </template>
         </ModalWindow>
