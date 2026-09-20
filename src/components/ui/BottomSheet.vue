@@ -3,11 +3,15 @@ import { onBeforeUnmount, watch } from 'vue'
 
 import { useDragToDismiss } from '@/composables'
 
-const props = defineProps<{
-  show: boolean
-  label?: string
-  title?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    show: boolean
+    label?: string
+    title?: string
+    role?: 'menu' | 'dialog'
+  }>(),
+  { role: 'menu' },
+)
 
 const emit = defineEmits<{ 'update:show': [boolean] }>()
 
@@ -39,7 +43,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
       <div v-if="show" class="fixed inset-0 z-[80] flex flex-col justify-end">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close" />
         <div
-          role="menu"
+          :role="role"
+          :aria-modal="role === 'dialog' ? 'true' : undefined"
           :aria-label="label"
           class="sheet-panel relative flex max-h-[75dvh] flex-col rounded-t-2xl border-t border-white/10 bg-[#14141b] pb-[env(safe-area-inset-bottom,0px)]"
           :style="dragStyle"

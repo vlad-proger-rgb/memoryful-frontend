@@ -1,8 +1,9 @@
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
+  import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import sessionsApi from '@/api/sessions'
   import { useUiStore } from '@/stores/ui'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import SettingsButton from '@/components/ui/SettingsButton.vue'
   import { useUserStore } from '@/stores/user'
   import type { ApiResponse, Session } from '@/types'
@@ -15,48 +16,33 @@
   const userStore = useUserStore()
   const router = useRouter()
 
-  const isConfirmModalOpen = ref(false)
-  const confirmModalSessionId = ref<string | null>(null)
-
-  const confirmModalSession = computed(() => {
-    const id = confirmModalSessionId.value
-    if (!id) return null
-    return sessions.value.find((s) => s.id === id) || null
-  })
+  const isSignOutDialogOpen = ref(false)
+  const isSigningOutEverywhere = ref(false)
 
   const formatDateTime = (isoOrDate: string) => {
     const d = new Date(isoOrDate)
     return Number.isNaN(d.getTime()) ? isoOrDate : d.toLocaleString()
   }
 
-  const closeConfirmModal = () => {
-    isConfirmModalOpen.value = false
-    confirmModalSessionId.value = null
-  }
+  const signOutEverywhere = async () => {
+    isSignOutDialogOpen.value = false
 
-  const confirmRevokeCurrentSession = async () => {
-    const sessionId = confirmModalSessionId.value
-    if (!sessionId) return
-
-    isConfirmModalOpen.value = false
-
-    if (revokingSessionIds.value.has(sessionId)) return
-    revokingSessionIds.value.add(sessionId)
+    if (isSigningOutEverywhere.value) return
+    isSigningOutEverywhere.value = true
     errorMessage.value = ''
     try {
-      const res = await sessionsApi.revokeSession(sessionId)
+      const res = await sessionsApi.logoutAll()
       if (res.code === 200) {
-        uiStore.showToast('Current session revoked. Signing you out…', 'info')
-        await userStore.logout()
+        uiStore.showToast('Signed out of every device', 'info')
+        userStore.clearUser()
         await router.push('/login')
       } else {
-        errorMessage.value = res.msg || 'Failed to revoke session'
+        errorMessage.value = res.msg || 'Failed to sign out everywhere'
       }
     } catch (e: unknown) {
-      errorMessage.value = getErrorMessage(e) || 'Failed to revoke session'
+      errorMessage.value = getErrorMessage(e) || 'Failed to sign out everywhere'
     } finally {
-      revokingSessionIds.value.delete(sessionId)
-      confirmModalSessionId.value = null
+      isSigningOutEverywhere.value = false
     }
   }
 
@@ -107,12 +93,6 @@
 
   const revoke = async (sessionId: string) => {
     if (revokingSessionIds.value.has(sessionId)) return
-    const session = sessions.value.find((s) => s.id === sessionId)
-    if (session?.isCurrent) {
-      confirmModalSessionId.value = sessionId
-      isConfirmModalOpen.value = true
-      return
-    }
 
     const ok = window.confirm('Revoke this session?')
     if (!ok) return
@@ -141,13 +121,23 @@
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex items-center justify-between">
-      <div>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="min-w-0">
         <p class="text-lg font-semibold">Active sessions</p>
         <p class="text-xs opacity-80">Sign out other sessions to protect your account.</p>
       </div>
 
-      <SettingsButton preset="refresh" :disabled="isLoading" @click="loadSessions" />
+      <div class="flex flex-wrap items-center gap-2">
+        <SettingsButton preset="refresh" :disabled="isLoading" @click="loadSessions" />
+        <SettingsButton
+          preset="pill"
+          tone="danger"
+          icon="right-from-bracket"
+          label="Sign out everywhere"
+          :disabled="isLoading || isSigningOutEverywhere || !sessions.length"
+          @click="isSignOutDialogOpen = true"
+        />
+      </div>
     </div>
 
     <p v-if="errorMessage" class="text-red-300 text-sm">{{ errorMessage }}</p>
@@ -183,13 +173,14 @@
           </div>
 
           <SettingsButton
+            v-if="!s.isCurrent"
             preset="session"
-            :tone="s.isCurrent ? 'neutral' : 'danger'"
+            tone="danger"
             :disabled="revokingSessionIds.has(s.id)"
             @click="revoke(s.id)"
           >
             <span v-if="revokingSessionIds.has(s.id)">Revoking…</span>
-            <span v-else>{{ s.isCurrent ? 'Revoke (sign out)' : 'Revoke' }}</span>
+            <span v-else>Revoke</span>
           </SettingsButton>
         </div>
 
@@ -200,28 +191,19 @@
       </div>
     </div>
 
-    <div
-      v-if="isConfirmModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center px-4"
-      @click.self="closeConfirmModal"
+    <ConfirmDialog
+      :show="isSignOutDialogOpen"
+      title="Sign out everywhere?"
+      message="This revokes every session, including this one. You will need to log in again on each device."
+      confirm-label="Sign out everywhere"
+      :busy="isSigningOutEverywhere"
+      @update:show="isSignOutDialogOpen = $event"
+      @confirm="signOutEverywhere"
     >
-      <div class="absolute inset-0 bg-black/60" />
-      <div class="relative w-full max-w-md rounded-2xl backdrop-blur-[17.5px] bg-white/15 border border-white/20 p-5">
-        <p class="text-lg font-semibold">Revoke current session?</p>
-        <p class="text-sm opacity-80 mt-2">
-          This is your current session. Revoking it will sign you out and you will need to log in again.
-        </p>
-
-        <div v-if="confirmModalSession" class="mt-3 text-xs opacity-80">
-          <p><span class="opacity-70">Device:</span> {{ getSessionLabel(confirmModalSession.userAgent) }}</p>
-          <p><span class="opacity-70">IP:</span> {{ confirmModalSession.ipAddress || 'IP unknown' }}</p>
-        </div>
-
-        <div class="mt-5 flex items-center justify-end gap-2">
-          <SettingsButton preset="pill" label="Cancel" @click="closeConfirmModal" />
-          <SettingsButton preset="pill" tone="danger" label="Revoke & Sign out" @click="confirmRevokeCurrentSession" />
-        </div>
-      </div>
-    </div>
+      <p class="mt-2 text-xs text-white/50">
+        {{ sessions.length }} {{ sessions.length === 1 ? 'session' : 'sessions' }} will be signed
+        out.
+      </p>
+    </ConfirmDialog>
   </div>
 </template>

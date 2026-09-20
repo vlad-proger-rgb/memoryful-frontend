@@ -9,6 +9,10 @@ export const sessionsApi = {
   revokeSession(sessionId: string): Promise<ApiResponse<null>> {
     return axios.delete(`/auth/sessions/${sessionId}`)
   },
+
+  logoutAll(): Promise<ApiResponse<null>> {
+    return axios.post('/auth/logout-all')
+  },
 }
 
 export default sessionsApi
