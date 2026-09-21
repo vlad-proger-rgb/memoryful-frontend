@@ -628,19 +628,18 @@ onBeforeUnmount(() => {
               @keyup.enter="submitSearch"
             />
 
+            <button
+              v-if="hasFilters"
+              type="button"
+              class="icon-button"
+              aria-label="Clear filters"
+              @click.stop="clearFilters"
+            >
+              <font-awesome-icon icon="rotate-left" />
+            </button>
+
             <button type="button" class="icon-button" aria-label="Search" @click="submitSearch">
               <font-awesome-icon icon="magnifying-glass" />
-            </button>
-          </div>
-
-          <div v-if="hasFilters" class="mt-2 flex flex-wrap items-center gap-2 px-1">
-            <span class="text-xs text-white/70">
-              {{ days.length }}{{ hasMore ? '+' : '' }}
-              {{ days.length === 1 && !hasMore ? 'result' : 'results' }}
-            </span>
-            <button type="button" class="text-button" @click="clearFilters">
-              <font-awesome-icon icon="rotate-left" class="mr-1.5 text-[11px]" />
-              Clear all
             </button>
           </div>
 
@@ -707,13 +706,7 @@ onBeforeUnmount(() => {
           <!-- One range: the two handles and the two dates under them drive the same
                start/end. Always on screen — it is the filter people actually reach for. -->
           <div class="panel mt-3 p-3">
-            <div class="mb-2 flex items-center justify-between gap-3">
-              <p class="field-label">Date</p>
-              <button type="button" class="text-button" @click="clearFilters">
-                <font-awesome-icon icon="rotate-left" class="mr-1.5 text-[11px]" />
-                Clear filters
-              </button>
-            </div>
+            <p class="field-label">Date</p>
 
             <div class="range-slider" :class="{ 'is-dragging': isDraggingRange }">
               <span class="range-track" aria-hidden="true" />
