@@ -4,27 +4,26 @@ import { useRoute, useRouter, RouterView } from 'vue-router'
 
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
-import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
 import useWorkspaceStore from '@/stores/workspace'
 
 import SettingsSectionButton from '@/components/ui/SettingsSectionButton.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
+import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
 
 import { useStorageResolve, useStorageUpload } from '@/composables'
 
 const userStore = useUserStore()
 const uiStore = useUiStore()
 const workspaceStore = useWorkspaceStore()
+const route = useRoute()
 const router = useRouter()
-
-uiStore.disableScroll = false
-
-const displayName = computed(() => userStore.user.firstName || 'User')
-
 const { resolveStorageSrc } = useStorageResolve()
 const { uploadToStorage } = useStorageUpload()
 
+uiStore.disableScroll = false
+
 const settingsBackground = computed(() => workspaceStore.backgrounds.settings)
+const displayName = computed(() => userStore.user.firstName || 'User')
 
 const avatarResolvedSrc = ref<string>(fallbackAvatar)
 watch(
@@ -70,28 +69,6 @@ const handleAvatarSelected = async (event: Event) => {
 
 const isLoggingOut = ref(false)
 
-const sections = [
-  { to: '/settings/account', label: 'Manage Account', icon: 'user' },
-  { to: '/settings/profile', label: 'Manage Profile', icon: 'id-card' },
-  { to: '/settings/workspace', label: 'Workspace', icon: 'paintbrush' },
-  { to: '/settings/ai', label: 'AI', icon: 'robot' },
-  { to: '/settings/tags-trackables', label: 'Tags & Trackables', icon: 'tags' },
-  { to: '/settings/connected-apps', label: 'Extensions (soon)', icon: 'sliders' },
-] as const
-
-const route = useRoute()
-const sectionNav = ref<HTMLElement | null>(null)
-
-// The nav is a horizontal scroller below md, so the active section can start out off-screen.
-const revealActiveSection = () => {
-  const nav = sectionNav.value
-  if (!nav || nav.scrollWidth <= nav.clientWidth) return
-  nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' })
-}
-
-onMounted(revealActiveSection)
-watch(() => route.path, revealActiveSection, { flush: 'post' })
-
 const handleLogout = async () => {
   if (isLoggingOut.value) return
 
@@ -115,6 +92,27 @@ const handleLogout = async () => {
     isLoggingOut.value = false
   }
 }
+
+const sections = [
+  { to: '/settings/account', label: 'Manage Account', icon: 'user' },
+  { to: '/settings/profile', label: 'Manage Profile', icon: 'id-card' },
+  { to: '/settings/workspace', label: 'Workspace', icon: 'paintbrush' },
+  { to: '/settings/ai', label: 'AI', icon: 'robot' },
+  { to: '/settings/tags-trackables', label: 'Tags & Trackables', icon: 'tags' },
+  { to: '/settings/connected-apps', label: 'Extensions (soon)', icon: 'sliders' },
+] as const
+
+const sectionNav = ref<HTMLElement | null>(null)
+
+// The nav is a horizontal scroller below md, so the active section can start out off-screen.
+const revealActiveSection = () => {
+  const nav = sectionNav.value
+  if (!nav || nav.scrollWidth <= nav.clientWidth) return
+  nav.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' })
+}
+
+onMounted(revealActiveSection)
+watch(() => route.path, revealActiveSection, { flush: 'post' })
 </script>
 
 <template>
