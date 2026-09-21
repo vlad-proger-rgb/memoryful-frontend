@@ -330,17 +330,23 @@ const restoreFiltersFromUrl = async () => {
 
 /* ---------- today, and the AI blocks behind it ---------- */
 
-const todayTimestamp = computed(() => startOfDay(new Date()).getTime())
-const todayPath = computed(() => dayPath(new Date(todayTimestamp.value)))
+const today = computed(() => startOfDay(new Date()))
+const todayPath = computed(() => dayPath(today.value))
+const dayShortcuts = computed(() => {
+  const yesterday = new Date(today.value)
+  yesterday.setDate(yesterday.getDate() - 1)
+  return [
+    { date: today.value, label: 'Today' },
+    { date: yesterday, label: 'Yesterday' },
+  ]
+})
 const todayLabel = computed(() =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
 )
 
 const todayEntry = ref<DayListItem | null>(null)
-const isCheckingToday = ref(true)
 
 const loadToday = async () => {
-  isCheckingToday.value = true
   try {
     const now = new Date()
     const response = await daysApi.getDays({
@@ -354,8 +360,6 @@ const loadToday = async () => {
     todayEntry.value = found ? { ...found, timestamp: found.timestamp * 1000, exists: true } : null
   } catch {
     todayEntry.value = null
-  } finally {
-    isCheckingToday.value = false
   }
 }
 
@@ -459,19 +463,6 @@ const goToDay = (date: Date) => {
   router.push(dayPath(date))
 }
 
-/* ---------- pointer spotlight ---------- */
-
-// A soft highlight that trails the cursor across a button, positioned in CSS vars.
-const spotlight = ref({ x: '50%', y: '50%' })
-
-const trackSpotlight = (event: MouseEvent) => {
-  const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  spotlight.value = {
-    x: `${event.clientX - box.left}px`,
-    y: `${event.clientY - box.top}px`,
-  }
-}
-
 /* ---------- scroll to top ---------- */
 
 const showScrollTop = ref(false)
@@ -553,62 +544,43 @@ onBeforeUnmount(() => {
             <font-awesome-icon icon="angle-right" class="ml-auto text-white/40" />
           </button>
 
-          <!-- Two peer CTAs shout at each other on an empty day, so only one of them is
-               ever the loud one: today's, until today is written. -->
-          <DayPickerDropdown v-if="todayEntry" prompt="Which day are you writing?" @pick="goToDay">
+          <DayPickerDropdown
+            prompt="Which day are you writing?"
+            :selected="today"
+            :shortcuts="dayShortcuts"
+            @pick="goToDay"
+          >
             <button type="button" class="cta-primary">
               <font-awesome-icon icon="plus" />
               New entry
             </button>
           </DayPickerDropdown>
 
-          <div class="panel p-3">
+          <div v-if="todayEntry" class="panel p-3">
             <div class="flex items-center justify-between">
               <p class="field-label">Today</p>
               <span class="text-[11px] text-white/50">{{ todayLabel }}</span>
             </div>
-
-            <div v-if="isCheckingToday" class="mt-3 h-9 animate-pulse rounded-lg bg-white/10" />
-
-            <template v-else-if="todayEntry">
-              <p class="mt-2 line-clamp-2 text-sm text-white/70">
-                {{ todayEntry.description || 'Written, no description yet' }}
-              </p>
-              <div class="mt-3 flex flex-col gap-2">
-                <RouterLink :to="todayPath" class="row-button">
-                  <font-awesome-icon icon="book-open" class="text-white/60" />
-                  Open
-                  <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
-                </RouterLink>
-                <button type="button" class="row-button" @click="discussToday">
-                  <font-awesome-icon icon="comments" class="text-white/60" />
-                  Discuss
-                  <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
-                </button>
-                <button type="button" class="row-button" @click="openDigest('today')">
-                  <font-awesome-icon icon="lightbulb" class="text-white/60" />
-                  AI summary
-                  <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
-                </button>
-              </div>
-            </template>
-
-            <template v-else>
-              <p class="mt-2 text-sm text-white/60">Nothing written for today yet.</p>
-              <button
-                type="button"
-                class="cta-create mt-3"
-                :style="{ '--spot-x': spotlight.x, '--spot-y': spotlight.y }"
-                @mousemove="trackSpotlight"
-                @click="router.push(todayPath)"
-              >
-                <font-awesome-icon icon="plus" />
-                Create today's entry
+            <p class="mt-2 line-clamp-2 text-sm text-white/70">
+              {{ todayEntry.description || 'Written, no description yet' }}
+            </p>
+            <div class="mt-3 flex flex-col gap-2">
+              <RouterLink :to="todayPath" class="row-button">
+                <font-awesome-icon icon="book-open" class="text-white/60" />
+                Open
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
+              </RouterLink>
+              <button type="button" class="row-button" @click="discussToday">
+                <font-awesome-icon icon="comments" class="text-white/60" />
+                Discuss
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
               </button>
-              <DayPickerDropdown class="mt-2" prompt="Which day are you writing?" @pick="goToDay">
-                <button type="button" class="quiet-link">or write another day…</button>
-              </DayPickerDropdown>
-            </template>
+              <button type="button" class="row-button" @click="openDigest('today')">
+                <font-awesome-icon icon="lightbulb" class="text-white/60" />
+                AI summary
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
+              </button>
+            </div>
           </div>
 
           <button type="button" class="cta-digest" @click="openDigest('week')">
@@ -1087,62 +1059,6 @@ onBeforeUnmount(() => {
   transform: translateY(0) scale(0.99);
 }
 
-.cta-create {
-  position: relative;
-  overflow: hidden;
-  display: inline-flex;
-  transition-property: transform, background, border-color;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #fff;
-  border: 1px solid rgba(192, 132, 252, 0.6);
-  background: linear-gradient(135deg, rgba(91, 75, 214, 0.35), rgba(192, 132, 252, 0.28));
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cta-create:hover {
-  border-color: rgba(216, 180, 254, 0.9);
-  background: linear-gradient(135deg, rgba(91, 75, 214, 0.5), rgba(192, 132, 252, 0.42));
-  transform: scale(1.015);
-}
-
-.cta-create:active {
-  transform: scale(0.985);
-}
-
-/* The highlight sits under the label and follows --spot-x / --spot-y, which the pointer
-   handler writes on the button. Wide and faint — a warm area, not a torch. */
-.cta-create::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    260px 120px at var(--spot-x, 50%) var(--spot-y, 50%),
-    rgba(233, 213, 255, 0.16),
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
-}
-
-.cta-create:hover::after {
-  opacity: 1;
-}
-
-.cta-create > * {
-  position: relative;
-  z-index: 1;
-}
-
 .row-button {
   display: flex;
   align-items: center;
@@ -1253,21 +1169,6 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.quiet-link {
-  display: block;
-  width: 100%;
-  padding: 4px;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.quiet-link:hover {
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: underline;
 }
 
 .unread-dot {

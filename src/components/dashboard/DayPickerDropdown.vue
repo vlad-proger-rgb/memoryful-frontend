@@ -1,19 +1,34 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 
-const props = withDefaults(defineProps<{ prompt: string; align?: 'center' | 'end' }>(), {
-  align: 'center',
-})
+const props = withDefaults(
+  defineProps<{
+    prompt: string
+    align?: 'center' | 'end'
+    selected?: Date | null
+    shortcuts?: { date: Date; label: string }[]
+  }>(),
+  { align: 'center', selected: null, shortcuts: () => [] },
+)
 
 const emit = defineEmits<{ pick: [date: Date] }>()
+
+const picker = ref<InstanceType<typeof VueDatePicker> | null>(null)
+
+const pickShortcut = (date: Date) => {
+  picker.value?.closeMenu()
+  emit('pick', date)
+}
 </script>
 
 <template>
   <!-- The picker's own root is `width: 100%`, which would wrap it inside a flex row. -->
   <div>
     <VueDatePicker
-      :model-value="null"
+      ref="picker"
+      :model-value="props.selected"
       :time-config="{ enableTimePicker: false }"
       :ui="{ menu: 'day-picker-menu' }"
       :floating="{
@@ -30,7 +45,20 @@ const emit = defineEmits<{ pick: [date: Date] }>()
         <slot />
       </template>
       <template #menu-header>
-        <p class="px-3 pt-3 text-center text-sm text-white/60">{{ prompt }}</p>
+        <div class="px-3 pt-3">
+          <p class="text-center text-sm text-white/60">{{ prompt }}</p>
+          <div v-if="props.shortcuts.length" class="mt-2 flex gap-2">
+            <button
+              v-for="shortcut in props.shortcuts"
+              :key="shortcut.label"
+              type="button"
+              class="min-h-9 flex-1 cursor-pointer rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white/85 transition hover:border-white/30 hover:bg-white/12 hover:text-white"
+              @click="pickShortcut(shortcut.date)"
+            >
+              {{ shortcut.label }}
+            </button>
+          </div>
+        </div>
       </template>
     </VueDatePicker>
   </div>
