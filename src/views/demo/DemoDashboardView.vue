@@ -44,7 +44,7 @@ const parseDate = (value: unknown): Date | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-const formatShort = (value: number) =>
+const formatShort = (value: number | Date) =>
   new Date(value).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
 
 const query = ref(String(route.query.q ?? ''))
@@ -97,10 +97,12 @@ const newestDay = ref<number | null>(null)
 const sliderMin = computed(() => oldestDay.value ?? startOfDay(new Date()).getTime() - 365 * DAY_MS)
 const sliderMax = computed(() => newestDay.value ?? startOfDay(new Date()).getTime())
 
+const nearestMidnight = (value: number) => startOfDay(new Date(value + DAY_MS / 2)).getTime()
+
 const rangeStart = ref(sliderMin.value)
 const rangeEnd = ref(sliderMax.value)
-const rangeStartDate = computed(() => new Date(rangeStart.value))
-const rangeEndDate = computed(() => new Date(rangeEnd.value))
+const rangeStartDate = computed(() => new Date(nearestMidnight(rangeStart.value)))
+const rangeEndDate = computed(() => new Date(nearestMidnight(rangeEnd.value)))
 const isDraggingRange = ref(false)
 
 const syncRangeFromDates = () => {
@@ -134,6 +136,8 @@ const onRangeEndInput = (event: Event) => {
 // A handle parked on its end of the track means "unbounded", so dragging it back clears the filter.
 const commitRange = () => {
   isDraggingRange.value = false
+  rangeStart.value = rangeStartDate.value.getTime()
+  rangeEnd.value = rangeEndDate.value.getTime()
   startDate.value = rangeStart.value > sliderMin.value ? new Date(rangeStart.value) : null
   endDate.value = rangeEnd.value < sliderMax.value ? new Date(rangeEnd.value) : null
 }
@@ -716,10 +720,11 @@ onBeforeUnmount(() => {
                 type="range"
                 :min="sliderMin"
                 :max="sliderMax"
-                :step="DAY_MS"
+                :step="isDraggingRange ? 'any' : DAY_MS"
                 :value="rangeStart"
-                :aria-valuetext="formatShort(rangeStart)"
+                :aria-valuetext="formatShort(rangeStartDate)"
                 aria-label="Range start"
+                @pointerdown="isDraggingRange = true"
                 @input="onRangeStartInput"
                 @change="commitRange"
               />
@@ -728,10 +733,11 @@ onBeforeUnmount(() => {
                 type="range"
                 :min="sliderMin"
                 :max="sliderMax"
-                :step="DAY_MS"
+                :step="isDraggingRange ? 'any' : DAY_MS"
                 :value="rangeEnd"
-                :aria-valuetext="formatShort(rangeEnd)"
+                :aria-valuetext="formatShort(rangeEndDate)"
                 aria-label="Range end"
+                @pointerdown="isDraggingRange = true"
                 @input="onRangeEndInput"
                 @change="commitRange"
               />
@@ -748,10 +754,10 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="range-date"
-                  :aria-label="`Range start, ${formatShort(rangeStart)}`"
+                  :aria-label="`Range start, ${formatShort(rangeStartDate)}`"
                 >
                   <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
-                  {{ formatShort(rangeStart) }}
+                  {{ formatShort(rangeStartDate) }}
                 </button>
               </DayPickerDropdown>
               <DayPickerDropdown
@@ -764,9 +770,9 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="range-date"
-                  :aria-label="`Range end, ${formatShort(rangeEnd)}`"
+                  :aria-label="`Range end, ${formatShort(rangeEndDate)}`"
                 >
-                  {{ formatShort(rangeEnd) }}
+                  {{ formatShort(rangeEndDate) }}
                   <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
                 </button>
               </DayPickerDropdown>
