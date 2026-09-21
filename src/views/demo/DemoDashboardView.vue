@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { VueDatePicker } from '@vuepic/vue-datepicker'
-import '@vuepic/vue-datepicker/dist/main.css'
 
 import citiesApi from '@/api/cities'
 import countriesApi from '@/api/countries'
@@ -90,7 +88,7 @@ const { url: avatarUrl } = useResolvedStorageMedia(() => userStore.user.photo, {
   fallbackSrc: fallbackAvatar,
 })
 
-/* ---------- the date range: two fields over one two-handle slider ---------- */
+/* ---------- the date range: one two-handle slider with a date button under each end ---------- */
 
 const oldestDay = ref<number | null>(null)
 const newestDay = ref<number | null>(null)
@@ -101,6 +99,8 @@ const sliderMax = computed(() => newestDay.value ?? startOfDay(new Date()).getTi
 
 const rangeStart = ref(sliderMin.value)
 const rangeEnd = ref(sliderMax.value)
+const rangeStartDate = computed(() => new Date(rangeStart.value))
+const rangeEndDate = computed(() => new Date(rangeEnd.value))
 const isDraggingRange = ref(false)
 
 const syncRangeFromDates = () => {
@@ -149,7 +149,7 @@ const loadDateBounds = async () => {
     if (first) oldestDay.value = startOfDay(new Date(first.timestamp * 1000)).getTime()
     if (last) newestDay.value = startOfDay(new Date(last.timestamp * 1000)).getTime()
   } catch {
-    // Without bounds the slider keeps its fallback span; the date fields still work.
+    // Without bounds the slider keeps its fallback span; the date buttons still work.
   }
   syncRangeFromDates()
 }
@@ -704,8 +704,8 @@ onBeforeUnmount(() => {
             </div>
           </Transition>
 
-          <!-- One range: the two fields and the two handles drive the same start/end. Always
-               on screen — it is the filter people actually reach for. -->
+          <!-- One range: the two handles and the two dates under them drive the same
+               start/end. Always on screen — it is the filter people actually reach for. -->
           <div class="panel mt-3 p-3">
             <div class="mb-2 flex items-center justify-between gap-3">
               <p class="field-label">Date</p>
@@ -713,38 +713,6 @@ onBeforeUnmount(() => {
                 <font-awesome-icon icon="rotate-left" class="mr-1.5 text-[11px]" />
                 Clear filters
               </button>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              <div class="date-field">
-                <VueDatePicker
-                  v-model="startDate"
-                  :formats="{ input: 'M/d/yyyy' }"
-                  :time-config="{ enableTimePicker: false }"
-                  :max-date="endDate || undefined"
-                  placeholder="Start date"
-                  hide-input-icon
-                  dark
-                  auto-apply
-                  :teleport="true"
-                />
-                <font-awesome-icon icon="calendar-days" class="date-field-icon" />
-              </div>
-
-              <div class="date-field">
-                <VueDatePicker
-                  v-model="endDate"
-                  :formats="{ input: 'M/d/yyyy' }"
-                  :time-config="{ enableTimePicker: false }"
-                  :min-date="startDate || undefined"
-                  placeholder="End date"
-                  hide-input-icon
-                  dark
-                  auto-apply
-                  :teleport="true"
-                />
-                <font-awesome-icon icon="calendar-days" class="date-field-icon" />
-              </div>
             </div>
 
             <div class="range-slider" :class="{ 'is-dragging': isDraggingRange }">
@@ -776,9 +744,39 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <div class="flex justify-between text-[11px] text-white/50">
-              <span>{{ formatShort(rangeStart) }}</span>
-              <span>{{ formatShort(rangeEnd) }}</span>
+            <div class="flex justify-between">
+              <DayPickerDropdown
+                align="start"
+                prompt="From which day?"
+                :selected="rangeStartDate"
+                :max-date="rangeEndDate"
+                @pick="startDate = $event"
+              >
+                <button
+                  type="button"
+                  class="range-date"
+                  :aria-label="`Range start, ${formatShort(rangeStart)}`"
+                >
+                  <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
+                  {{ formatShort(rangeStart) }}
+                </button>
+              </DayPickerDropdown>
+              <DayPickerDropdown
+                align="end"
+                prompt="Up to which day?"
+                :selected="rangeEndDate"
+                :min-date="rangeStartDate"
+                @pick="endDate = $event"
+              >
+                <button
+                  type="button"
+                  class="range-date"
+                  :aria-label="`Range end, ${formatShort(rangeEnd)}`"
+                >
+                  {{ formatShort(rangeEnd) }}
+                  <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
+                </button>
+              </DayPickerDropdown>
             </div>
           </div>
         </div>
@@ -1255,22 +1253,26 @@ onBeforeUnmount(() => {
 
 /* ---------- date range ---------- */
 
-/* 132px is what a full date plus its icon needs — narrow enough to keep both fields on one
-   row at 375px, the way the two-field range reads on a desktop. */
-.date-field {
-  position: relative;
-  flex: 1 1 132px;
-  min-width: 132px;
+.range-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.date-field-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  pointer-events: none;
+.range-date:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Taller than the thumb so the track stays draggable on a phone. */
@@ -1430,63 +1432,5 @@ onBeforeUnmount(() => {
   .welcome-card:hover {
     transform: none;
   }
-}
-
-/* The date picker is a third-party widget, so its skin has to be reached with :deep */
-.date-field :deep(.dp__theme_dark) {
-  --dp-background-color: rgba(30, 30, 50, 0.95);
-  --dp-text-color: #fff;
-  --dp-hover-color: rgba(255, 255, 255, 0.1);
-  --dp-hover-text-color: #fff;
-  --dp-hover-icon-color: #fff;
-  --dp-primary-color: rgba(255, 255, 255, 0.3);
-  --dp-primary-disabled-color: rgba(255, 255, 255, 0.1);
-  --dp-primary-text-color: #fff;
-  --dp-secondary-color: rgba(255, 255, 255, 0.5);
-  --dp-border-color: rgba(255, 255, 255, 0.2);
-  --dp-menu-border-color: rgba(255, 255, 255, 0.2);
-  --dp-border-color-hover: rgba(255, 255, 255, 0.4);
-  --dp-disabled-color: rgba(255, 255, 255, 0.1);
-  --dp-icon-color: rgba(255, 255, 255, 0.7);
-  --dp-danger-color: #ff6f6f;
-  --dp-marker-color: rgba(255, 255, 255, 0.3);
-  --dp-highlight-color: rgba(255, 255, 255, 0.1);
-}
-
-.date-field :deep(.dp__input_wrap) {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-}
-
-.date-field :deep(.dp__input) {
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  /* 16px below md, or iOS Safari zooms the page when the field takes focus. */
-  font-size: 1rem;
-  padding: 7px 28px 7px 10px;
-  box-shadow: none;
-}
-
-@media (min-width: 768px) {
-  .date-field :deep(.dp__input) {
-    font-size: 0.8125rem;
-  }
-}
-
-/* The calendar glyph sits on the right here, so the widget's own leading icon goes away —
-   `hide-input-icon` alone still leaves it in the layout. */
-.date-field :deep(.dp__input_icon),
-.date-field :deep(.dp__clear_icon) {
-  display: none;
-}
-
-.date-field :deep(.dp__menu) {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 </style>

@@ -6,11 +6,13 @@ import '@vuepic/vue-datepicker/dist/main.css'
 const props = withDefaults(
   defineProps<{
     prompt: string
-    align?: 'center' | 'end'
+    align?: 'center' | 'start' | 'end'
     selected?: Date | null
+    minDate?: Date | null
+    maxDate?: Date | null
     shortcuts?: { date: Date; label: string }[]
   }>(),
-  { align: 'center', selected: null, shortcuts: () => [] },
+  { align: 'center', selected: null, minDate: null, maxDate: null, shortcuts: () => [] },
 )
 
 const emit = defineEmits<{ pick: [date: Date] }>()
@@ -29,12 +31,14 @@ const pickShortcut = (date: Date) => {
     <VueDatePicker
       ref="picker"
       :model-value="props.selected"
+      :min-date="props.minDate ?? undefined"
+      :max-date="props.maxDate ?? undefined"
       :time-config="{ enableTimePicker: false }"
       :ui="{ menu: 'day-picker-menu' }"
       :floating="{
         arrow: false,
         offset: 8,
-        placement: props.align === 'end' ? 'bottom-end' : 'bottom',
+        placement: props.align === 'center' ? 'bottom' : `bottom-${props.align}`,
       }"
       :teleport="true"
       auto-apply
