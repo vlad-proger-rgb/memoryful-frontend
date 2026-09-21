@@ -39,9 +39,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 <template>
   <Teleport to="body">
-    <Transition name="sheet">
+    <Transition name="sheet" :duration="{ enter: 260, leave: 200 }">
       <div v-if="show" class="fixed inset-0 z-[80] flex flex-col justify-end">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close" />
+        <div class="sheet-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close" />
         <div
           :role="role"
           :aria-modal="role === 'dialog' ? 'true' : undefined"
@@ -63,9 +63,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </template>
 
 <style scoped>
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: opacity 200ms ease;
+.sheet-enter-active .sheet-backdrop,
+.sheet-leave-active .sheet-backdrop {
+  transition:
+    background-color 200ms ease,
+    backdrop-filter 200ms ease,
+    -webkit-backdrop-filter 200ms ease;
 }
 
 /* `translate`, not `transform`: the drag offset owns `transform`, and the two would collide. */
@@ -77,9 +80,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
   transition: translate 200ms cubic-bezier(0.4, 0, 1, 1);
 }
 
-.sheet-enter-from,
-.sheet-leave-to {
-  opacity: 0;
+/* Opacity on the backdrop or above it drops the blur until it reaches 1, so ramp the blur itself. */
+.sheet-enter-from .sheet-backdrop,
+.sheet-leave-to .sheet-backdrop {
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(0);
+  backdrop-filter: blur(0);
 }
 
 .sheet-enter-from .sheet-panel,
@@ -90,12 +96,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 @media (prefers-reduced-motion: reduce) {
   .sheet-enter-active .sheet-panel,
   .sheet-leave-active .sheet-panel {
-    transition: none;
+    transition: opacity 200ms ease;
   }
 
   .sheet-enter-from .sheet-panel,
   .sheet-leave-to .sheet-panel {
     translate: none;
+    opacity: 0;
   }
 }
 </style>
