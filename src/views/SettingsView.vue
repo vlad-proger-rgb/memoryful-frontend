@@ -7,7 +7,6 @@ import { useUiStore } from '@/stores/ui'
 import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
 import useWorkspaceStore from '@/stores/workspace'
 
-import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SettingsSectionButton from '@/components/ui/SettingsSectionButton.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 
@@ -93,12 +92,15 @@ const revealActiveSection = () => {
 onMounted(revealActiveSection)
 watch(() => route.path, revealActiveSection, { flush: 'post' })
 
-const isSignOutDialogOpen = ref(false)
-
 const handleLogout = async () => {
-  isSignOutDialogOpen.value = false
-
   if (isLoggingOut.value) return
+
+  const ok = await uiStore.confirm({
+    title: 'Sign out?',
+    message: 'You will need to log in again on this device. Your other sessions stay signed in.',
+    confirmLabel: 'Sign out',
+  })
+  if (!ok) return
 
   isLoggingOut.value = true
   try {
@@ -158,7 +160,7 @@ const handleLogout = async () => {
 
         <button
           class="pointer-events-auto shrink-0 backdrop-blur-[17.5px] bg-[rgba(191,47,47,0.2)] border border-red-400 px-4 py-2 min-h-11 md:min-h-0 rounded-full flex items-center gap-2 text-base text-red-300 [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] transition-transform duration-150 ease-out hover:scale-[1.03] hover:ring-2 hover:ring-red-400/30 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:hover:ring-0"
-          @click="isSignOutDialogOpen = true"
+          @click="handleLogout"
           :disabled="isLoggingOut"
         >
           <span class="text-sm font-semibold whitespace-nowrap">
@@ -215,16 +217,6 @@ const handleLogout = async () => {
         </main>
       </div>
     </div>
-
-    <ConfirmDialog
-      :show="isSignOutDialogOpen"
-      title="Sign out?"
-      message="You will need to log in again on this device. Your other sessions stay signed in."
-      confirm-label="Sign out"
-      :busy="isLoggingOut"
-      @update:show="isSignOutDialogOpen = $event"
-      @confirm="handleLogout"
-    />
   </div>
 </template>
 

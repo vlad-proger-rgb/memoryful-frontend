@@ -1,30 +1,14 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import DialogShell from '@/components/ui/DialogShell.vue'
 import SettingsButton from '@/components/ui/SettingsButton.vue'
+import { useUiStore } from '@/stores/ui'
 
-withDefaults(
-  defineProps<{
-    show: boolean
-    title: string
-    message?: string
-    confirmLabel?: string
-    cancelLabel?: string
-    tone?: 'neutral' | 'danger'
-    busy?: boolean
-  }>(),
-  {
-    message: '',
-    confirmLabel: 'Confirm',
-    cancelLabel: 'Cancel',
-    tone: 'danger',
-    busy: false,
-  },
-)
+const uiStore = useUiStore()
 
-const emit = defineEmits<{ 'update:show': [boolean]; confirm: [] }>()
+const options = computed(() => uiStore.confirmOptions)
 
 const wideScreen = window.matchMedia('(min-width: 768px)')
 const isWide = ref(wideScreen.matches)
@@ -38,32 +22,29 @@ onBeforeUnmount(() => wideScreen.removeEventListener('change', onWidthChange))
 <template>
   <component
     :is="isWide ? DialogShell : BottomSheet"
-    :show="show"
-    :label="title"
+    :show="uiStore.isConfirmOpen"
+    :label="options?.title"
     role="dialog"
-    @update:show="emit('update:show', $event)"
+    @update:show="uiStore.resolveConfirm(false)"
   >
     <div class="px-4 pb-4 text-white md:p-0">
-      <p class="text-base font-semibold">{{ title }}</p>
-      <p v-if="message" class="mt-2 text-sm text-white/70">{{ message }}</p>
-
-      <slot />
+      <p class="text-base font-semibold">{{ options?.title }}</p>
+      <p v-if="options?.message" class="mt-2 text-sm text-white/70">{{ options?.message }}</p>
+      <p v-if="options?.detail" class="mt-2 text-xs text-white/50">{{ options?.detail }}</p>
 
       <div class="mt-5 flex flex-col-reverse gap-2 md:flex-row md:justify-end">
         <SettingsButton
           preset="pill"
           class="justify-center"
-          :label="cancelLabel"
-          :disabled="busy"
-          @click="emit('update:show', false)"
+          :label="options?.cancelLabel ?? 'Cancel'"
+          @click="uiStore.resolveConfirm(false)"
         />
         <SettingsButton
           preset="pill"
           class="justify-center"
-          :tone="tone"
-          :label="confirmLabel"
-          :loading="busy"
-          @click="emit('confirm')"
+          :tone="options?.tone ?? 'danger'"
+          :label="options?.confirmLabel ?? 'Confirm'"
+          @click="uiStore.resolveConfirm(true)"
         />
       </div>
     </div>

@@ -3,7 +3,6 @@
   import { useRouter } from 'vue-router'
   import sessionsApi from '@/api/sessions'
   import { useUiStore } from '@/stores/ui'
-  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import SettingsButton from '@/components/ui/SettingsButton.vue'
   import { useUserStore } from '@/stores/user'
   import type { ApiResponse, Session } from '@/types'
@@ -16,7 +15,6 @@
   const userStore = useUserStore()
   const router = useRouter()
 
-  const isSignOutDialogOpen = ref(false)
   const isSigningOutEverywhere = ref(false)
 
   const formatDateTime = (isoOrDate: string) => {
@@ -25,9 +23,18 @@
   }
 
   const signOutEverywhere = async () => {
-    isSignOutDialogOpen.value = false
-
     if (isSigningOutEverywhere.value) return
+
+    const count = sessions.value.length
+    const ok = await uiStore.confirm({
+      title: 'Sign out everywhere?',
+      message:
+        'This revokes every session, including this one. You will need to log in again on each device.',
+      detail: `${count} ${count === 1 ? 'session' : 'sessions'} will be signed out.`,
+      confirmLabel: 'Sign out everywhere',
+    })
+    if (!ok) return
+
     isSigningOutEverywhere.value = true
     errorMessage.value = ''
     try {
@@ -94,7 +101,11 @@
   const revoke = async (sessionId: string) => {
     if (revokingSessionIds.value.has(sessionId)) return
 
-    const ok = window.confirm('Revoke this session?')
+    const ok = await uiStore.confirm({
+      title: 'Revoke this session?',
+      message: 'That device will need to log in again. Your other sessions stay signed in.',
+      confirmLabel: 'Revoke',
+    })
     if (!ok) return
 
     revokingSessionIds.value.add(sessionId)
@@ -135,7 +146,7 @@
           icon="right-from-bracket"
           label="Sign out everywhere"
           :disabled="isLoading || isSigningOutEverywhere || !sessions.length"
-          @click="isSignOutDialogOpen = true"
+          @click="signOutEverywhere"
         />
       </div>
     </div>
@@ -190,20 +201,5 @@
         </div>
       </div>
     </div>
-
-    <ConfirmDialog
-      :show="isSignOutDialogOpen"
-      title="Sign out everywhere?"
-      message="This revokes every session, including this one. You will need to log in again on each device."
-      confirm-label="Sign out everywhere"
-      :busy="isSigningOutEverywhere"
-      @update:show="isSignOutDialogOpen = $event"
-      @confirm="signOutEverywhere"
-    >
-      <p class="mt-2 text-xs text-white/50">
-        {{ sessions.length }} {{ sessions.length === 1 ? 'session' : 'sessions' }} will be signed
-        out.
-      </p>
-    </ConfirmDialog>
   </div>
 </template>

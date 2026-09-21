@@ -158,7 +158,10 @@ const updateTag = async (tag: Tag) => {
 }
 
 const deleteTag = async (tag: Tag) => {
-  const ok = window.confirm(`Delete tag "${tag.name}"?`)
+  const ok = await uiStore.confirm({
+    title: `Delete tag "${tag.name}"?`,
+    confirmLabel: 'Delete',
+  })
   if (!ok) return
 
   try {
@@ -292,7 +295,10 @@ const updateTrackableType = async (id: string, data: TrackableTypeUpdate) => {
 }
 
 const deleteTrackableType = async (tt: TrackableType) => {
-  const ok = window.confirm(`Delete trackable type "${tt.name}"?`)
+  const ok = await uiStore.confirm({
+    title: `Delete trackable type "${tt.name}"?`,
+    confirmLabel: 'Delete',
+  })
   if (!ok) return
 
   try {
@@ -378,7 +384,10 @@ const updateTrackable = async (id: string, data: TrackableUpdate) => {
 }
 
 const deleteTrackable = async (t: TrackableInDB) => {
-  const ok = window.confirm(`Delete trackable "${t.title}"?`)
+  const ok = await uiStore.confirm({
+    title: `Delete trackable "${t.title}"?`,
+    confirmLabel: 'Delete',
+  })
   if (!ok) return
 
   try {

@@ -4,6 +4,7 @@ import DemoNavbar from '@/components/demo/DemoNavbar.vue'
 import DemoBottomNav from '@/components/demo/DemoBottomNav.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import AppToast from '@/components/ui/AppToast.vue'
+import AppConfirm from '@/components/ui/AppConfirm.vue'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
 import useFeatureFlagsStore from '@/stores/featureFlags'
 import useUiStore from '@/stores/ui.ts'
@@ -43,6 +44,7 @@ watch(
     <BottomNav v-else-if="showAppShell" class="md:hidden" />
     <AiChatPanel v-if="showAppShell" />
     <AppToast />
+    <AppConfirm />
     <div
       :class="
         showAppShell ? 'pb-[var(--bottom-nav-total)] md:pb-0 md:pt-[var(--app-header-height)]' : ''

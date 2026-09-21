@@ -1,6 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
+export interface ConfirmOptions {
+  title: string
+  message?: string
+  detail?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  tone?: 'neutral' | 'danger'
+}
+
 export const useUiStore = defineStore('ui', () => {
   const theme = ref('light')
   const disableScroll = ref(false)
@@ -9,6 +18,11 @@ export const useUiStore = defineStore('ui', () => {
   const toastType = ref<'success' | 'error' | 'info'>('info')
   const isToastVisible = ref(false)
   let toastTimeout: number | null = null
+
+  // Outlives isConfirmOpen on purpose: clearing it on close would blank the text mid-leave.
+  const confirmOptions = ref<ConfirmOptions | null>(null)
+  const isConfirmOpen = ref(false)
+  let resolveConfirmPromise: ((ok: boolean) => void) | null = null
 
   const toggleTheme = () => {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
@@ -44,6 +58,22 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
 
+  const confirm = (options: ConfirmOptions): Promise<boolean> => {
+    resolveConfirmPromise?.(false)
+    confirmOptions.value = options
+    isConfirmOpen.value = true
+
+    return new Promise<boolean>((resolve) => {
+      resolveConfirmPromise = resolve
+    })
+  }
+
+  const resolveConfirm = (ok: boolean) => {
+    isConfirmOpen.value = false
+    resolveConfirmPromise?.(ok)
+    resolveConfirmPromise = null
+  }
+
   const isDark = computed(() => theme.value === 'dark')
 
   return {
@@ -56,6 +86,10 @@ export const useUiStore = defineStore('ui', () => {
     isToastVisible,
     showToast,
     hideToast,
+    confirmOptions,
+    isConfirmOpen,
+    confirm,
+    resolveConfirm,
   }
 })
 
