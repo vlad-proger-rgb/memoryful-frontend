@@ -763,7 +763,7 @@ onBeforeUnmount(() => {
                 @change="commitRange"
               />
               <input
-                class="range-input"
+                class="range-input range-input-end"
                 type="range"
                 :min="sliderMin"
                 :max="sliderMax"
@@ -1320,6 +1320,12 @@ onBeforeUnmount(() => {
   pointer-events: none;
   -webkit-appearance: none;
   appearance: none;
+  --thumb-color: rgb(150, 136, 240);
+}
+
+/* Each handle wears the color of its end of the fill. */
+.range-input.range-input-end {
+  --thumb-color: rgb(196, 214, 240);
 }
 
 .range-input:focus {
@@ -1335,12 +1341,17 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   appearance: none;
   pointer-events: auto;
-  width: 16px;
-  height: 16px;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  /* A styled WebKit thumb hugs the top of its 36px track; this drops it onto the line. */
+  margin-top: 8px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  border: 2px solid var(--thumb-color);
+  background: radial-gradient(circle, var(--thumb-color) 0 3px, rgb(22, 20, 38) 3.5px);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--thumb-color) 18%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
   cursor: grab;
   transition:
     transform 0.15s ease,
@@ -1348,22 +1359,24 @@ onBeforeUnmount(() => {
 }
 
 .range-input::-webkit-slider-thumb:hover {
-  transform: scale(1.12);
+  transform: scale(1.08);
   box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.45),
-    0 0 0 5px rgba(255, 255, 255, 0.12);
+    0 0 0 6px color-mix(in srgb, var(--thumb-color) 26%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 .range-input::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.15);
+  transform: scale(1.12);
   box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.45),
-    0 0 0 6px rgba(255, 255, 255, 0.18);
+    0 0 0 8px color-mix(in srgb, var(--thumb-color) 30%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 .range-input:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 .range-input::-moz-range-track {
@@ -1373,24 +1386,40 @@ onBeforeUnmount(() => {
 
 .range-input::-moz-range-thumb {
   pointer-events: auto;
-  width: 16px;
-  height: 16px;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  border: 2px solid var(--thumb-color);
+  background: radial-gradient(circle, var(--thumb-color) 0 3px, rgb(22, 20, 38) 3.5px);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--thumb-color) 18%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
   cursor: grab;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
 
+.range-input::-moz-range-thumb:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--thumb-color) 26%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
 .range-input::-moz-range-thumb:active {
-  transform: scale(1.2);
+  cursor: grabbing;
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--thumb-color) 30%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 .range-input:focus-visible::-moz-range-thumb {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
