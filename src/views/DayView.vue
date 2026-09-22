@@ -110,6 +110,7 @@ const day = ref<DayDetail>({
 })
 
 const showModal = ref(false)
+const showMoreFields = ref(false)
 const isSaving = ref(false)
 const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
@@ -432,6 +433,16 @@ const handleModalClose = () => {
 const handleModalOpen = () => {
   showModal.value = true
   onModalOpen()
+}
+
+watch(showModal, (open) => {
+  if (open) showMoreFields.value = false
+})
+
+const moreFieldsSection = ref<HTMLElement | null>(null)
+
+const scrollToMoreFields = () => {
+  moreFieldsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const handleDiscuss = (item: InsightInDB, type: 'insight' | 'suggestion') => {
@@ -1133,69 +1144,6 @@ onUnmounted(() => {
                 </button>
               </div>
 
-              <!-- Description -->
-              <div>
-                <label for="description-input" class="block text-sm font-medium text-white/70 mb-1">
-                  Description
-                </label>
-                <input
-                  v-model="editForm.description"
-                  type="text"
-                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Add a short description"
-                />
-              </div>
-
-              <!-- City and Country -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div id="country-input-container">
-                  <label for="country-input" class="block text-sm font-medium text-white/70 mb-1">
-                    Country
-                  </label>
-                  <LocationAutocomplete
-                    v-model="editForm.country"
-                    input-id="country-input"
-                    placeholder="Search country..."
-                    :icon="'globe'"
-                    :show-country-code="true"
-                    :full-width="true"
-                    :fetch-items="fetchCountries"
-                    @select="
-                      (item) => {
-                        editForm.country = item.name
-                        editForm.countryId = item.id
-                        // Clear city when country changes
-                        editForm.city = ''
-                        editForm.cityId = ''
-                      }
-                    "
-                  />
-                </div>
-                <div id="city-input-container">
-                  <label for="city-input" class="block text-sm font-medium text-white/70 mb-1">
-                    City
-                  </label>
-                  <LocationAutocomplete
-                    v-model="editForm.city"
-                    input-id="city-input"
-                    :placeholder="editForm.country ? 'Search city...' : 'Select country first'"
-                    :icon="'map-marker-alt'"
-                    :country-id="editForm.countryId || ''"
-                    :disabled="!editForm.country"
-                    :full-width="true"
-                    :fetch-items="
-                      (query: string, countryId?: string) => fetchCities(query, countryId || '')
-                    "
-                    @select="
-                      (item) => {
-                        editForm.city = item.name
-                        editForm.cityId = item.id
-                      }
-                    "
-                  />
-                </div>
-              </div>
-
               <!-- Content -->
               <div>
                 <label for="content-input" class="block text-sm font-medium text-white/70 mb-1">
@@ -1206,200 +1154,6 @@ onUnmounted(() => {
                   placeholder="Write your day's story here..."
                   :min-height="200"
                 />
-              </div>
-
-              <!-- Tags -->
-              <div>
-                <label for="tags-input" class="block text-sm font-medium text-white/70 mb-1">
-                  Tags
-                </label>
-                <TagSelector
-                  v-model="editForm.tags"
-                  :available-tags="tags"
-                  :loading="isLoadingTags"
-                  :error="tagsError"
-                  placeholder="Add tags..."
-                  allow-create
-                  @tag-created="(tag) => tags.push(tag)"
-                />
-              </div>
-
-              <!-- Trackables -->
-              <div>
-                <label class="block text-sm font-medium text-white/70 mb-1">Trackables</label>
-
-                <div
-                  v-if="trackableTypesError"
-                  class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
-                >
-                  {{ trackableTypesError }}
-                </div>
-
-                <div
-                  v-if="trackablesError"
-                  class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
-                >
-                  {{ trackablesError }}
-                </div>
-
-                <div class="space-y-3">
-                  <div id="trackable-type-select-container" class="min-w-0">
-                    <label class="block text-xs font-medium text-white/60 mb-1">Type</label>
-                    <div class="relative min-w-0">
-                      <input
-                        ref="trackableTypeInputRef"
-                        v-model="trackableTypeSearchQuery"
-                        type="text"
-                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        :placeholder="
-                          isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'
-                        "
-                        :disabled="isLoadingTrackableTypes || !trackableTypes.length"
-                        @focus="isTrackableTypeDropdownOpen = true"
-                        @input="isTrackableTypeDropdownOpen = true"
-                      />
-
-                      <BaseAutocomplete
-                        :show="isTrackableTypeDropdownOpen"
-                        @update:show="onTrackableTypeDropdownShowUpdate"
-                        :items="filteredTrackableTypes"
-                        :loading="isLoadingTrackableTypes"
-                        :attach-to="trackableTypeInputRef"
-                        item-key="id"
-                        item-label="name"
-                        class="z-50"
-                        @select="selectTrackableType"
-                      />
-                    </div>
-                  </div>
-
-                  <div id="trackable-item-select-container" class="min-w-0">
-                    <label class="block text-xs font-medium text-white/60 mb-1">Item</label>
-                    <div class="relative min-w-0">
-                      <input
-                        ref="trackableItemInputRef"
-                        v-model="trackableItemSearchQuery"
-                        type="text"
-                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        :placeholder="
-                          !selectedTrackableTypeId
-                            ? 'Select type first'
-                            : isLoadingTrackables
-                              ? 'Loading items...'
-                              : 'Search item...'
-                        "
-                        :disabled="!selectedTrackableTypeId || isLoadingTrackables"
-                        @focus="isTrackableItemDropdownOpen = true"
-                        @input="isTrackableItemDropdownOpen = true"
-                      />
-
-                      <BaseAutocomplete
-                        :show="isTrackableItemDropdownOpen"
-                        @update:show="onTrackableItemDropdownShowUpdate"
-                        :items="filteredTrackableItems"
-                        :loading="isLoadingTrackables"
-                        :attach-to="trackableItemInputRef"
-                        item-key="id"
-                        item-label="title"
-                        class="z-50"
-                        @select="selectTrackableItem"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div id="trackable-value-container" class="min-w-0">
-                      <label class="block text-xs font-medium text-white/60 mb-1">Value</label>
-                      <input
-                        v-model.number="newTrackableValue"
-                        type="number"
-                        step="any"
-                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter value"
-                      />
-                    </div>
-
-                    <div class="md:col-span-2 min-w-0">
-                      <label class="block text-xs font-medium text-white/60 mb-1">
-                        Description
-                      </label>
-                      <input
-                        v-model="newTrackableDescription"
-                        type="text"
-                        class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    v-if="newTrackableItemId"
-                    class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs"
-                  >
-                    <font-awesome-icon icon="pen" class="shrink-0" />
-                    <span>
-                      Editing — update the fields above, then click
-                      <strong>Update Trackable</strong>
-                      to save. Click
-                      <strong>Cancel</strong>
-                      to discard changes.
-                    </span>
-                  </div>
-
-                  <div class="flex justify-end gap-2">
-                    <MainButton
-                      v-if="newTrackableItemId"
-                      type="button"
-                      variant="secondary"
-                      @click="cancelEditTrackable"
-                    >
-                      Cancel
-                    </MainButton>
-                    <MainButton type="button" class="bg-blue-600" @click="addTrackableProgress">
-                      {{ newTrackableItemId ? 'Update Trackable' : 'Add Trackable' }}
-                    </MainButton>
-                  </div>
-                </div>
-
-                <div v-if="editForm.trackableProgresses.length" class="mt-3 space-y-2">
-                  <div
-                    v-for="p in editForm.trackableProgresses"
-                    :key="p.trackableItemId"
-                    class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
-                  >
-                    <div class="min-w-0">
-                      <div class="text-white/90 font-medium truncate">
-                        {{ trackableTitle(p.trackableItemId) }}
-                      </div>
-                      <div class="text-white/60 text-sm">
-                        {{ p.value }}
-                        <span v-if="p.description">- {{ p.description }}</span>
-                      </div>
-                    </div>
-                    <div class="ml-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        class="text-white/50 hover:text-white/80 transition-colors"
-                        @click="editTrackableProgress(p)"
-                        :aria-label="`Edit ${trackableTitle(p.trackableItemId)}`"
-                        title="Edit"
-                      >
-                        <font-awesome-icon icon="pen" />
-                      </button>
-                      <button
-                        type="button"
-                        class="text-red-200/80 hover:text-red-200 transition-colors"
-                        @click="removeTrackableProgress(p.trackableItemId)"
-                        :aria-label="`Remove ${trackableTitle(p.trackableItemId)}`"
-                        title="Remove"
-                      >
-                        <font-awesome-icon icon="times" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <BaseBox v-else class="mt-3 text-white/50">No trackables added</BaseBox>
               </div>
 
               <!-- Main Image -->
@@ -1428,7 +1182,7 @@ onUnmounted(() => {
                     <p>Upload a main image for this day</p>
                     <button
                       type="button"
-                      class="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors w-fit min-h-11"
+                      class="hidden touch:flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors w-fit min-h-11"
                       @click="mainCameraInput?.click()"
                     >
                       <font-awesome-icon icon="camera" class="text-xs" />
@@ -1485,7 +1239,7 @@ onUnmounted(() => {
                     />
                   </div>
                   <div
-                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors gap-1"
+                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 hidden touch:flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors gap-1"
                     @click="additionalCameraInput?.click()"
                   >
                     <font-awesome-icon icon="camera" class="text-white/40" />
@@ -1500,6 +1254,323 @@ onUnmounted(() => {
                     />
                   </div>
                 </div>
+              </div>
+
+              <div ref="moreFieldsSection" class="scroll-mt-2">
+                <button
+                  type="button"
+                  class="flex w-full cursor-pointer items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 text-white/90 hover:bg-white/10 transition-colors"
+                  aria-controls="day-more-fields"
+                  :aria-expanded="showMoreFields"
+                  @click="showMoreFields = !showMoreFields"
+                >
+                  <span>More</span>
+                  <font-awesome-icon
+                    icon="chevron-down"
+                    class="text-xs text-white/40 transition-transform duration-200"
+                    :class="{ 'rotate-180': showMoreFields }"
+                  />
+                </button>
+
+                <Transition
+                  enter-active-class="overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none"
+                  enter-from-class="grid-rows-[0fr] opacity-0"
+                  enter-to-class="grid-rows-[1fr] opacity-100"
+                  leave-active-class="overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-in motion-reduce:transition-none"
+                  leave-from-class="grid-rows-[1fr] opacity-100"
+                  leave-to-class="grid-rows-[0fr] opacity-0"
+                  @after-enter="scrollToMoreFields"
+                >
+                  <div v-show="showMoreFields" id="day-more-fields" class="grid">
+                    <div class="min-h-0">
+                      <div class="pt-4 space-y-4">
+                        <!-- Description -->
+                        <div>
+                          <label
+                            for="description-input"
+                            class="block text-sm font-medium text-white/70 mb-1"
+                          >
+                            Description
+                          </label>
+                          <input
+                            v-model="editForm.description"
+                            type="text"
+                            class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Add a short description"
+                          />
+                        </div>
+
+                        <!-- City and Country -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div id="country-input-container">
+                            <label
+                              for="country-input"
+                              class="block text-sm font-medium text-white/70 mb-1"
+                            >
+                              Country
+                            </label>
+                            <LocationAutocomplete
+                              v-model="editForm.country"
+                              input-id="country-input"
+                              placeholder="Search country..."
+                              :icon="'globe'"
+                              :show-country-code="true"
+                              :full-width="true"
+                              :fetch-items="fetchCountries"
+                              @select="
+                                (item) => {
+                                  editForm.country = item.name
+                                  editForm.countryId = item.id
+                                  // Clear city when country changes
+                                  editForm.city = ''
+                                  editForm.cityId = ''
+                                }
+                              "
+                            />
+                          </div>
+                          <div id="city-input-container">
+                            <label
+                              for="city-input"
+                              class="block text-sm font-medium text-white/70 mb-1"
+                            >
+                              City
+                            </label>
+                            <LocationAutocomplete
+                              v-model="editForm.city"
+                              input-id="city-input"
+                              :placeholder="
+                                editForm.country ? 'Search city...' : 'Select country first'
+                              "
+                              :icon="'map-marker-alt'"
+                              :country-id="editForm.countryId || ''"
+                              :disabled="!editForm.country"
+                              :full-width="true"
+                              :fetch-items="
+                                (query: string, countryId?: string) =>
+                                  fetchCities(query, countryId || '')
+                              "
+                              @select="
+                                (item) => {
+                                  editForm.city = item.name
+                                  editForm.cityId = item.id
+                                }
+                              "
+                            />
+                          </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div>
+                          <label
+                            for="tags-input"
+                            class="block text-sm font-medium text-white/70 mb-1"
+                          >
+                            Tags
+                          </label>
+                          <TagSelector
+                            v-model="editForm.tags"
+                            :available-tags="tags"
+                            :loading="isLoadingTags"
+                            :error="tagsError"
+                            placeholder="Add tags..."
+                            allow-create
+                            @tag-created="(tag) => tags.push(tag)"
+                          />
+                        </div>
+
+                        <!-- Trackables -->
+                        <div>
+                          <label class="block text-sm font-medium text-white/70 mb-1">
+                            Trackables
+                          </label>
+
+                          <div
+                            v-if="trackableTypesError"
+                            class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
+                          >
+                            {{ trackableTypesError }}
+                          </div>
+
+                          <div
+                            v-if="trackablesError"
+                            class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm"
+                          >
+                            {{ trackablesError }}
+                          </div>
+
+                          <div class="space-y-3">
+                            <div id="trackable-type-select-container" class="min-w-0">
+                              <label class="block text-xs font-medium text-white/60 mb-1">
+                                Type
+                              </label>
+                              <div class="relative min-w-0">
+                                <input
+                                  ref="trackableTypeInputRef"
+                                  v-model="trackableTypeSearchQuery"
+                                  type="text"
+                                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  :placeholder="
+                                    isLoadingTrackableTypes ? 'Loading types...' : 'Search type...'
+                                  "
+                                  :disabled="isLoadingTrackableTypes || !trackableTypes.length"
+                                  @focus="isTrackableTypeDropdownOpen = true"
+                                  @input="isTrackableTypeDropdownOpen = true"
+                                />
+
+                                <BaseAutocomplete
+                                  :show="isTrackableTypeDropdownOpen"
+                                  @update:show="onTrackableTypeDropdownShowUpdate"
+                                  :items="filteredTrackableTypes"
+                                  :loading="isLoadingTrackableTypes"
+                                  :attach-to="trackableTypeInputRef"
+                                  item-key="id"
+                                  item-label="name"
+                                  class="z-50"
+                                  @select="selectTrackableType"
+                                />
+                              </div>
+                            </div>
+
+                            <div id="trackable-item-select-container" class="min-w-0">
+                              <label class="block text-xs font-medium text-white/60 mb-1">
+                                Item
+                              </label>
+                              <div class="relative min-w-0">
+                                <input
+                                  ref="trackableItemInputRef"
+                                  v-model="trackableItemSearchQuery"
+                                  type="text"
+                                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  :placeholder="
+                                    !selectedTrackableTypeId
+                                      ? 'Select type first'
+                                      : isLoadingTrackables
+                                        ? 'Loading items...'
+                                        : 'Search item...'
+                                  "
+                                  :disabled="!selectedTrackableTypeId || isLoadingTrackables"
+                                  @focus="isTrackableItemDropdownOpen = true"
+                                  @input="isTrackableItemDropdownOpen = true"
+                                />
+
+                                <BaseAutocomplete
+                                  :show="isTrackableItemDropdownOpen"
+                                  @update:show="onTrackableItemDropdownShowUpdate"
+                                  :items="filteredTrackableItems"
+                                  :loading="isLoadingTrackables"
+                                  :attach-to="trackableItemInputRef"
+                                  item-key="id"
+                                  item-label="title"
+                                  class="z-50"
+                                  @select="selectTrackableItem"
+                                />
+                              </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div id="trackable-value-container" class="min-w-0">
+                                <label class="block text-xs font-medium text-white/60 mb-1">
+                                  Value
+                                </label>
+                                <input
+                                  v-model.number="newTrackableValue"
+                                  type="number"
+                                  step="any"
+                                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter value"
+                                />
+                              </div>
+
+                              <div class="md:col-span-2 min-w-0">
+                                <label class="block text-xs font-medium text-white/60 mb-1">
+                                  Description
+                                </label>
+                                <input
+                                  v-model="newTrackableDescription"
+                                  type="text"
+                                  class="w-full px-3 py-2.5 md:py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Optional"
+                                />
+                              </div>
+                            </div>
+
+                            <div
+                              v-if="newTrackableItemId"
+                              class="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs"
+                            >
+                              <font-awesome-icon icon="pen" class="shrink-0" />
+                              <span>
+                                Editing — update the fields above, then click
+                                <strong>Update Trackable</strong>
+                                to save. Click
+                                <strong>Cancel</strong>
+                                to discard changes.
+                              </span>
+                            </div>
+
+                            <div class="flex justify-end gap-2">
+                              <MainButton
+                                v-if="newTrackableItemId"
+                                type="button"
+                                variant="secondary"
+                                @click="cancelEditTrackable"
+                              >
+                                Cancel
+                              </MainButton>
+                              <MainButton
+                                type="button"
+                                class="bg-blue-600"
+                                @click="addTrackableProgress"
+                              >
+                                {{ newTrackableItemId ? 'Update Trackable' : 'Add Trackable' }}
+                              </MainButton>
+                            </div>
+                          </div>
+
+                          <div v-if="editForm.trackableProgresses.length" class="mt-3 space-y-2">
+                            <div
+                              v-for="p in editForm.trackableProgresses"
+                              :key="p.trackableItemId"
+                              class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                            >
+                              <div class="min-w-0">
+                                <div class="text-white/90 font-medium truncate">
+                                  {{ trackableTitle(p.trackableItemId) }}
+                                </div>
+                                <div class="text-white/60 text-sm">
+                                  {{ p.value }}
+                                  <span v-if="p.description">- {{ p.description }}</span>
+                                </div>
+                              </div>
+                              <div class="ml-3 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  class="text-white/50 hover:text-white/80 transition-colors"
+                                  @click="editTrackableProgress(p)"
+                                  :aria-label="`Edit ${trackableTitle(p.trackableItemId)}`"
+                                  title="Edit"
+                                >
+                                  <font-awesome-icon icon="pen" />
+                                </button>
+                                <button
+                                  type="button"
+                                  class="text-red-200/80 hover:text-red-200 transition-colors"
+                                  @click="removeTrackableProgress(p.trackableItemId)"
+                                  :aria-label="`Remove ${trackableTitle(p.trackableItemId)}`"
+                                  title="Remove"
+                                >
+                                  <font-awesome-icon icon="times" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <BaseBox v-else class="mt-3 text-white/50">No trackables added</BaseBox>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Transition>
               </div>
             </form>
           </template>
