@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useUiStore } from '@/stores/ui'
 import { useLocation, useShake } from '@/composables'
 import AuthCard from '@/components/auth/AuthCard.vue'
 import AuthInput from '@/components/auth/AuthInput.vue'
@@ -10,7 +9,6 @@ import AuthButton from '@/components/auth/AuthButton.vue'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 
 const userStore = useUserStore()
-const uiStore = useUiStore()
 const router = useRouter()
 
 const {
@@ -91,13 +89,6 @@ const handleUpdateProfile = async () => {
     userStore.isLoading = false
   }
 }
-
-const handleLogout = async () => {
-  await userStore.logout()
-  userStore.errorMessage = ''
-  uiStore.showToast('Signed out', 'success')
-  await router.push('/login')
-}
 </script>
 
 <template>
@@ -173,9 +164,5 @@ const handleLogout = async () => {
         <font-awesome-icon icon="circle-notch" class="animate-spin" />
       </template>
     </AuthButton>
-
-    <div class="flex w-full">
-      <AuthButton variant="link" @click="handleLogout">Cancel & Log Out</AuthButton>
-    </div>
   </AuthCard>
 </template>
