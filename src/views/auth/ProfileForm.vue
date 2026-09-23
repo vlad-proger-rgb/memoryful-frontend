@@ -35,11 +35,11 @@ onMounted(() => {
   }
 
   // Initialize with user's current location if available
-  if (userStore.user.city) {
-    setSelectedCity(userStore.user.city)
-    if (userStore.user.city.country) {
-      setSelectedCountry(userStore.user.city.country)
-    }
+  if (userStore.user.city?.id) {
+    setSelectedCity(userStore.homeCity)
+  }
+  if (userStore.user.country) {
+    setSelectedCountry(userStore.user.country)
   }
 
   ageDraft.value = typeof userStore.user.age === 'number' ? userStore.user.age : undefined

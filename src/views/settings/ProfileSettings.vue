@@ -27,15 +27,11 @@ const bioDraft = ref('')
 
 const hydrateLocationFromUser = () => {
   if (!selectedCity.value?.id && userStore.user.city?.id) {
-    setSelectedCity(userStore.user.city)
+    setSelectedCity(userStore.homeCity)
   }
 
-  if (!selectedCountry.value?.id) {
-    if (userStore.user.city?.country?.id) {
-      setSelectedCountry(userStore.user.city.country)
-    } else if (userStore.user.country?.id) {
-      setSelectedCountry(userStore.user.country)
-    }
+  if (!selectedCountry.value?.id && userStore.user.country?.id) {
+    setSelectedCountry(userStore.user.country)
   }
 }
 
@@ -55,7 +51,6 @@ watch(
   [
     () => userStore.user.id,
     () => userStore.user.city?.id,
-    () => userStore.user.city?.country?.id,
     () => userStore.user.country?.id,
   ],
   () => {
@@ -83,11 +78,6 @@ const saveProfile = async () => {
       city: {
         id: '',
         name: '',
-        country: {
-          id: '',
-          name: '',
-          code: '',
-        },
       },
       country: selectedCountry.value || undefined,
       bio: bioDraft.value,

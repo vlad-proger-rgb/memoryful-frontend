@@ -1,10 +1,10 @@
 import type { Token } from '@/types/auth.ts'
-import type { CityDetail, Country } from '@/types'
+import type { City, Country } from '@/types'
 
 export interface User {
   id?: string
   country?: Country
-  city: CityDetail
+  city?: City
   email: string
   firstName?: string
   lastName?: string

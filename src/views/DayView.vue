@@ -89,15 +89,7 @@ const day = ref<DayDetail>({
   timestamp: 0,
   description: '',
   mainImage: '',
-  city: userStore.user.city || {
-    id: '',
-    name: '',
-    country: {
-      id: '',
-      name: '',
-      code: '',
-    },
-  },
+  city: userStore.homeCity,
   tags: [],
   content: '',
   steps: 0,
@@ -674,15 +666,7 @@ const loadDay = async () => {
       return
     }
   } catch {
-    const defaultCity = userStore.user.city || {
-      id: '',
-      name: '',
-      country: {
-        id: '',
-        name: '',
-        code: '',
-      },
-    }
+    const defaultCity = userStore.homeCity
 
     day.value = {
       timestamp: timestamp / 1000,
@@ -704,8 +688,8 @@ const loadDay = async () => {
     // Initialize form with default values
     editForm.city = defaultCity.name
     editForm.cityId = defaultCity.id
-    editForm.country = defaultCity.country?.name || ''
-    editForm.countryId = defaultCity.country?.id || ''
+    editForm.country = defaultCity.country.name
+    editForm.countryId = defaultCity.country.id
 
     showModal.value = true
   }

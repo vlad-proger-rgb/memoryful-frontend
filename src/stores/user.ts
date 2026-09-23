@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import authApi from '@/api/auth'
 import { setAuthToken } from '@/api/client'
 import { useApiError, googleSignOut } from '@/composables'
-import type { User, Token } from '@/types'
+import type { CityDetail, User, Token } from '@/types'
 
 // Outlives sessionStorage, so a cold load knows whether a refresh cookie is worth asking for.
 const SESSION_HINT_KEY = 'hasSession'
@@ -15,11 +15,6 @@ export const useUserStore = defineStore('user', () => {
     city: {
       id: '',
       name: '',
-      country: {
-        id: '',
-        name: '',
-        code: '',
-      },
     },
     country: {
       id: '',
@@ -49,11 +44,6 @@ export const useUserStore = defineStore('user', () => {
       city: {
         id: '',
         name: '',
-        country: {
-          id: '',
-          name: '',
-          code: '',
-        },
       },
       country: {
         id: '',
@@ -162,11 +152,6 @@ export const useUserStore = defineStore('user', () => {
           city: (response.data as unknown as { city?: User['city'] | null }).city ?? {
             id: '',
             name: '',
-            country: {
-              id: '',
-              name: '',
-              code: '',
-            },
           },
           country: (response.data as unknown as { country?: User['country'] | null }).country ?? {
             id: '',
@@ -197,11 +182,8 @@ export const useUserStore = defineStore('user', () => {
         userData.age = user.value.age
       }
 
-      const resolvedCountry = user.value.city?.country?.id
-        ? user.value.city.country
-        : user.value.country
-      if (resolvedCountry?.id) {
-        userData.country = resolvedCountry
+      if (user.value.country?.id) {
+        userData.country = user.value.country
       }
 
       if (user.value.city?.id) {
@@ -270,8 +252,16 @@ export const useUserStore = defineStore('user', () => {
   const isAuthenticated = computed(() => !!token.value)
   const isProfileComplete = computed(() => !!user.value.firstName && !!user.value.city?.id)
 
+  // The API sends country beside city, never inside it, so a full city is assembled here
+  const homeCity = computed<CityDetail>(() => ({
+    id: user.value.city?.id || '',
+    name: user.value.city?.name || '',
+    country: user.value.country || { id: '', name: '', code: '' },
+  }))
+
   return {
     user,
+    homeCity,
     errorMessage,
     isLoading,
     setUser,
