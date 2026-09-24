@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import CopyButton from '@/components/ui/CopyButton.vue'
 import { getIcon } from '@/plugins/fontawesome'
 import type { FAIcon } from '@/types'
 
@@ -44,6 +45,8 @@ const shortDate = computed(() =>
     : '',
 )
 
+const copyText = computed(() => `${props.title}\n\n${props.body}`)
+
 const isOpen = ref(false)
 </script>
 
@@ -79,11 +82,16 @@ const isOpen = ref(false)
       :class="isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
     >
       <div class="overflow-hidden">
-        <p
-          class="mr-3.5 mb-3.5 ml-15 text-[13px] leading-relaxed whitespace-pre-line text-white/60"
-        >
-          {{ body }}
-        </p>
+        <div class="mr-3.5 mb-3.5 ml-15 flex flex-col items-end gap-1">
+          <p class="self-stretch text-[13px] leading-relaxed whitespace-pre-line text-white/60">
+            {{ body }}
+          </p>
+          <CopyButton
+            :text="copyText"
+            :label="`Copy ${props.tone}`"
+            :tabindex="isOpen ? undefined : -1"
+          />
+        </div>
       </div>
     </div>
   </article>

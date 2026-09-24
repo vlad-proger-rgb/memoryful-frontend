@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import DigestEntry from '@/components/digest/DigestEntry.vue'
+import CopyButton from '@/components/ui/CopyButton.vue'
 import type { WeekDigestInDB } from '@/types'
 import { formatDate } from '@/utils/dates'
 
@@ -24,12 +25,15 @@ const generatedAt = computed(() => formatDate(new Date(props.digest.updatedAt)))
       </p>
     </div>
 
-    <p class="flex flex-wrap items-center gap-x-2 text-[11px] text-white/45">
-      <span>
-        Generated {{ generatedAt }} from {{ digest.sourceDayCount }}
-        {{ digest.sourceDayCount === 1 ? 'entry' : 'entries' }}
-      </span>
-    </p>
+    <div class="flex items-center justify-between gap-3">
+      <p class="flex flex-wrap items-center gap-x-2 text-[11px] text-white/45">
+        <span>
+          Generated {{ generatedAt }} from {{ digest.sourceDayCount }}
+          {{ digest.sourceDayCount === 1 ? 'entry' : 'entries' }}
+        </span>
+      </p>
+      <CopyButton :text="digest.summary" label="Copy summary" />
+    </div>
 
     <div v-if="digest.sections.length" class="space-y-2 border-t border-white/8 pt-5">
       <DigestEntry

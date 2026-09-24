@@ -445,6 +445,8 @@ const handleDiscuss = (item: InsightInDB, type: 'insight' | 'suggestion') => {
   uiStore.showToast(`Discuss feature coming soon for ${type}`, 'info')
 }
 
+const insightCopyText = (item: InsightInDB) => `${item.description}\n\n${item.content}`
+
 const dayObservations = computed(
   () => day.value.insights?.filter((item) => item.kind === 'observation') ?? [],
 )
@@ -998,7 +1000,7 @@ onUnmounted(() => {
                 </h4>
                 <div class="text-white/40 text-xs text-center mb-3 italic touch:hidden">
                   <font-awesome-icon icon="info-circle" class="mr-1" />
-                  Hover over insights to reveal the Discuss button
+                  Hover over insights to reveal Copy and Discuss
                 </div>
                 <div class="space-y-3">
                   <div
@@ -1012,13 +1014,18 @@ onUnmounted(() => {
                         :icon="[insight.icon.style || 'fas', insight.icon.name]"
                         class="text-yellow-400 mt-1 flex-shrink-0"
                       />
-                      <div class="flex-1">
+                      <div class="flex-1 min-w-0 pr-10 md:pr-8">
                         <h5 class="text-white font-medium mb-2">{{ insight.description }}</h5>
                         <div class="prose prose-invert max-w-none text-sm text-white/80">
                           <div v-html="marked(insight.content)"></div>
                         </div>
                       </div>
                     </div>
+                    <CopyButton
+                      :text="insightCopyText(insight)"
+                      label="Copy insight"
+                      class="absolute top-2 right-2 md:top-3 md:right-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 touch:opacity-100"
+                    />
                     <button
                       class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg touch:static touch:mt-3 touch:ml-auto touch:block touch:w-fit touch:opacity-100"
                       @click="handleDiscuss(insight, 'insight')"
@@ -1041,7 +1048,7 @@ onUnmounted(() => {
                 </h4>
                 <div class="text-white/40 text-xs text-center mb-3 italic touch:hidden">
                   <font-awesome-icon icon="info-circle" class="mr-1" />
-                  Hover over suggestions to reveal the Discuss button
+                  Hover over suggestions to reveal Copy and Discuss
                 </div>
                 <div class="space-y-3">
                   <div
@@ -1055,13 +1062,18 @@ onUnmounted(() => {
                         :icon="[suggestion.icon.style || 'fas', suggestion.icon.name]"
                         class="text-purple-400 mt-1 flex-shrink-0"
                       />
-                      <div class="flex-1">
+                      <div class="flex-1 min-w-0 pr-10 md:pr-8">
                         <h5 class="text-white font-medium mb-2">{{ suggestion.description }}</h5>
                         <div class="prose prose-invert max-w-none text-sm text-white/80">
                           <div v-html="marked(suggestion.content)"></div>
                         </div>
                       </div>
                     </div>
+                    <CopyButton
+                      :text="insightCopyText(suggestion)"
+                      label="Copy suggestion"
+                      class="absolute top-2 right-2 md:top-3 md:right-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 touch:opacity-100"
+                    />
                     <button
                       class="absolute bottom-[-20px] right-[-20px] px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 group-hover:bottom-3 group-hover:right-3 transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-10 border border-white/20 shadow-lg touch:static touch:mt-3 touch:ml-auto touch:block touch:w-fit touch:opacity-100"
                       @click="handleDiscuss(suggestion, 'suggestion')"
