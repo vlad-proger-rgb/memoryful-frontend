@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { marked } from 'marked'
 import BoxyLoader from '@/components/ui/BoxyLoader.vue'
+import CopyButton from '@/components/ui/CopyButton.vue'
 import type { ChatMessage } from '@/types/chat'
 
 const props = defineProps<{
@@ -38,22 +39,6 @@ const timeLabel = computed(() => {
     ? ''
     : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 })
-
-const isCopied = ref(false)
-let copyTimeout: number | null = null
-
-const copyContent = async () => {
-  try {
-    await navigator.clipboard.writeText(props.message.content)
-    isCopied.value = true
-    if (copyTimeout) clearTimeout(copyTimeout)
-    copyTimeout = window.setTimeout(() => {
-      isCopied.value = false
-    }, 1500)
-  } catch {
-    // clipboard unavailable, fail silently
-  }
-}
 </script>
 
 <template>
@@ -121,20 +106,13 @@ const copyContent = async () => {
         {{ timeLabel }}
       </div>
 
-      <button
-        type="button"
-        class="absolute -bottom-2.5 opacity-0 group-hover:opacity-100 focus:opacity-100 touch:opacity-100 transition-opacity duration-150 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full size-6 flex items-center justify-center"
+      <CopyButton
+        :text="message.content"
+        label="Copy message"
+        size="sm"
+        class="absolute -bottom-2.5 opacity-0 group-hover:opacity-100 focus:opacity-100 touch:opacity-100 backdrop-blur-md border border-white/10"
         :class="isUser ? 'left-2' : 'right-2'"
-        :aria-label="isCopied ? 'Copied' : 'Copy message'"
-        title="Copy"
-        @click="copyContent"
-      >
-        <font-awesome-icon
-          :icon="isCopied ? 'check' : 'copy'"
-          class="text-[10px]"
-          :class="isCopied ? 'text-emerald-300' : 'text-white/70'"
-        />
-      </button>
+      />
     </div>
   </div>
 </template>

@@ -36,6 +36,7 @@ import DayImage from '@/components/day/DayImage.vue'
 import BaseAutocomplete from '@/components/ui/BaseAutocomplete.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 import AiProviderIcon from '@/components/ai/AiProviderIcon.vue'
+import CopyButton from '@/components/ui/CopyButton.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
 
@@ -891,7 +892,15 @@ onUnmounted(() => {
 
         <!-- Content -->
         <BaseBox>
-          <h3 class="text-white/70 text-sm font-medium mb-3">Content</h3>
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <h3 class="text-white/70 text-sm font-medium">Content</h3>
+            <CopyButton
+              v-if="day.content"
+              :text="day.content"
+              label="Copy content"
+              class="-my-2 md:-my-1"
+            />
+          </div>
           <div class="prose prose-invert max-w-none">
             <div v-if="day.content" v-html="marked(day.content)"></div>
             <p v-else class="text-white/50">No content</p>
