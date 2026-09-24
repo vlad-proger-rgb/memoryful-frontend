@@ -16,6 +16,7 @@ import DayTrackables from '@/components/day/DayTrackables.vue'
 import TagSelector from '@/components/day/TagSelector.vue'
 import DigestSheet from '@/components/digest/DigestSheet.vue'
 import MainButton from '@/components/MainButton.vue'
+import GlintButton from '@/components/ui/GlintButton.vue'
 import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
 import { useResolvedStorageMedia, type DigestMode } from '@/composables'
@@ -554,10 +555,10 @@ onBeforeUnmount(() => {
             :shortcuts="dayShortcuts"
             @pick="goToDay"
           >
-            <button type="button" class="cta-primary">
+            <GlintButton class="cta-primary">
               <font-awesome-icon icon="plus" />
               New entry
-            </button>
+            </GlintButton>
           </DayPickerDropdown>
 
           <div v-if="todayEntry" class="panel p-3">
