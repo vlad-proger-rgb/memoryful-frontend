@@ -106,6 +106,7 @@ const showMoreFields = ref(false)
 const isSaving = ref(false)
 const isCompletingDay = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
+const mainImageInput = ref<HTMLInputElement | null>(null)
 const mainCameraInput = ref<HTMLInputElement | null>(null)
 const additionalCameraInput = ref<HTMLInputElement | null>(null)
 const dayExists = ref(false)
@@ -113,7 +114,7 @@ const showInsights = ref(false)
 const showTrackables = ref(false)
 const showScrollTop = ref(false)
 const showGoToImages = ref(false)
-const showImageFullscreen = ref(false)
+const fullscreenImage = ref<string | null>(null)
 
 // Form state
 interface EditForm {
@@ -466,18 +467,19 @@ const goToImages = () => {
   }
 }
 
-const openImageFullscreen = () => {
-  if (!day.value?.mainImage) return
-  showImageFullscreen.value = true
+const openImageFullscreen = (src?: string) => {
+  const image = src || day.value?.mainImage
+  if (!image) return
+  fullscreenImage.value = image
 }
 
 const closeImageFullscreen = () => {
-  showImageFullscreen.value = false
+  fullscreenImage.value = null
 }
 
 // Handle keyboard events
 const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && showImageFullscreen.value) {
+  if (e.key === 'Escape' && fullscreenImage.value) {
     closeImageFullscreen()
   }
 }
@@ -793,9 +795,9 @@ onUnmounted(() => {
             :role="day.mainImage ? 'button' : undefined"
             :tabindex="day.mainImage ? 0 : undefined"
             :aria-label="day.mainImage ? 'View image fullscreen' : undefined"
-            @click="openImageFullscreen"
-            @keydown.enter="openImageFullscreen"
-            @keydown.space.prevent="openImageFullscreen"
+            @click="openImageFullscreen()"
+            @keydown.enter="openImageFullscreen()"
+            @keydown.space.prevent="openImageFullscreen()"
           >
             <DayImage
               v-if="day.mainImage"
@@ -1096,6 +1098,7 @@ onUnmounted(() => {
           eyebrow="Edit day"
           :title="date"
           :busy="isSaving"
+          :close-on-esc="!fullscreenImage"
           @close="handleModalClose"
         >
           <template #default>
@@ -1145,9 +1148,19 @@ onUnmounted(() => {
                 <label for="main-image-input" class="block text-sm font-medium text-white/70 mb-1">
                   Main Image
                 </label>
-                <div class="flex items-center space-x-4">
+                <div class="flex flex-col gap-3">
+                  <button
+                    v-if="editForm.mainImage"
+                    type="button"
+                    class="w-full h-56 md:h-72 cursor-pointer rounded-lg overflow-hidden bg-white/5 border border-white/10"
+                    aria-label="View main image fullscreen"
+                    @click="openImageFullscreen(editForm.mainImage)"
+                  >
+                    <DayImage :src="editForm.mainImage" alt="Main" size="boxed" />
+                  </button>
                   <div
-                    class="relative w-24 h-24 rounded-lg overflow-hidden bg-white/5 border border-dashed border-white/20 flex items-center justify-center"
+                    v-else
+                    class="relative w-full h-40 md:h-56 rounded-lg overflow-hidden bg-white/5 border border-dashed border-white/20 flex items-center justify-center"
                   >
                     <input
                       type="file"
@@ -1155,31 +1168,45 @@ onUnmounted(() => {
                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       @change="handleMainImageUpload"
                     />
-                    <template v-if="editForm.mainImage">
-                      <DayImage :src="editForm.mainImage" alt="Main" size="small" />
-                    </template>
-                    <template v-else>
-                      <span class="text-white/40 text-sm">Upload</span>
-                    </template>
+                    <span class="text-white/40 text-sm">Upload</span>
                   </div>
-                  <div class="flex flex-col gap-2 text-sm text-white/60">
-                    <p>Upload a main image for this day</p>
-                    <button
-                      type="button"
-                      class="hidden touch:flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors w-fit min-h-11"
-                      @click="mainCameraInput?.click()"
-                    >
-                      <font-awesome-icon icon="camera" class="text-xs" />
-                      <span>Take photo</span>
-                    </button>
-                    <input
-                      type="file"
-                      ref="mainCameraInput"
-                      accept="image/*"
-                      capture="environment"
-                      class="hidden"
-                      @change="handleMainImageUpload"
-                    />
+                  <div class="flex min-w-0 flex-col gap-2">
+                    <p v-if="!editForm.mainImage" class="text-sm text-white/60">
+                      Upload a main image for this day
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
+                        @click="mainImageInput?.click()"
+                      >
+                        <font-awesome-icon icon="pen" class="text-xs" />
+                        <span>{{ editForm.mainImage ? 'Replace image' : 'Choose image' }}</span>
+                      </button>
+                      <input
+                        type="file"
+                        ref="mainImageInput"
+                        accept="image/*"
+                        class="hidden"
+                        @change="handleMainImageUpload"
+                      />
+                      <button
+                        type="button"
+                        class="hidden touch:flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
+                        @click="mainCameraInput?.click()"
+                      >
+                        <font-awesome-icon icon="camera" class="text-xs" />
+                        <span>Take photo</span>
+                      </button>
+                      <input
+                        type="file"
+                        ref="mainCameraInput"
+                        accept="image/*"
+                        capture="environment"
+                        class="hidden"
+                        @change="handleMainImageUpload"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1192,24 +1219,34 @@ onUnmounted(() => {
                 >
                   Additional Images
                 </label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div class="columns-2 sm:columns-3 md:columns-4 gap-3">
                   <div
                     v-for="(image, index) in editForm.images"
                     :key="index"
-                    class="relative group aspect-square rounded-lg overflow-hidden bg-white/5"
+                    class="relative group mb-3 break-inside-avoid rounded-lg overflow-hidden border border-white/15 bg-white/5"
                   >
-                    <DayImage :src="image" :alt="`Image ${index + 1}`" size="small" />
+                    <button
+                      type="button"
+                      class="block w-full cursor-pointer"
+                      :aria-label="`View image ${index + 1} fullscreen`"
+                      @click="openImageFullscreen(image)"
+                    >
+                      <DayImage :src="image" :alt="`Image ${index + 1}`" size="column" />
+                    </button>
                     <button
                       type="button"
                       @click="removeImage(index)"
                       :aria-label="`Remove image ${index + 1}`"
-                      class="absolute top-1 right-1 size-8 md:size-6 flex items-center justify-center bg-red-500/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
+                      class="absolute top-1.5 right-1.5 size-7 md:size-6 flex items-center justify-center bg-red-500/60 hover:bg-red-500/90 rounded-full opacity-0 group-hover:opacity-100 transition touch:opacity-100"
                     >
-                      <font-awesome-icon icon="times" class="text-white" />
+                      <font-awesome-icon icon="times" class="text-xs text-white" />
                     </button>
                   </div>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-3">
                   <div
-                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+                    class="size-32 rounded-lg border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
                     @click="triggerImageUpload"
                   >
                     <span class="text-white/40">+ Add Image</span>
@@ -1223,7 +1260,7 @@ onUnmounted(() => {
                     />
                   </div>
                   <div
-                    class="aspect-square rounded-lg border-2 border-dashed border-white/20 hidden touch:flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors gap-1"
+                    class="size-32 rounded-lg border-2 border-dashed border-white/20 hidden touch:flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors gap-1"
                     @click="additionalCameraInput?.click()"
                   >
                     <font-awesome-icon icon="camera" class="text-white/40" />
@@ -1627,40 +1664,41 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Image Fullscreen Overlay -->
-    <Transition
-      name="fade"
-      enter-active-class="transition-opacity duration-300"
-      leave-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="showImageFullscreen"
-        class="fixed inset-0 z-50 bg-black flex items-center justify-center"
-        @click="closeImageFullscreen"
+    <Teleport to="#modal">
+      <Transition
+        name="fade"
+        enter-active-class="transition-opacity duration-300"
+        leave-active-class="transition-opacity duration-300"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
       >
-        <div class="relative max-w-full max-h-full p-4">
-          <DayImage
-            v-if="day.mainImage"
-            :src="day.mainImage"
-            :alt="day.city?.name || 'Day image'"
-            class="max-h-[90dvh] max-w-[95vw] w-auto h-auto object-contain"
-            @click.stop
-          />
-          <!-- Close button -->
-          <button
-            @click="closeImageFullscreen"
-            class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-black/50 p-2 rounded-full"
-            aria-label="Close fullscreen"
-            title="Close fullscreen"
-          >
-            <font-awesome-icon icon="times" class="h-6 w-6" />
-          </button>
+        <div
+          v-if="fullscreenImage"
+          class="fixed inset-0 z-60 bg-black flex items-center justify-center"
+          @click="closeImageFullscreen"
+        >
+          <div class="relative flex h-[90dvh] w-[95vw] items-center justify-center p-4">
+            <DayImage
+              :src="fullscreenImage"
+              :alt="day.city?.name || 'Day image'"
+              size="viewport"
+              @click.stop
+            />
+            <!-- Close button -->
+            <button
+              @click="closeImageFullscreen"
+              class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-black/50 p-2 rounded-full"
+              aria-label="Close fullscreen"
+              title="Close fullscreen"
+            >
+              <font-awesome-icon icon="times" class="h-6 w-6" />
+            </button>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
