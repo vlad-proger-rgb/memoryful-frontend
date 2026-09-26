@@ -18,6 +18,11 @@
   );
 }
 
+/* A frosted block that turns less translucent under the pointer, which pulls the eye to it. */
+@utility glass-panel {
+  @apply rounded-[14px] border border-white/16 bg-white/11 backdrop-blur-[17.5px] transition-[background-color,border-color,box-shadow] duration-250 hover:border-white/26 hover:bg-white/20 hover:shadow-[0_12px_30px_-16px_rgba(0,0,0,0.85)];
+}
+
 .ai-swap-enter-active {
   transition:
     opacity 160ms ease,
