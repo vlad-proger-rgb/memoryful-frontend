@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineOptions({
-  name: 'DemoDashboardIcon',
+  name: 'DashboardIcon',
 })
 </script>
 

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { resetScrollReady, waitForScrollReady } from '@/utils/scrollReady'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUserStore } from '@/stores/user'
 
 declare module 'vue-router' {
@@ -8,7 +7,6 @@ declare module 'vue-router' {
     public?: boolean
     guestOnly?: boolean
     appShell?: boolean
-    header?: 'demo'
     waitsForContent?: boolean
   }
 }
@@ -38,6 +36,9 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
+      meta: {
+        waitsForContent: true,
+      },
     },
     {
       path: '/login',
@@ -96,15 +97,6 @@ const router = createRouter({
       path: '/search',
       name: 'search',
       component: () => import('@/views/SearchView.vue'),
-    },
-    {
-      path: '/demo/dashboard',
-      name: 'demo-dashboard',
-      component: () => import('@/views/demo/DemoDashboardView.vue'),
-      meta: {
-        header: 'demo',
-        waitsForContent: true,
-      },
     },
     {
       path: '/ai',
@@ -181,9 +173,6 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && userStore.isAuthenticated) return { name: 'dashboard' }
   if (!to.meta.public && !userStore.isAuthenticated) return { name: 'landing' }
-
-  const featureFlags = useFeatureFlagsStore()
-  if (featureFlags.demoUi && to.name === 'dashboard') return { name: 'demo-dashboard' }
 })
 
 export default router

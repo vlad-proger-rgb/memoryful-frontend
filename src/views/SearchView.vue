@@ -1,3 +1,4 @@
+<!-- Legacy: still routed, but nothing links here since the dashboard replaced it. -->
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

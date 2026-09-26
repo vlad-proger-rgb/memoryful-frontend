@@ -1,50 +1,57 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-import logo from '@/assets/img/memoryful-ai-brain.webp'
-import AiOrbButton from '@/components/ai/AiOrbButton.vue'
+import AiOrbPet from '@/components/ai/AiOrbPet.vue'
+import DashboardIcon from '@/components/ui/DashboardIcon.vue'
 import { navDestinations } from '@/config/navigation'
-
-// import { useUserStore } from '@/stores/user'
+import useFeatureFlagsStore from '@/stores/featureFlags'
 
 defineOptions({
   name: 'NavBar',
 })
 
-// const userStore = useUserStore()
+const featureFlags = useFeatureFlagsStore()
 
-const destination = (key: string) => navDestinations.find((d) => d.key === key)!
+const dashboard = navDestinations.find((d) => d.key === 'dashboard')!
+const settings = navDestinations.find((d) => d.key === 'settings')!
 </script>
 
 <template>
   <nav
-    class="flex justify-between items-center p-1 bg-[radial-gradient(circle,rgba(0,0,0,0.6)_0%,rgba(0,0,0,1)_100%)] text-white backdrop-blur-sm"
+    class="h-[var(--app-header-height)] items-center justify-center gap-[clamp(3rem,9vw,8rem)] bg-[radial-gradient(circle,rgba(0,0,0,0.6)_0%,rgba(0,0,0,1)_100%)] text-white backdrop-blur-sm"
   >
-    <RouterLink :to="destination('dashboard').to">
-      <img :src="logo" class="rounded-full w-[60px] h-[60px]" alt="Memoryful Logo" />
+    <RouterLink :to="dashboard.to" class="header-link">
+      <DashboardIcon class="text-2xl" />
+      <span>{{ dashboard.label }}</span>
     </RouterLink>
 
-    <RouterLink :to="destination('calendar').to" class="flex items-center">
-      <p class="mr-2 text-2xl">{{ destination('calendar').label }}</p>
-      <font-awesome-icon :icon="destination('calendar').icon" class="text-xl" />
-    </RouterLink>
+    <AiOrbPet :personality="featureFlags.isEnabled('orbPet')" />
 
-    <AiOrbButton :size="60" />
-
-    <RouterLink :to="destination('search').to" class="flex items-center">
-      <p class="mr-2 text-2xl">{{ destination('search').label }}</p>
-      <font-awesome-icon :icon="destination('search').icon" class="text-xl" />
-    </RouterLink>
-
-    <RouterLink :to="destination('settings').to">
-      <!-- <img
-        :src="userStore.user?.photoUrl"
-        class="rounded-full"
-        width="60px"
-        height="60px"
-        alt="Profile Picture"
-      /> -->
-      <font-awesome-icon :icon="destination('settings').icon" class="text-3xl mr-2" />
+    <RouterLink :to="settings.to" class="header-link">
+      <font-awesome-icon :icon="settings.icon" class="text-2xl" />
+      <span>{{ settings.label }}</span>
     </RouterLink>
   </nav>
 </template>
+
+<style scoped>
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.15s ease;
+}
+
+.header-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-link.router-link-active {
+  color: #fff;
+}
+</style>

@@ -1,3 +1,4 @@
+<!-- Legacy: only the legacy YearView uses this. -->
 <script setup lang="ts">
 defineProps({
   year: {

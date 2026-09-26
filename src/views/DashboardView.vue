@@ -1,660 +1,1435 @@
 <script setup lang="ts">
-import useWorkspaceStore from '@/stores/workspace'
-import useUiStore from '@/stores/ui'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+
+import citiesApi from '@/api/cities'
+import countriesApi from '@/api/countries'
+import daysApi from '@/api/days'
+import tagsApi from '@/api/tags'
+import fallbackAvatar from '@/assets/img/avatar-fallback.webp'
+import DayPickerDropdown from '@/components/dashboard/DayPickerDropdown.vue'
+import DayCard from '@/components/day/DayCard.vue'
+import DayImage from '@/components/day/DayImage.vue'
+import DayInfo from '@/components/day/DayInfo.vue'
+import DayStats from '@/components/day/DayStats.vue'
+import DayTrackables from '@/components/day/DayTrackables.vue'
+import TagSelector from '@/components/day/TagSelector.vue'
+import DigestSheet from '@/components/digest/DigestSheet.vue'
+import MainButton from '@/components/MainButton.vue'
+import GlintButton from '@/components/ui/GlintButton.vue'
+import LocationFlow from '@/components/ui/LocationFlow.vue'
 import MediaBackground from '@/components/ui/MediaBackground.vue'
-import { computed, onActivated, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { insightsApi } from '@/api'
-import type { InsightInDB } from '@/types'
-import { getIcon } from '@/plugins/fontawesome'
-import ModalWindow from '@/components/ModalWindow.vue'
+import { useResolvedStorageMedia, type DigestMode } from '@/composables'
+import STORAGE_KEYS from '@/constants/storageKeys'
+import { endOfDay, latestFinishedWeek, startOfDay, toIsoDate, toTimestamp } from '@/utils/dates'
 import { dayPath } from '@/utils/routes'
+import { markScrollReady } from '@/utils/scrollReady'
+import useAiChatStore from '@/stores/aiChat'
+import useUiStore from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
+import useWorkspaceStore from '@/stores/workspace'
+import type { CityDetail, Country, DayFilters, DayListItem, Tag } from '@/types'
 
-const workspaceStore = useWorkspaceStore()
+const route = useRoute()
+const router = useRouter()
+const aiChatStore = useAiChatStore()
 const uiStore = useUiStore()
+const userStore = useUserStore()
+const workspaceStore = useWorkspaceStore()
 
-uiStore.disableScroll = true
+const PAGE_SIZE = 5
+const DAY_MS = 24 * 60 * 60 * 1000
+
+const parseDate = (value: unknown): Date | null => {
+  if (!value) return null
+  const parsed = new Date(String(value))
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const formatShort = (value: number | Date) =>
+  new Date(value).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })
+
+const query = ref(String(route.query.q ?? ''))
+const appliedQuery = ref(query.value)
+const similaritySearch = ref(route.query.similarity === '1')
+const starredOnly = ref(route.query.starred === '1')
+const startDate = ref<Date | null>(parseDate(route.query.start))
+const endDate = ref<Date | null>(parseDate(route.query.end))
+const selectedTags = ref<Tag[]>([])
+const availableTags = ref<Tag[]>([])
+const selectedCountry = ref<Country | null>(null)
+const selectedCity = ref<CityDetail | null>(null)
+
+// The extra filters stay behind the gear; the date range is always on screen.
+const showFilters = ref(false)
+
+const days = ref<DayListItem[]>([])
+const isLoading = ref(false)
+const isLoadingMore = ref(false)
+const hasMore = ref(true)
+const errorMessage = ref('')
+
+// Restoring the URL sets several filters in a row; without this each one would refetch.
+const isRestoring = ref(true)
+
+const hasFilters = computed(
+  () =>
+    !!appliedQuery.value.trim() ||
+    !!startDate.value ||
+    !!endDate.value ||
+    !!selectedCountry.value ||
+    !!selectedCity.value ||
+    selectedTags.value.length > 0 ||
+    starredOnly.value,
+)
 
 const background = computed(() => workspaceStore.backgrounds.dashboard)
 
-const todayPath = computed(() => dayPath(new Date()))
-
-const rawInsights = ref<InsightInDB[]>([])
-const rawSuggestions = ref<InsightInDB[]>([])
-const isLoadingAi = ref(false)
-
-const todayIso = computed(() => {
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
+const displayName = computed(() => userStore.user.firstName || 'User')
+const { url: avatarUrl } = useResolvedStorageMedia(() => userStore.user.photo, {
+  fallbackSrc: fallbackAvatar,
 })
 
-const dayIsoOf = (timestamp: number) => new Date(timestamp * 1000).toISOString().slice(0, 10)
+/* ---------- the date range: one two-handle slider with a date button under each end ---------- */
 
-const todaysInsightsRaw = computed(() =>
-  rawInsights.value.filter((i) => dayIsoOf(i.timestamp) === todayIso.value),
-)
-const todaysSuggestionsRaw = computed(() =>
-  rawSuggestions.value.filter((s) => dayIsoOf(s.timestamp) === todayIso.value),
-)
+const oldestDay = ref<number | null>(null)
+const newestDay = ref<number | null>(null)
 
-const insightsPreview = computed(() => todaysInsightsRaw.value.slice(0, 3))
-const suggestionsPreview = computed(() => todaysSuggestionsRaw.value.slice(0, 3))
+// A year back from today until the first day is known, so the slider is never a zero-width track.
+const sliderMin = computed(() => oldestDay.value ?? startOfDay(new Date()).getTime() - 365 * DAY_MS)
+const sliderMax = computed(() => newestDay.value ?? startOfDay(new Date()).getTime())
 
-const getInsightIcon = (item: InsightInDB): [string, string] => {
-  return item.icon
-    ? (getIcon(item.icon) as [string, string])
-    : (['fas', 'lightbulb'] as [string, string])
+const nearestMidnight = (value: number) => startOfDay(new Date(value + DAY_MS / 2)).getTime()
+
+const rangeStart = ref(sliderMin.value)
+const rangeEnd = ref(sliderMax.value)
+const rangeStartDate = computed(() => new Date(nearestMidnight(rangeStart.value)))
+const rangeEndDate = computed(() => new Date(nearestMidnight(rangeEnd.value)))
+const isDraggingRange = ref(false)
+
+const syncRangeFromDates = () => {
+  rangeStart.value = startDate.value ? startOfDay(startDate.value).getTime() : sliderMin.value
+  rangeEnd.value = endDate.value ? startOfDay(endDate.value).getTime() : sliderMax.value
 }
 
-const getSuggestionIcon = (item: InsightInDB): [string, string] => {
-  return item.icon
-    ? (getIcon(item.icon) as [string, string])
-    : (['fas', 'wand-magic-sparkles'] as [string, string])
+const percentOf = (value: number) => {
+  const span = sliderMax.value - sliderMin.value
+  if (span <= 0) return 0
+  return Math.min(100, Math.max(0, ((value - sliderMin.value) / span) * 100))
 }
 
-type AiModalMode = 'insights' | 'suggestions'
-const showAiModal = ref(false)
-const aiModalMode = ref<AiModalMode>('insights')
+const fillStyle = computed(() => ({
+  left: `${percentOf(rangeStart.value)}%`,
+  right: `${100 - percentOf(rangeEnd.value)}%`,
+}))
 
-const aiModalTitle = computed(() => (aiModalMode.value === 'insights' ? 'Insights' : 'Suggestions'))
-const aiModalItems = computed(() =>
-  aiModalMode.value === 'insights' ? todaysInsightsRaw.value : todaysSuggestionsRaw.value,
-)
+const onRangeStartInput = (event: Event) => {
+  const value = Number((event.target as HTMLInputElement).value)
+  rangeStart.value = Math.min(value, rangeEnd.value)
+  isDraggingRange.value = true
+}
 
-const openAiModal = (mode: AiModalMode, itemId?: string) => {
-  aiModalMode.value = mode
-  showAiModal.value = true
-  if (itemId) {
-    if (mode === 'insights') {
-      expandedInsightIds.value.add(itemId)
-    } else {
-      expandedSuggestionIds.value.add(itemId)
+const onRangeEndInput = (event: Event) => {
+  const value = Number((event.target as HTMLInputElement).value)
+  rangeEnd.value = Math.max(value, rangeStart.value)
+  isDraggingRange.value = true
+}
+
+// A handle parked on its end of the track means "unbounded", so dragging it back clears the filter.
+const commitRange = () => {
+  isDraggingRange.value = false
+  rangeStart.value = rangeStartDate.value.getTime()
+  rangeEnd.value = rangeEndDate.value.getTime()
+  startDate.value = rangeStart.value > sliderMin.value ? new Date(rangeStart.value) : null
+  endDate.value = rangeEnd.value < sliderMax.value ? new Date(rangeEnd.value) : null
+}
+
+const loadDateBounds = async () => {
+  try {
+    const [oldest, newest] = await Promise.all([
+      daysApi.getDays({ limit: 1, sortField: 'timestamp', sortOrder: 'asc' }),
+      daysApi.getDays({ limit: 1, sortField: 'timestamp', sortOrder: 'desc' }),
+    ])
+    const first = oldest.data?.[0]
+    const last = newest.data?.[0]
+    if (first) oldestDay.value = startOfDay(new Date(first.timestamp * 1000)).getTime()
+    if (last) newestDay.value = startOfDay(new Date(last.timestamp * 1000)).getTime()
+  } catch {
+    // Without bounds the slider keeps its fallback span; the date buttons still work.
+  }
+  syncRangeFromDates()
+}
+
+/* ---------- the day list ---------- */
+
+const syncUrl = () => {
+  const params: Record<string, string> = {}
+  if (appliedQuery.value.trim()) params.q = appliedQuery.value.trim()
+  if (similaritySearch.value) params.similarity = '1'
+  if (starredOnly.value) params.starred = '1'
+  if (startDate.value) params.start = toIsoDate(startDate.value)
+  if (endDate.value) params.end = toIsoDate(endDate.value)
+  if (selectedCity.value) params.cityId = String(selectedCity.value.id)
+  else if (selectedCountry.value) params.countryId = String(selectedCountry.value.id)
+  if (selectedTags.value.length) params.tags = selectedTags.value.map((t) => t.name).join(',')
+  router.replace({ query: params })
+}
+
+const buildFilters = (): DayFilters => {
+  const filters: DayFilters = {}
+  const text = appliedQuery.value.trim()
+  if (text) filters.description = { like: text }
+  if (startDate.value) filters.createdAfter = toTimestamp(startOfDay(startDate.value))
+  if (endDate.value) filters.createdBefore = toTimestamp(endOfDay(endDate.value))
+  if (starredOnly.value) filters.starred = true
+  if (selectedCity.value) filters.cityId = selectedCity.value.id
+  else if (selectedCountry.value) filters.countryId = selectedCountry.value.id
+  return filters
+}
+
+const fetchPage = async (offset: number) => {
+  const filters = buildFilters()
+  const tagNames = selectedTags.value.map((t) => t.name)
+  const response = await daysApi.getDays({
+    filters: Object.keys(filters).length ? filters : undefined,
+    tagNames: tagNames.length ? tagNames : undefined,
+    sortField: 'timestamp',
+    sortOrder: 'desc',
+    limit: PAGE_SIZE,
+    offset,
+  })
+  return (response.data ?? []).map((day) => ({
+    ...day,
+    timestamp: day.timestamp * 1000,
+    exists: true,
+  }))
+}
+
+const loadFirstPage = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const batch = await fetchPage(0)
+    days.value = batch
+    hasMore.value = batch.length === PAGE_SIZE
+  } catch (e: unknown) {
+    const maybeErr = e as { msg?: string }
+    errorMessage.value = maybeErr?.msg || 'Failed to load days'
+    days.value = []
+    hasMore.value = false
+  } finally {
+    isLoading.value = false
+  }
+
+  await nextTick()
+  markScrollReady()
+}
+
+const loadMore = async () => {
+  if (!hasMore.value || isLoading.value || isLoadingMore.value) return
+
+  isLoadingMore.value = true
+  try {
+    const batch = await fetchPage(days.value.length)
+    days.value = [...days.value, ...batch]
+    hasMore.value = batch.length === PAGE_SIZE
+  } catch (e: unknown) {
+    const maybeErr = e as { msg?: string }
+    uiStore.showToast(maybeErr?.msg || 'Failed to load more days', 'error')
+    hasMore.value = false
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
+const submitSearch = async () => {
+  appliedQuery.value = query.value
+  await loadFirstPage()
+  syncUrl()
+}
+
+const clearFilters = async () => {
+  isRestoring.value = true
+  query.value = ''
+  appliedQuery.value = ''
+  startDate.value = null
+  endDate.value = null
+  similaritySearch.value = false
+  starredOnly.value = false
+  selectedTags.value = []
+  selectedCountry.value = null
+  selectedCity.value = null
+  syncRangeFromDates()
+  await nextTick()
+  isRestoring.value = false
+  await loadFirstPage()
+  syncUrl()
+}
+
+const toggleStarred = async (timestamp: string | number) => {
+  const day = days.value.find((item) => item.timestamp === timestamp)
+  if (!day) return
+
+  day.starred = !day.starred
+  try {
+    await daysApi.toggleStarred(day.timestamp / 1000)
+  } catch {
+    day.starred = !day.starred
+    uiStore.showToast('Failed to update the star', 'error')
+  }
+}
+
+/* ---------- location and tag filters ---------- */
+
+const handleCountryUpdate = (value: Country | null) => {
+  selectedCountry.value = value
+  selectedCity.value = null
+}
+
+const handleCityUpdate = (value: CityDetail | null) => {
+  selectedCity.value = value
+  if (value?.country) selectedCountry.value = value.country
+}
+
+const fetchTags = async () => {
+  try {
+    const response = await tagsApi.getTags()
+    availableTags.value = response.data || []
+  } catch {
+    // A missing tag list only costs the filter its suggestions.
+  }
+}
+
+const restoreFiltersFromUrl = async () => {
+  const q = route.query
+
+  if (q.cityId) {
+    try {
+      const res = await citiesApi.getCityById(String(q.cityId))
+      if (res.code === 200 && res.data && 'country' in res.data) {
+        const cityDetail = res.data as unknown as CityDetail
+        selectedCity.value = cityDetail
+        selectedCountry.value = cityDetail.country
+      }
+    } catch {
+      // A stale city id in the URL just leaves the filter unset.
     }
   }
-}
 
-const expandedInsightIds = ref(new Set<string>())
-const expandedSuggestionIds = ref(new Set<string>())
-
-const isInsightExpanded = (id: string) => expandedInsightIds.value.has(id)
-const isSuggestionExpanded = (id: string) => expandedSuggestionIds.value.has(id)
-
-const toggleInsight = (id: string) => {
-  if (expandedInsightIds.value.has(id)) expandedInsightIds.value.delete(id)
-  else expandedInsightIds.value.add(id)
-}
-
-const toggleSuggestion = (id: string) => {
-  if (expandedSuggestionIds.value.has(id)) expandedSuggestionIds.value.delete(id)
-  else expandedSuggestionIds.value.add(id)
-}
-
-const areAllTodaysInsightsExpanded = computed(() => {
-  const items = todaysInsightsRaw.value
-  if (!items.length) return false
-  return items.every((i) => expandedInsightIds.value.has(i.id))
-})
-
-const areAllTodaysSuggestionsExpanded = computed(() => {
-  const items = todaysSuggestionsRaw.value
-  if (!items.length) return false
-  return items.every((s) => expandedSuggestionIds.value.has(s.id))
-})
-
-const toggleAllInsights = () => {
-  if (areAllTodaysInsightsExpanded.value) {
-    expandedInsightIds.value.clear()
-    return
+  if (q.countryId && !selectedCountry.value) {
+    try {
+      const response = await countriesApi.getCountries('')
+      const country = (response.data || []).find((c) => c.id === String(q.countryId))
+      if (country) selectedCountry.value = country
+    } catch {
+      // Same as above.
+    }
   }
 
-  expandedInsightIds.value = new Set(todaysInsightsRaw.value.map((i) => i.id))
-}
-
-const toggleAllSuggestions = () => {
-  if (areAllTodaysSuggestionsExpanded.value) {
-    expandedSuggestionIds.value.clear()
-    return
+  if (q.tags) {
+    const names = String(q.tags).split(',')
+    selectedTags.value = availableTags.value.filter((t) => names.includes(t.name))
   }
 
-  expandedSuggestionIds.value = new Set(todaysSuggestionsRaw.value.map((s) => s.id))
+  if (q.cityId || q.countryId || q.tags) showFilters.value = true
 }
 
-const beforeEnterCollapse = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = '0'
-  element.style.opacity = '0'
-}
+/* ---------- today, and the AI blocks behind it ---------- */
 
-const enterCollapse = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = `${element.scrollHeight}px`
-  element.style.opacity = '1'
-}
+const today = computed(() => startOfDay(new Date()))
+const todayPath = computed(() => dayPath(today.value))
+const dayShortcuts = computed(() => {
+  const yesterday = new Date(today.value)
+  yesterday.setDate(yesterday.getDate() - 1)
+  return [
+    { date: today.value, label: 'Today' },
+    { date: yesterday, label: 'Yesterday' },
+  ]
+})
+const todayLabel = computed(() =>
+  new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+)
 
-const afterEnterCollapse = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = 'auto'
-}
+const todayEntry = ref<DayListItem | null>(null)
 
-const beforeLeaveCollapse = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = `${element.scrollHeight}px`
-  element.style.opacity = '1'
-}
-
-const leaveCollapse = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.height = '0'
-  element.style.opacity = '0'
-}
-
-const loadAi = async () => {
-  isLoadingAi.value = true
+const loadToday = async () => {
   try {
-    const [ins, sug] = await Promise.all([
-      insightsApi.getInsights({ limit: 50, offset: 0, kind: 'observation' }),
-      insightsApi.getInsights({ limit: 50, offset: 0, kind: 'suggestion' }),
-    ])
-    rawInsights.value = ins.data || []
-    rawSuggestions.value = sug.data || []
-  } finally {
-    isLoadingAi.value = false
+    const now = new Date()
+    const response = await daysApi.getDays({
+      limit: 1,
+      filters: {
+        createdAfter: toTimestamp(startOfDay(now)),
+        createdBefore: toTimestamp(endOfDay(now)),
+      },
+    })
+    const found = response.data?.[0]
+    todayEntry.value = found ? { ...found, timestamp: found.timestamp * 1000, exists: true } : null
+  } catch {
+    todayEntry.value = null
   }
 }
 
-onMounted(() => {
-  loadAi()
+const showDigest = ref(false)
+const digestMode = ref<DigestMode>('today')
+
+const latestWeek = latestFinishedWeek()
+
+/* The unread mark. There is no digest table yet, so "have I read the newest one" lives in
+   this browser; swap the two helpers for `viewed_at` once the backend writes digests. */
+const lastSeenWeek = ref<string>('')
+
+const readLastSeenWeek = () => {
+  try {
+    lastSeenWeek.value = localStorage.getItem(STORAGE_KEYS.UI.DIGEST_SEEN_WEEK) ?? ''
+  } catch {
+    lastSeenWeek.value = ''
+  }
+}
+
+const markDigestSeen = (weekStartIso: string) => {
+  lastSeenWeek.value = weekStartIso
+  try {
+    localStorage.setItem(STORAGE_KEYS.UI.DIGEST_SEEN_WEEK, weekStartIso)
+  } catch {
+    // A blocked storage only costs the dot its memory.
+  }
+}
+
+const hasUnreadDigest = computed(() => lastSeenWeek.value !== latestWeek.startIso)
+
+const openDigest = (mode: DigestMode) => {
+  digestMode.value = mode
+  showDigest.value = true
+  if (mode === 'week') markDigestSeen(latestWeek.startIso)
+}
+
+const discussToday = () => {
+  aiChatStore.draft = `Let's talk about my day, ${new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })}.`
+  aiChatStore.open()
+}
+
+/* ---------- profile hand-off ---------- */
+
+// The card and the settings header both carry `view-transition-name: welcome-card`, so the
+// browser tweens one into the other instead of swapping pages outright. Chrome-only today;
+// everywhere else this is just a normal push.
+const openProfile = async () => {
+  const target = '/settings/profile'
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (!document.startViewTransition || prefersReducedMotion) {
+    router.push(target)
+    return
+  }
+
+  document.startViewTransition(async () => {
+    await router.push(target)
+    await nextTick()
+  })
+}
+
+/* ---------- collapsing filter panel ---------- */
+
+const beforeCollapseEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = '0'
+}
+
+const collapseEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+}
+
+const afterCollapseEnter = (el: Element) => {
+  ;(el as HTMLElement).style.height = 'auto'
+}
+
+const beforeCollapseLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+}
+
+const collapseLeave = (el: Element) => {
+  const element = el as HTMLElement
+  // Reading the height first commits the start value, or the browser folds both frames
+  // into one and the panel vanishes without animating.
+  void element.offsetHeight
+  element.style.height = '0'
+}
+
+/* ---------- picking a day: write it, or just go there ---------- */
+
+const goToDay = (date: Date) => {
+  router.push(dayPath(date))
+}
+
+/* ---------- scroll to top ---------- */
+
+const showScrollTop = ref(false)
+
+const handleScroll = () => {
+  showScrollTop.value = window.scrollY > 200
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+/* ---------- wiring ---------- */
+
+// Everything except the free-text query applies on the spot.
+watch(
+  [starredOnly, startDate, endDate, selectedTags, selectedCountry, selectedCity],
+  async () => {
+    if (isRestoring.value) return
+    await loadFirstPage()
+    syncUrl()
+  },
+  { deep: true },
+)
+
+// Keeps the handles under whatever set the range last — a date field, or the data bounds.
+watch([startDate, endDate, sliderMin, sliderMax], syncRangeFromDates)
+
+onMounted(async () => {
+  uiStore.disableScroll = false
+  readLastSeenWeek()
+
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  handleScroll()
+
+  await fetchTags()
+  await restoreFiltersFromUrl()
+  isRestoring.value = false
+
+  await Promise.all([loadFirstPage(), loadDateBounds(), loadToday()])
 })
 
-onActivated(() => {
-  loadAi()
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 <template>
-  <div class="relative min-h-dvh w-full md:h-screen md:overflow-hidden font-dashboard">
+  <div class="relative min-h-dvh w-full overflow-x-hidden text-white">
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"
       :poster-url="background.posterUrl"
       :placeholder="background.placeholder"
-      container-class="fixed inset-0 z-0 brightness-75"
+      container-class="fixed inset-0 z-0 blur-[3px] brightness-75"
     />
 
-    <div class="relative z-10 pt-8 pb-8 px-5">
-      <div class="mx-auto max-w-[1400px]">
-        <div class="grid grid-cols-12 gap-6">
-          <section
-            class="col-span-12 lg:col-span-8 glass-card glass-card-lg"
-            aria-label="Productivity Week"
+    <div class="relative z-10 mx-auto w-full max-w-[1400px] px-4 pt-6 pb-20 md:px-6 md:pb-16">
+      <!-- Stacked, search first, on anything narrower than xl; at xl the rail moves into the
+           left column so the search stays centered over the day cards. -->
+      <div
+        class="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-start xl:gap-6"
+      >
+        <aside
+          class="order-2 mx-auto flex w-full max-w-2xl flex-col gap-3 xl:order-none xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:mx-0 xl:max-w-[19rem] xl:justify-self-end xl:sticky xl:top-[calc(var(--app-header-height)+16px)]"
+        >
+          <!-- Only in the wide layout, where it belongs to the rail. Stacked, it repeats the
+               Settings link the nav already carries and lands in an odd spot mid-column. -->
+          <button type="button" class="panel welcome-card hidden xl:flex" @click="openProfile">
+            <img
+              :src="avatarUrl ?? fallbackAvatar"
+              alt=""
+              class="size-11 shrink-0 rounded-full object-cover md:size-12"
+            />
+            <div class="min-w-0 text-left">
+              <p class="text-xs text-white/70">Welcome,</p>
+              <p class="truncate text-base font-semibold md:text-lg">{{ displayName }}</p>
+            </div>
+            <font-awesome-icon icon="angle-right" class="ml-auto text-white/40" />
+          </button>
+
+          <DayPickerDropdown
+            prompt="Which day are you writing?"
+            :selected="today"
+            :shortcuts="dayShortcuts"
+            @pick="goToDay"
           >
-            <h2 class="section-title">Productivity Week</h2>
+            <GlintButton class="cta-primary">
+              <font-awesome-icon icon="plus" />
+              New entry
+            </GlintButton>
+          </DayPickerDropdown>
 
-            <div class="mt-8 flex items-center justify-center flex-wrap gap-x-4 gap-y-6 sm:gap-12">
-              <div class="stat-col">
-                <font-awesome-icon
-                  icon="person-walking"
-                  class="text-[34px] sm:text-[44px] text-lime-400 drop-shadow"
-                />
-                <div class="stat-val">+32%</div>
-              </div>
-              <div class="stat-col">
-                <font-awesome-icon
-                  icon="code"
-                  class="text-[34px] sm:text-[44px] text-blue-500 drop-shadow"
-                />
-                <div class="stat-val">+38%</div>
-              </div>
-              <div class="stat-col">
-                <font-awesome-icon
-                  icon="book"
-                  class="text-[34px] sm:text-[44px] text-cyan-300 drop-shadow"
-                />
-                <div class="stat-val">+27%</div>
-              </div>
-              <div class="stat-col">
-                <font-awesome-icon
-                  icon="gamepad"
-                  class="text-[34px] sm:text-[44px] text-red-500 drop-shadow"
-                />
-                <div class="stat-val">-11%</div>
-              </div>
+          <div v-if="todayEntry" class="panel p-3">
+            <div class="flex items-center justify-between">
+              <p class="field-label">Today</p>
+              <span class="text-[11px] text-white/50">{{ todayLabel }}</span>
             </div>
-
-            <div class="mt-8 flex justify-center">
-              <button type="button" class="pill-button text-[24px]">
-                <span>More</span>
-                <font-awesome-icon icon="arrow-right-long" class="text-[24px]" />
-              </button>
-            </div>
-          </section>
-
-          <section class="col-span-12 lg:col-span-4 glass-card" aria-label="Today">
-            <h2 class="section-title">Today</h2>
-
-            <div class="mt-6 flex flex-col gap-4">
-              <RouterLink :to="todayPath" class="pill-button pill-button-sm">
-                <span>Open</span>
-                <font-awesome-icon icon="angle-right" class="text-[26px]" />
+            <p class="mt-2 line-clamp-2 text-sm text-white/70">
+              {{ todayEntry.description || 'Written, no description yet' }}
+            </p>
+            <div class="mt-3 flex flex-col gap-2">
+              <RouterLink :to="todayPath" class="row-button">
+                <font-awesome-icon icon="book-open" class="text-white/60" />
+                Open
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
               </RouterLink>
-              <button type="button" class="pill-button pill-button-sm">
-                <span>Discuss</span>
-                <font-awesome-icon icon="angle-right" class="text-[26px]" />
+              <button type="button" class="row-button" @click="discussToday">
+                <font-awesome-icon icon="comments" class="text-white/60" />
+                Discuss
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
               </button>
-              <button type="button" class="pill-button pill-button-sm">
-                <span>Summary</span>
-                <font-awesome-icon icon="angle-right" class="text-[26px]" />
+              <button type="button" class="row-button" @click="openDigest('today')">
+                <font-awesome-icon icon="lightbulb" class="text-white/60" />
+                AI summary
+                <font-awesome-icon icon="angle-right" class="ml-auto text-white/50" />
               </button>
             </div>
-          </section>
+          </div>
 
-          <section class="col-span-12 lg:col-span-6 glass-card" aria-label="Insights">
-            <div class="flex items-center justify-between">
-              <h2 class="section-title !text-left !w-auto">Insights</h2>
-              <div class="flex items-center gap-3">
-                <button
-                  v-if="todaysInsightsRaw.length"
-                  type="button"
-                  class="pill-button pill-button-sm !w-auto"
-                  @click="toggleAllInsights"
-                >
-                  <span>{{ areAllTodaysInsightsExpanded ? 'Collapse all' : 'Expand all' }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="pill-button pill-button-sm !w-auto"
-                  @click="openAiModal('insights')"
-                >
-                  <span>View all</span>
-                  <font-awesome-icon icon="angle-right" class="text-[26px]" />
-                </button>
-              </div>
-            </div>
-            <div class="mt-8 flex flex-col gap-4">
-              <div v-if="isLoadingAi" class="text-white/70 text-center">Loading...</div>
-              <div v-else-if="!todaysInsightsRaw.length" class="text-white/70 text-center">
-                No insights for today yet - write the day and mark it as complete to generate.
-              </div>
-              <div v-for="item in insightsPreview" :key="item.id" class="flex flex-col gap-3">
-                <button
-                  type="button"
-                  class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/20 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/30 hover:-translate-y-px"
-                  @click="toggleInsight(item.id)"
-                  :aria-expanded="isInsightExpanded(item.id)"
-                >
-                  <span
-                    class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
+          <button type="button" class="cta-digest" @click="openDigest('week')">
+            <span class="flex w-full items-center gap-3">
+              <span class="relative flex">
+                <font-awesome-icon icon="wand-magic-sparkles" class="text-lg" />
+                <span v-if="hasUnreadDigest" class="unread-dot" aria-hidden="true" />
+              </span>
+              <span class="flex min-w-0 flex-col items-start text-left leading-tight">
+                <span class="text-sm font-semibold">
+                  Weekly digest
+                  <span v-if="hasUnreadDigest" class="sr-only">(unread)</span>
+                </span>
+                <span class="text-[11px] text-white/70">Your week, summarized</span>
+              </span>
+              <font-awesome-icon icon="angle-right" class="ml-auto" />
+            </span>
+          </button>
+        </aside>
+
+        <div
+          class="order-1 mx-auto w-full max-w-2xl xl:order-none xl:col-start-2 xl:row-start-1 xl:w-[42rem]"
+        >
+          <div
+            class="search-bar flex cursor-text items-center gap-1 px-1.5"
+            @click="($refs.searchInput as HTMLInputElement)?.focus()"
+          >
+            <button
+              type="button"
+              class="icon-button"
+              aria-label="Search options"
+              :aria-expanded="showFilters"
+              @click.stop="showFilters = !showFilters"
+            >
+              <font-awesome-icon icon="gear" />
+            </button>
+
+            <input
+              ref="searchInput"
+              v-model="query"
+              type="text"
+              placeholder="Quick Search with AI"
+              aria-label="Search your days"
+              class="min-w-0 flex-1 bg-transparent text-base text-white placeholder-white/50 outline-none md:text-sm"
+              @keyup.enter="submitSearch"
+            />
+
+            <button
+              v-if="hasFilters"
+              type="button"
+              class="icon-button"
+              aria-label="Clear filters"
+              @click.stop="clearFilters"
+            >
+              <font-awesome-icon icon="rotate-left" />
+            </button>
+
+            <button type="button" class="icon-button" aria-label="Search" @click="submitSearch">
+              <font-awesome-icon icon="magnifying-glass" />
+            </button>
+          </div>
+
+          <!-- Behind the gear. The wrapper is what collapses: animating the panel alone left
+               everything below it snapping up the instant it unmounted. -->
+          <Transition
+            name="filters"
+            @before-enter="beforeCollapseEnter"
+            @enter="collapseEnter"
+            @after-enter="afterCollapseEnter"
+            @before-leave="beforeCollapseLeave"
+            @leave="collapseLeave"
+          >
+            <div v-if="showFilters" class="filters-wrap">
+              <div class="panel mt-3 space-y-3 p-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    class="filter-toggle"
+                    :class="{ 'is-checked': similaritySearch }"
+                    :aria-pressed="similaritySearch"
+                    @click="similaritySearch = !similaritySearch"
                   >
-                    <font-awesome-icon :icon="getInsightIcon(item)" class="text-[22px]" />
-                  </span>
-                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
-                    {{ item.description }}
-                  </span>
-                  <font-awesome-icon
-                    icon="angle-down"
-                    class="text-[22px] opacity-90 transition-transform duration-200"
-                    :class="isInsightExpanded(item.id) ? 'rotate-180' : ''"
+                    <span class="check-box" aria-hidden="true">
+                      <font-awesome-icon v-if="similaritySearch" icon="check" class="text-[10px]" />
+                    </span>
+                    Similarity search
+                  </button>
+
+                  <button
+                    type="button"
+                    class="filter-toggle"
+                    :class="{ 'is-checked': starredOnly }"
+                    :aria-pressed="starredOnly"
+                    @click="starredOnly = !starredOnly"
+                  >
+                    <span class="check-box" aria-hidden="true">
+                      <font-awesome-icon v-if="starredOnly" icon="check" class="text-[10px]" />
+                    </span>
+                    Starred
+                  </button>
+                </div>
+
+                <div class="relative z-20">
+                  <p class="field-label mb-1.5">Location</p>
+                  <LocationFlow
+                    :country="selectedCountry"
+                    :city="selectedCity"
+                    country-input-id="dashboard-country-input"
+                    city-input-id="dashboard-city-input"
+                    @update:country="handleCountryUpdate"
+                    @update:city="handleCityUpdate"
                   />
-                </button>
+                </div>
 
-                <Transition
-                  name="collapse"
-                  @before-enter="beforeEnterCollapse"
-                  @enter="enterCollapse"
-                  @after-enter="afterEnterCollapse"
-                  @before-leave="beforeLeaveCollapse"
-                  @leave="leaveCollapse"
-                >
-                  <div
-                    v-if="isInsightExpanded(item.id)"
-                    class="rounded-2xl bg-white/12 backdrop-blur-[17.5px] px-4 py-3 overflow-hidden"
-                  >
-                    <div class="text-white/80 whitespace-pre-line">{{ item.content }}</div>
-                  </div>
-                </Transition>
+                <div class="relative z-10">
+                  <p class="field-label mb-1.5">Tags</p>
+                  <TagSelector v-model="selectedTags" :available-tags="availableTags" />
+                </div>
               </div>
             </div>
-          </section>
+          </Transition>
 
-          <section class="col-span-12 lg:col-span-6 glass-card" aria-label="Suggestions">
-            <div class="flex items-center justify-between">
-              <h2 class="section-title !text-left !w-auto">Suggestions</h2>
-              <div class="flex items-center gap-3">
-                <button
-                  v-if="todaysSuggestionsRaw.length"
-                  type="button"
-                  class="pill-button pill-button-sm !w-auto"
-                  @click="toggleAllSuggestions"
-                >
-                  <span>{{ areAllTodaysSuggestionsExpanded ? 'Collapse all' : 'Expand all' }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="pill-button pill-button-sm !w-auto"
-                  @click="openAiModal('suggestions')"
-                >
-                  <span>View all</span>
-                  <font-awesome-icon icon="angle-right" class="text-[26px]" />
-                </button>
-              </div>
+          <!-- One range: the two handles and the two dates under them drive the same
+               start/end. Always on screen — it is the filter people actually reach for. -->
+          <div class="panel mt-3 p-3">
+            <p class="field-label">Date</p>
+
+            <div class="range-slider" :class="{ 'is-dragging': isDraggingRange }">
+              <span class="range-track" aria-hidden="true" />
+              <span class="range-fill" :style="fillStyle" aria-hidden="true" />
+              <input
+                class="range-input"
+                type="range"
+                :min="sliderMin"
+                :max="sliderMax"
+                :step="isDraggingRange ? 'any' : DAY_MS"
+                :value="rangeStart"
+                :aria-valuetext="formatShort(rangeStartDate)"
+                aria-label="Range start"
+                @pointerdown="isDraggingRange = true"
+                @input="onRangeStartInput"
+                @change="commitRange"
+              />
+              <input
+                class="range-input range-input-end"
+                type="range"
+                :min="sliderMin"
+                :max="sliderMax"
+                :step="isDraggingRange ? 'any' : DAY_MS"
+                :value="rangeEnd"
+                :aria-valuetext="formatShort(rangeEndDate)"
+                aria-label="Range end"
+                @pointerdown="isDraggingRange = true"
+                @input="onRangeEndInput"
+                @change="commitRange"
+              />
             </div>
-            <div class="mt-8 flex flex-col gap-4">
-              <div v-if="isLoadingAi" class="text-white/70 text-center">Loading...</div>
-              <div v-else-if="!todaysSuggestionsRaw.length" class="text-white/70 text-center">
-                No suggestions for today yet - write the day and mark it as complete to generate.
-              </div>
-              <div v-for="item in suggestionsPreview" :key="item.id" class="flex flex-col gap-3">
+
+            <div class="flex justify-between">
+              <DayPickerDropdown
+                align="start"
+                prompt="From which day?"
+                :selected="rangeStartDate"
+                :max-date="rangeEndDate"
+                @pick="startDate = $event"
+              >
                 <button
                   type="button"
-                  class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/15 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/25 hover:-translate-y-px"
-                  @click="toggleSuggestion(item.id)"
-                  :aria-expanded="isSuggestionExpanded(item.id)"
+                  class="range-date"
+                  :aria-label="`Range start, ${formatShort(rangeStartDate)}`"
                 >
-                  <span
-                    class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
-                  >
-                    <font-awesome-icon :icon="getSuggestionIcon(item)" class="text-[22px]" />
-                  </span>
-                  <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
-                    {{ item.description }}
-                  </span>
-                  <font-awesome-icon
-                    icon="angle-down"
-                    class="text-[22px] opacity-90 transition-transform duration-200"
-                    :class="isSuggestionExpanded(item.id) ? 'rotate-180' : ''"
-                  />
+                  <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
+                  {{ formatShort(rangeStartDate) }}
                 </button>
-
-                <Transition
-                  name="collapse"
-                  @before-enter="beforeEnterCollapse"
-                  @enter="enterCollapse"
-                  @after-enter="afterEnterCollapse"
-                  @before-leave="beforeLeaveCollapse"
-                  @leave="leaveCollapse"
+              </DayPickerDropdown>
+              <DayPickerDropdown
+                align="end"
+                prompt="Up to which day?"
+                :selected="rangeEndDate"
+                :min-date="rangeStartDate"
+                @pick="endDate = $event"
+              >
+                <button
+                  type="button"
+                  class="range-date"
+                  :aria-label="`Range end, ${formatShort(rangeEndDate)}`"
                 >
-                  <div
-                    v-if="isSuggestionExpanded(item.id)"
-                    class="rounded-2xl bg-white/12 backdrop-blur-[17.5px] px-4 py-3 overflow-hidden"
-                  >
-                    <div class="text-white/80 whitespace-pre-line">{{ item.content }}</div>
-                  </div>
-                </Transition>
-              </div>
+                  {{ formatShort(rangeEndDate) }}
+                  <font-awesome-icon icon="calendar-days" class="text-[10px] text-white/50" />
+                </button>
+              </DayPickerDropdown>
             </div>
-          </section>
+          </div>
+        </div>
 
-          <ModalWindow v-model="showAiModal" maxWidth="2xl">
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-white">{{ aiModalTitle }}</h2>
-                <button
-                  v-if="aiModalItems.length"
-                  type="button"
-                  class="pill-button pill-button-sm !w-auto"
-                  @click="aiModalMode === 'insights' ? toggleAllInsights() : toggleAllSuggestions()"
-                >
-                  <span>
-                    {{
-                      aiModalMode === 'insights'
-                        ? areAllTodaysInsightsExpanded
-                          ? 'Collapse all'
-                          : 'Expand all'
-                        : areAllTodaysSuggestionsExpanded
-                          ? 'Collapse all'
-                          : 'Expand all'
-                    }}
-                  </span>
+        <!-- Days, newest first, five at a time -->
+        <div
+          class="order-3 mx-auto w-full max-w-2xl xl:order-none xl:col-start-2 xl:row-start-2 xl:w-[42rem]"
+        >
+          <div class="mt-2 xl:mt-6">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h1 class="text-lg font-semibold md:text-xl">
+                {{ hasFilters ? 'Search results' : 'Latest days' }}
+              </h1>
+              <!-- The merged view lost the calendar's "jump to a specific day"; this is it. -->
+              <DayPickerDropdown align="end" prompt="Which day do you want to see?" @pick="goToDay">
+                <button type="button" class="text-button">
+                  <font-awesome-icon icon="calendar-day" class="mr-1.5 text-[11px]" />
+                  Go to date
                 </button>
+              </DayPickerDropdown>
+            </div>
+
+            <div v-if="errorMessage" class="panel border border-red-400/40 px-4 py-3 text-sm">
+              {{ errorMessage }}
+            </div>
+
+            <div v-else-if="isLoading" class="py-12 text-center">
+              <font-awesome-icon icon="spinner" class="animate-spin text-2xl text-white/80" />
+              <p class="mt-3 text-sm text-white/70">Loading your days...</p>
+            </div>
+
+            <div
+              v-else-if="!days.length"
+              class="rounded-xl bg-black/35 px-6 py-10 text-center backdrop-blur-sm"
+            >
+              <font-awesome-icon
+                :icon="hasFilters ? 'magnifying-glass' : 'book'"
+                class="mb-3 text-3xl text-white/40"
+              />
+              <p class="mb-1 text-base text-white/80">
+                {{ hasFilters ? 'No days found' : 'Nothing written yet' }}
+              </p>
+              <p class="text-sm text-white/50">
+                {{
+                  hasFilters
+                    ? 'Try another keyword, or widen the filters'
+                    : 'Start with a new entry'
+                }}
+              </p>
+            </div>
+
+            <template v-else>
+              <div v-for="day in days" :key="day.timestamp" class="day-focus">
+                <DayCard>
+                  <template #image>
+                    <DayImage :src="day.mainImage" alt="" size="card" />
+                  </template>
+                  <template #info>
+                    <DayInfo
+                      :date="day.timestamp"
+                      :description="day.description"
+                      :starred="day.starred"
+                      :exists="day.exists"
+                      @toggle-starred="toggleStarred(day.timestamp)"
+                    />
+                  </template>
+                  <template #stats>
+                    <DayStats :steps="day.steps ?? 0" :city="day.city?.name || 'Not specified'" />
+                  </template>
+                  <template #learning-items>
+                    <DayTrackables
+                      v-if="day.trackableProgresses?.length"
+                      :trackable-progresses="day.trackableProgresses"
+                    />
+                    <div v-else>No trackable items</div>
+                  </template>
+                  <template #open>
+                    <MainButton
+                      class="whitespace-nowrap"
+                      @click="router.push(dayPath(new Date(day.timestamp)))"
+                    >
+                      <template #default>Open</template>
+                      <template #icon-right>
+                        <font-awesome-icon icon="arrow-right-long" />
+                      </template>
+                    </MainButton>
+                  </template>
+                </DayCard>
               </div>
             </template>
 
-            <template #default>
-              <div class="space-y-6">
-                <div v-if="!aiModalItems.length" class="text-white/70 text-center">
-                  Nothing for today.
-                </div>
-
-                <div v-else>
-                  <div v-if="aiModalMode === 'insights'" class="flex flex-col gap-3">
-                    <div
-                      v-for="item in aiModalItems as InsightInDB[]"
-                      :key="item.id"
-                      class="flex flex-col gap-3"
-                    >
-                      <button
-                        type="button"
-                        class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/20 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/30 hover:-translate-y-px"
-                        @click="toggleInsight(item.id)"
-                        :aria-expanded="isInsightExpanded(item.id)"
-                      >
-                        <span
-                          class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
-                        >
-                          <font-awesome-icon :icon="getInsightIcon(item)" class="text-[22px]" />
-                        </span>
-                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
-                          {{ item.description }}
-                        </span>
-                        <font-awesome-icon
-                          icon="angle-down"
-                          class="text-[22px] opacity-90 transition-transform duration-200"
-                          :class="isInsightExpanded(item.id) ? 'rotate-180' : ''"
-                        />
-                      </button>
-
-                      <Transition
-                        name="collapse"
-                        @before-enter="beforeEnterCollapse"
-                        @enter="enterCollapse"
-                        @after-enter="afterEnterCollapse"
-                        @before-leave="beforeLeaveCollapse"
-                        @leave="leaveCollapse"
-                      >
-                        <div
-                          v-if="isInsightExpanded(item.id)"
-                          class="rounded-2xl bg-white/12 backdrop-blur-[17.5px] px-4 py-3 overflow-hidden"
-                        >
-                          <div class="text-white/80 whitespace-pre-line">{{ item.content }}</div>
-                        </div>
-                      </Transition>
-                    </div>
-                  </div>
-
-                  <div v-else class="flex flex-col gap-3">
-                    <div
-                      v-for="item in aiModalItems as InsightInDB[]"
-                      :key="item.id"
-                      class="flex flex-col gap-3"
-                    >
-                      <button
-                        type="button"
-                        class="flex items-center justify-between gap-3.5 px-3 py-2 rounded-full bg-white/15 backdrop-blur-[17.5px] text-white no-underline transition hover:bg-white/25 hover:-translate-y-px"
-                        @click="toggleSuggestion(item.id)"
-                        :aria-expanded="isSuggestionExpanded(item.id)"
-                      >
-                        <span
-                          class="w-8 h-8 inline-flex items-center justify-center text-[22px] text-white/90"
-                        >
-                          <font-awesome-icon :icon="getSuggestionIcon(item)" class="text-[22px]" />
-                        </span>
-                        <span class="flex-1 min-w-0 text-[16px] text-center leading-[1.25]">
-                          {{ item.description }}
-                        </span>
-                        <font-awesome-icon
-                          icon="angle-down"
-                          class="text-[22px] opacity-90 transition-transform duration-200"
-                          :class="isSuggestionExpanded(item.id) ? 'rotate-180' : ''"
-                        />
-                      </button>
-
-                      <Transition
-                        name="collapse"
-                        @before-enter="beforeEnterCollapse"
-                        @enter="enterCollapse"
-                        @after-enter="afterEnterCollapse"
-                        @before-leave="beforeLeaveCollapse"
-                        @leave="leaveCollapse"
-                      >
-                        <div
-                          v-if="isSuggestionExpanded(item.id)"
-                          class="rounded-2xl bg-white/12 backdrop-blur-[17.5px] px-4 py-3 overflow-hidden"
-                        >
-                          <div class="text-white/80 whitespace-pre-line">{{ item.content }}</div>
-                        </div>
-                      </Transition>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </ModalWindow>
+            <div v-if="days.length && hasMore" class="flex justify-center py-4">
+              <button type="button" class="load-more" :disabled="isLoadingMore" @click="loadMore">
+                <font-awesome-icon
+                  :icon="isLoadingMore ? 'spinner' : 'angle-down'"
+                  :class="isLoadingMore ? 'animate-spin' : ''"
+                />
+                {{ isLoadingMore ? 'Loading...' : `Load ${PAGE_SIZE} more` }}
+              </button>
+            </div>
+            <p v-else-if="days.length" class="py-6 text-center text-sm text-white/50">
+              That's every day so far.
+            </p>
+          </div>
         </div>
       </div>
     </div>
+
+    <Transition name="fade">
+      <button v-if="showScrollTop" type="button" class="scroll-top" @click="scrollToTop">
+        <font-awesome-icon icon="arrow-up" class="mr-2" />
+        Scroll to top
+      </button>
+    </Transition>
+
+    <!-- Today's summary and the weekly digest, one sheet with two faces -->
+    <DigestSheet v-model="showDigest" :mode="digestMode" :today="todayEntry" />
   </div>
 </template>
 
 <style scoped>
-.font-dashboard {
-  font-family:
-    Verdana,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Arial,
-    sans-serif;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.2);
+/* Borrowed from DayView: a block under the pointer turns less translucent, which pulls the
+   eye to it. Every surface on this page opts in through .panel / .search-bar / .day-focus. */
+.panel {
+  background: rgba(255, 255, 255, 0.11);
   backdrop-filter: blur(17.5px);
   -webkit-backdrop-filter: blur(17.5px);
-  border-radius: 50px;
-  padding: 34px;
-  overflow: hidden;
-  color: white;
-}
-
-.glass-card-lg {
-  min-height: 340px;
-}
-
-.section-title {
-  font-size: 28px;
-  text-align: center;
-  width: 100%;
-  line-height: 1.2;
-}
-
-.stat-col {
-  width: 138px;
-  height: 104px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.drop-shadow {
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
-}
-
-.stat-val {
-  font-size: 28px;
-  text-align: center;
-}
-
-.pill-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  font-size: 20px;
-  border-radius: 50px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(17.5px);
-  -webkit-backdrop-filter: blur(17.5px);
-  color: white;
-  text-decoration: none;
-  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
   transition:
-    background 0.15s ease,
-    transform 0.15s ease;
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-.pill-button:hover {
-  background: rgba(255, 255, 255, 0.28);
+.panel:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* The day cards come from the shared DayCard, so the focus lands on a wrapper. */
+.day-focus :deep(> div) {
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.day-focus:hover :deep(> div) {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.85);
+}
+
+.welcome-card {
+  /* No `display` here on purpose — the template's `hidden md:flex` decides that. */
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  color: #fff;
+  cursor: pointer;
+  view-transition-name: welcome-card;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.welcome-card:hover {
+  background: rgba(255, 255, 255, 0.25);
   transform: scale(1.03);
+  box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.9);
 }
 
-.pill-button:active {
+.welcome-card:active {
   transform: scale(0.98);
 }
 
-.pill-button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+.field-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.pill-button-sm {
-  font-size: 18px;
-  justify-content: space-between;
-}
-
-.collapse-enter-active,
-.collapse-leave-active {
+.search-bar {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(17.5px);
+  -webkit-backdrop-filter: blur(17.5px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
   transition:
-    height 220ms ease,
-    opacity 220ms ease;
+    background 0.25s ease,
+    border-color 0.15s ease,
+    box-shadow 0.25s ease;
+}
+
+.search-bar:hover {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.85);
+}
+
+.search-bar:focus-within {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.text-button:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ---------- rail actions ---------- */
+
+.cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #5b4bd6 0%, #8b5cf6 55%, #c084fc 100%);
+  box-shadow: 0 8px 20px -8px rgba(139, 92, 246, 0.9);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+.cta-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 12px 26px -8px rgba(139, 92, 246, 1);
+}
+
+.cta-primary:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.row-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.row-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* A step above the plain rows and a step below New entry: a tint and a border, no motion. */
+.cta-digest {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(120deg, rgba(99, 102, 241, 0.16), rgba(139, 92, 246, 0.14));
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cta-digest:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(120deg, rgba(99, 102, 241, 0.26), rgba(139, 92, 246, 0.22));
+}
+
+/* ---------- filter controls ---------- */
+
+/* The row keeps a 36px tap target while the box itself stays a control, not a tile. */
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.filter-toggle.is-checked {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.check-box {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0b1120;
+}
+
+.filter-toggle.is-checked .check-box {
+  background: #fff;
+  border-color: #fff;
+}
+
+.filters-wrap {
   overflow: hidden;
 }
 
-.collapse-enter-from,
-.collapse-leave-to {
+.filters-enter-active,
+.filters-leave-active {
+  transition:
+    height 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+}
+
+.filters-enter-from,
+.filters-leave-to {
   opacity: 0;
 }
 
-@media (max-width: 1024px) {
-  .glass-card {
-    padding: 24px;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.unread-dot {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f0506e;
+  box-shadow: 0 0 0 2px rgba(10, 10, 16, 0.6);
+}
+
+.load-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.load-more:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.load-more:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* On a phone: bottom-right corner, out from under the bar's raised orb. */
+.scroll-top {
+  position: fixed;
+  right: 12px;
+  bottom: calc(var(--bottom-nav-total) + 1rem);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scroll-top:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (min-width: 768px) {
+  .scroll-top {
+    right: 24px;
+    bottom: 2rem;
   }
 }
 
-@media (max-width: 640px) {
-  .glass-card {
-    border-radius: 32px;
+/* Wide enough for a gutter beside the day column: park it there, at eye level, where it is
+   actually noticed. 22rem clears the 42rem column's half-width plus a margin. */
+@media (min-width: 1024px) {
+  .scroll-top {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: calc(50% + 22rem);
+    transform: translateY(-50%);
+  }
+}
+
+/* ---------- date range ---------- */
+
+.range-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.range-date:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Taller than the thumb so the track stays draggable on a phone. */
+.range-slider {
+  position: relative;
+  height: 36px;
+  margin-top: 4px;
+}
+
+.range-track,
+.range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+}
+
+.range-track {
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.2));
+}
+
+/* Dark at the old end, light at the recent one, so the covered span reads as a direction. */
+.range-fill {
+  background: linear-gradient(90deg, rgba(112, 100, 190, 0.9) 0%, rgba(184, 205, 235, 0.9) 100%);
+  transition:
+    left 140ms ease,
+    right 140ms ease;
+}
+
+/* Following the pointer beats easing to it while a handle is being dragged. */
+.range-slider.is-dragging .range-fill {
+  transition: none;
+}
+
+/* Two inputs share one track: the input itself ignores pointer events so the lower
+   handle is never trapped under the upper input, and only the thumbs take them back. */
+.range-input {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  --thumb-color: rgb(150, 136, 240);
+}
+
+/* Each handle wears the color of its end of the fill. */
+.range-input.range-input-end {
+  --thumb-color: rgb(196, 214, 240);
+}
+
+.range-input:focus {
+  outline: none;
+}
+
+.range-input::-webkit-slider-runnable-track {
+  height: 36px;
+  background: transparent;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  /* A styled WebKit thumb hugs the top of its 36px track; this drops it onto the line. */
+  margin-top: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--thumb-color);
+  background: radial-gradient(circle, var(--thumb-color) 0 3px, rgb(22, 20, 38) 3.5px);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--thumb-color) 18%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+  cursor: grab;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--thumb-color) 26%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.range-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--thumb-color) 30%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.range-input:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.range-input::-moz-range-track {
+  height: 36px;
+  background: transparent;
+}
+
+.range-input::-moz-range-thumb {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--thumb-color);
+  background: radial-gradient(circle, var(--thumb-color) 0 3px, rgb(22, 20, 38) 3.5px);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--thumb-color) 18%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+  cursor: grab;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.range-input::-moz-range-thumb:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--thumb-color) 26%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.range-input::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--thumb-color) 30%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.range-input:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range-fill {
+    transition: none;
   }
 
-  .section-title {
-    font-size: 22px;
-  }
-
-  /* A fixed 138px never fits two per row at 375px, so the card grew to four stacked rows. */
-  .stat-col {
-    width: calc(50% - 8px);
-    height: auto;
-  }
-
-  .stat-val {
-    font-size: 22px;
-  }
-
-  .pill-button {
-    font-size: 17px;
-  }
-
-  .pill-button-sm {
-    font-size: 16px;
+  .welcome-card:hover {
+    transform: none;
   }
 }
 </style>

@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AiOrbButton from '@/components/ai/AiOrbButton.vue'
 
 defineOptions({
-  name: 'DemoOrbPet',
+  name: 'AiOrbPet',
 })
 
 const props = withDefaults(

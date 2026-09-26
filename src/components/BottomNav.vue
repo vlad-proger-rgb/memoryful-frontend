@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, nextTick, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import AiOrbButton from '@/components/ai/AiOrbButton.vue'
-import { isDestinationActive, navDestinations, type NavDestination } from '@/config/navigation'
+import DashboardIcon from '@/components/ui/DashboardIcon.vue'
+import { isDestinationActive, navDestinations } from '@/config/navigation'
 import useFeatureFlagsStore from '@/stores/featureFlags'
 
 defineOptions({
@@ -13,96 +14,44 @@ defineOptions({
 const route = useRoute()
 const featureFlags = useFeatureFlagsStore()
 
-// Two on each side of the raised centre orb.
-const leftDestinations = computed(() => navDestinations.slice(0, 2))
-const rightDestinations = computed(() => navDestinations.slice(2))
-
-const isActive = (to: string) =>
-  isDestinationActive(navDestinations.find((d) => d.to === to)!, route.path)
+const dashboard = navDestinations.find((d) => d.key === 'dashboard')!
+const settings = navDestinations.find((d) => d.key === 'settings')!
 
 const iconColors = computed(() => featureFlags.isEnabled('navIconColors'))
-const iconStyle = (destination: NavDestination) =>
-  iconColors.value ? { color: destination.color } : undefined
+const iconStyle = (color: string) => (iconColors.value ? { color } : undefined)
 
-const pillRef = ref<HTMLElement | null>(null)
-const lensStyle = ref<Record<string, string>>({ opacity: '0' })
-
-// Keeps the lens off the capsule's rounded ends, which it would otherwise sit tangent to.
-const LENS_INSET = 4
-
-/** The lens tracks whichever tab is current; the orb slot makes the offsets uneven, so
- *  measure rather than compute them from an index. */
-const positionLens = () => {
-  const pill = pillRef.value
-  const active = pill?.querySelector<HTMLElement>('a[aria-current="page"]')
-  if (!pill || !active) {
-    lensStyle.value = { opacity: '0' }
-    return
-  }
-
-  lensStyle.value = {
-    opacity: '1',
-    width: `${active.offsetWidth - LENS_INSET * 2}px`,
-    transform: `translateX(${active.offsetLeft + LENS_INSET}px)`,
-  }
-}
-
-let observer: ResizeObserver | null = null
-
-onMounted(async () => {
-  await nextTick()
-  positionLens()
-  observer = new ResizeObserver(positionLens)
-  if (pillRef.value) observer.observe(pillRef.value)
-})
-
-onBeforeUnmount(() => {
-  observer?.disconnect()
-  observer = null
-})
-
-watch(
-  () => route.path,
-  async () => {
-    await nextTick()
-    positionLens()
-  },
-)
+const isDashboard = computed(() => isDestinationActive(dashboard, route.path))
+const isSettings = computed(() => isDestinationActive(settings, route.path))
 </script>
 
 <template>
   <nav class="bottom-nav" aria-label="Primary">
-    <div ref="pillRef" class="glass-pill">
-      <span class="lens" :style="lensStyle" aria-hidden="true" />
-
+    <div class="glass-pill">
       <RouterLink
-        v-for="destination in leftDestinations"
-        :key="destination.key"
-        :to="destination.to"
+        :to="dashboard.to"
         class="bottom-nav-item"
-        :class="{ 'is-active': isActive(destination.to), 'has-color': iconColors }"
-        :style="iconStyle(destination)"
-        :aria-label="destination.label"
-        :aria-current="isActive(destination.to) ? 'page' : undefined"
+        :class="{ 'is-active': isDashboard, 'has-color': iconColors }"
+        :style="iconStyle(dashboard.color)"
+        :aria-label="dashboard.label"
+        :aria-current="isDashboard ? 'page' : undefined"
       >
-        <font-awesome-icon :icon="destination.icon" class="text-xl" />
+        <DashboardIcon class="text-xl" />
       </RouterLink>
 
       <div class="bottom-nav-orb-slot">
-        <AiOrbButton :size="52" :ring-spread="1.42" class="bottom-nav-orb" />
+        <!-- No outer ring here: at phone size it crowded the cards behind the bar. -->
+        <AiOrbButton :size="48" :ring-spread="1.42" class="bottom-nav-orb" />
       </div>
 
       <RouterLink
-        v-for="destination in rightDestinations"
-        :key="destination.key"
-        :to="destination.to"
+        :to="settings.to"
         class="bottom-nav-item"
-        :class="{ 'is-active': isActive(destination.to), 'has-color': iconColors }"
-        :style="iconStyle(destination)"
-        :aria-label="destination.label"
-        :aria-current="isActive(destination.to) ? 'page' : undefined"
+        :class="{ 'is-active': isSettings, 'has-color': iconColors }"
+        :style="iconStyle(settings.color)"
+        :aria-label="settings.label"
+        :aria-current="isSettings ? 'page' : undefined"
       >
-        <font-awesome-icon :icon="destination.icon" class="text-xl" />
+        <font-awesome-icon :icon="settings.icon" class="text-xl" />
       </RouterLink>
     </div>
   </nav>
@@ -117,19 +66,17 @@ watch(
   padding: 0 12px calc(var(--bottom-nav-gap) + env(safe-area-inset-bottom, 0px));
   /* The bar floats, so only the capsule itself should intercept taps. */
   pointer-events: none;
-  /* Deliberately no `display` here — App.vue's `md:hidden` is the single place the
-     breakpoint is decided, and a scoped class would outrank that utility. */
+  /* Deliberately no `display` here — App.vue's `md:hidden` decides the breakpoint. */
 }
 
-/* Liquid glass: a dark tinted capsule that refracts the page behind it, lit along the
-   top edge so it reads as a physical pane rather than a flat translucent box. */
+/* Same liquid glass as the shared bar, with two destinations instead of four. */
 .glass-pill {
   pointer-events: auto;
   position: relative;
   display: flex;
   align-items: stretch;
   width: 100%;
-  max-width: 420px;
+  max-width: 340px;
   margin-inline: auto;
   height: var(--bottom-nav-height);
   border-radius: 9999px;
@@ -145,7 +92,6 @@ watch(
     inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Specular sheen down the upper half — the highlight a curved glass edge would catch. */
 .glass-pill::before {
   content: '';
   position: absolute;
@@ -158,27 +104,6 @@ watch(
     rgba(255, 255, 255, 0) 62%
   );
   pointer-events: none;
-}
-
-/* The travelling highlight behind the current tab. Its own inner rim makes it read as a
-   thicker lens sitting inside the capsule, which is what sells the depth. */
-.lens {
-  position: absolute;
-  top: 7px;
-  bottom: 7px;
-  left: 0;
-  width: 0;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-    0 2px 10px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
-  transition:
-    transform 460ms cubic-bezier(0.22, 1, 0.36, 1),
-    width 460ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 200ms ease;
 }
 
 .bottom-nav-item {
@@ -200,8 +125,6 @@ watch(
   transform: translateY(-1px) scale(1.08);
 }
 
-/* Tinted mode drives color from the inline style, so dim the inactive icons with opacity
-   rather than the white-mode color ramp. */
 .bottom-nav-item.has-color {
   opacity: 0.7;
 }
@@ -218,33 +141,30 @@ watch(
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-  width: 84px;
+  width: 96px;
 }
 
-/* Raised out of the capsule so the orb reads as the primary action rather than a fifth tab.
+/* Raised out of the capsule so the orb reads as the primary action rather than a third tab.
    width:max-content is load-bearing — shrink-to-fit against `left:50%` would otherwise cap
    the button at half the slot and squash the logo via preflight's img{max-width:100%}. */
 .bottom-nav-orb {
   position: absolute;
   left: 50%;
-  bottom: 24px;
+  bottom: 14px;
   width: max-content;
   transform: translateX(-50%);
 }
 
-/* Just enough shading to keep the overhanging top of the orb legible against page content,
-   without stamping an opaque hole through the glass behind it. */
 .bottom-nav-orb::after {
   content: '';
   position: absolute;
   z-index: 0;
   inset: -6px;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(14, 14, 20, 0.72) 46%, rgba(14, 14, 20, 0) 76%);
+  background: radial-gradient(circle, rgba(14, 14, 20, 0.72) 40%, rgba(14, 14, 20, 0) 72%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lens,
   .bottom-nav-item {
     transition: none;
   }

@@ -219,7 +219,7 @@ watch(() => route.path, revealActiveSection, { flush: 'post' })
 </template>
 
 <style scoped>
-/* Paired with the demo dashboard's welcome card: when that view starts a view transition,
+/* Paired with the dashboard's welcome card: when that view starts a view transition,
    the browser tweens the card into this header instead of cutting between pages. Inert
    otherwise — nothing else calls startViewTransition. */
 .welcome-header {

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { FEATURE_FLAGS, FEATURE_FLAG_STORAGE_KEY, type FeatureFlagId } from '@/config/featureFlags'
@@ -55,9 +55,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     persist()
   }
 
-  const demoUi = computed(() => flags.value.demoUi)
-
-  return { flags, demoUi, hydrate, isEnabled, setFlag }
+  return { flags, hydrate, isEnabled, setFlag }
 })
 
 export default useFeatureFlagsStore

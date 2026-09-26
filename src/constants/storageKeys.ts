@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   },
   UI: {
     THEME: 'memoryful:ui:theme',
+    DIGEST_SEEN_WEEK: 'memoryful:ui:digest-seen-week',
   },
   DATA: {
     COUNTRIES: 'memoryful:data:countries',
