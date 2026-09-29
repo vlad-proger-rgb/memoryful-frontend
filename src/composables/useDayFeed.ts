@@ -13,7 +13,7 @@ export function useDayFeed(query: MaybeRefOrGetter<DayQuery>) {
   const uiStore = useUiStore()
 
   const days = ref<DayListItem[]>([])
-  const isLoading = ref(false)
+  const isLoading = ref(true)
   const isLoadingMore = ref(false)
   const hasMore = ref(true)
   const errorMessage = ref('')
