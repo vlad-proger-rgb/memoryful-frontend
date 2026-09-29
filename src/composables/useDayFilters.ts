@@ -116,7 +116,7 @@ export function useDayFilters(apply: () => Promise<void>) {
   /** Resolves the URL's ids into filters; true when any of them sit behind the gear. */
   const restore = async () => {
     const q = route.query
-    await fetchTags()
+    const tagsLoaded = fetchTags()
 
     if (q.cityId) {
       try {
@@ -133,15 +133,15 @@ export function useDayFilters(apply: () => Promise<void>) {
 
     if (q.countryId && !country.value) {
       try {
-        const response = await countriesApi.getCountries('')
-        const match = (response.data || []).find((c) => c.id === String(q.countryId))
-        if (match) country.value = match
+        const response = await countriesApi.getCountryById(String(q.countryId))
+        if (response.data) country.value = response.data
       } catch {
         // Same as above.
       }
     }
 
     if (q.tags) {
+      await tagsLoaded
       const names = String(q.tags).split(',')
       tags.value = availableTags.value.filter((t) => names.includes(t.name))
     }
