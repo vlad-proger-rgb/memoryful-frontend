@@ -18,6 +18,12 @@ export interface DayListItem {
   exists: boolean
 }
 
+export interface DaySummary {
+  oldest: number | null
+  newest: number | null
+  today: DayListItem | null
+}
+
 export interface DayDetail {
   timestamp: number
   content: string

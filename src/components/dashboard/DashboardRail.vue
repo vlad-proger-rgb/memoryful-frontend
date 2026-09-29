@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import daysApi from '@/api/days'
 import DayPickerDropdown from '@/components/dashboard/DayPickerDropdown.vue'
 import ProfileCard from '@/components/dashboard/ProfileCard.vue'
 import TodayCard from '@/components/dashboard/TodayCard.vue'
@@ -10,8 +9,10 @@ import DigestSheet from '@/components/digest/DigestSheet.vue'
 import GlintButton from '@/components/ui/GlintButton.vue'
 import { useDigestUnread, type DigestMode } from '@/composables'
 import type { DayListItem } from '@/types'
-import { endOfDay, startOfDay, toTimestamp } from '@/utils/dates'
+import { startOfDay } from '@/utils/dates'
 import { dayPath } from '@/utils/routes'
+
+defineProps<{ todayEntry: DayListItem | null }>()
 
 const router = useRouter()
 
@@ -23,24 +24,6 @@ const dayShortcuts = [
   { date: yesterday, label: 'Yesterday' },
 ]
 
-const todayEntry = ref<DayListItem | null>(null)
-
-const loadToday = async () => {
-  try {
-    const response = await daysApi.getDays({
-      limit: 1,
-      filters: {
-        createdAfter: toTimestamp(today),
-        createdBefore: toTimestamp(endOfDay(today)),
-      },
-    })
-    const found = response.data?.[0]
-    todayEntry.value = found ? { ...found, timestamp: found.timestamp * 1000, exists: true } : null
-  } catch {
-    todayEntry.value = null
-  }
-}
-
 const showDigest = ref(false)
 const digestMode = ref<DigestMode>('today')
 const { hasUnread, markSeen } = useDigestUnread()
@@ -50,8 +33,6 @@ const openDigest = (mode: DigestMode) => {
   showDigest.value = true
   if (mode === 'week') markSeen()
 }
-
-onMounted(loadToday)
 </script>
 
 <template>

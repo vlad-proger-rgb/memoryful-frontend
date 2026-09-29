@@ -38,15 +38,16 @@ const {
   restore,
 } = useDayFilters(reload)
 
-const { min, max, load: loadBounds } = useDayBounds()
+const { min, max, today, load: loadBounds } = useDayBounds()
 
 // The extra filters stay behind the gear; the date range is always on screen.
 const showFilters = ref(false)
 
 onMounted(async () => {
   uiStore.disableScroll = false
+  const bounds = loadBounds()
   showFilters.value = await restore()
-  await Promise.all([reload(), loadBounds()])
+  await Promise.all([reload(), bounds])
 })
 </script>
 
@@ -67,6 +68,7 @@ onMounted(async () => {
         class="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-start xl:gap-6"
       >
         <DashboardRail
+          :today-entry="today"
           class="order-2 mx-auto w-full max-w-2xl xl:sticky xl:top-[calc(var(--app-header-height)+16px)] xl:order-none xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:mx-0 xl:max-w-[19rem] xl:justify-self-end"
         />
 

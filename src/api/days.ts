@@ -1,5 +1,13 @@
 import axios from '@/api/client'
-import type { DayListItem, DayDetail, ApiResponse, DayCreate, DayUpdate, DayFilters } from '@/types'
+import type {
+  DayListItem,
+  DayDetail,
+  DaySummary,
+  ApiResponse,
+  DayCreate,
+  DayUpdate,
+  DayFilters,
+} from '@/types'
 
 export const daysApi = {
   getDays(params: {
@@ -29,6 +37,9 @@ export const daysApi = {
 
     const searchParams = new URLSearchParams(cleanedQuery).toString()
     return axios.get(`/days/?${searchParams}`)
+  },
+  getSummary(todayStart: number, todayEnd: number): Promise<ApiResponse<DaySummary>> {
+    return axios.get('/days/summary', { params: { todayStart, todayEnd } })
   },
   getDayDetail(timestamp: number): Promise<ApiResponse<DayDetail>> {
     return axios.get(`/days/${timestamp}`)
