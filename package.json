@@ -24,6 +24,7 @@
     "@vuepic/vue-datepicker": "^12.0.5",
     "@vueuse/core": "^13.1.0",
     "axios": "^1.8.4",
+    "dompurify": "^3.4.16",
     "marked": "^15.0.12",
     "memoryful-frontend": "file:",
     "pinia": "^3.0.1",

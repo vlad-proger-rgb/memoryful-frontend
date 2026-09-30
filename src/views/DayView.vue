@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marked } from 'marked'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 
 import { daysApi, tagsApi } from '@/api'
+import { renderMarkdown } from '@/utils/markdown'
 import trackablesApi from '@/api/trackables'
 import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
@@ -39,12 +39,6 @@ import AiProviderIcon from '@/components/ai/AiProviderIcon.vue'
 import CopyButton from '@/components/ui/CopyButton.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
-
-// Configure marked
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-})
 
 // Tags state
 const tags = ref<Tag[]>([])
@@ -904,7 +898,7 @@ onUnmounted(() => {
             />
           </div>
           <div class="prose prose-invert max-w-none">
-            <div v-if="day.content" v-html="marked(day.content)"></div>
+            <div v-if="day.content" v-html="renderMarkdown(day.content)"></div>
             <p v-else class="text-white/50">No content</p>
           </div>
         </BaseBox>
@@ -1017,7 +1011,7 @@ onUnmounted(() => {
                       <div class="flex-1 min-w-0 pr-10 md:pr-8">
                         <h5 class="text-white font-medium mb-2">{{ insight.description }}</h5>
                         <div class="prose prose-invert max-w-none text-sm text-white/80">
-                          <div v-html="marked(insight.content)"></div>
+                          <div v-html="renderMarkdown(insight.content)"></div>
                         </div>
                       </div>
                     </div>
@@ -1065,7 +1059,7 @@ onUnmounted(() => {
                       <div class="flex-1 min-w-0 pr-10 md:pr-8">
                         <h5 class="text-white font-medium mb-2">{{ suggestion.description }}</h5>
                         <div class="prose prose-invert max-w-none text-sm text-white/80">
-                          <div v-html="marked(suggestion.content)"></div>
+                          <div v-html="renderMarkdown(suggestion.content)"></div>
                         </div>
                       </div>
                     </div>

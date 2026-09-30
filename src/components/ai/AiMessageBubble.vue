@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { marked } from 'marked'
 import BoxyLoader from '@/components/ui/BoxyLoader.vue'
 import CopyButton from '@/components/ui/CopyButton.vue'
 import type { ChatMessage } from '@/types/chat'
+import { renderMarkdown } from '@/utils/markdown'
 
 const props = defineProps<{
   message: ChatMessage
 }>()
 
-marked.setOptions({ gfm: true, breaks: true })
-
 const isUser = computed(() => props.message.role === 'user')
-const renderedContent = computed(() => marked(props.message.content) as string)
+const renderedContent = computed(() => renderMarkdown(props.message.content))
 const tools = computed(() => props.message.tools ?? [])
 // Dots fill the wait before the first token. A running tool has its own loader,
 // so they'd only be noise next to it.
