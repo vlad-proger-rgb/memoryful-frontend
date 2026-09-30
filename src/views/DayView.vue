@@ -342,33 +342,40 @@ const editTrackableProgress = (p: DayTrackableProgressUpdate) => {
   removeTrackableProgress(p.trackableItemId)
 }
 
-// Reset form when day data changes
-watch(
-  () => day.value,
-  (newVal: DayDetail | null) => {
-    if (newVal) {
-      editForm.mainImage = newVal.mainImage || ''
-      editForm.images = newVal.images || []
-      editForm.description = newVal.description || ''
-      editForm.content = newVal.content
-      editForm.tags = newVal.tags || []
-      editForm.city = newVal.city?.name || ''
-      editForm.country = newVal.city?.country?.name || ''
-      editForm.cityId = newVal.city?.id || ''
-      editForm.countryId = newVal.city?.country?.id || ''
-      editForm.starred = newVal.starred || false
+// Arrays are copied so that editing the form never mutates the saved day.
+const formFromDay = (source: DayDetail): EditForm => ({
+  mainImage: source.mainImage || '',
+  images: [...(source.images || [])],
+  description: source.description || '',
+  content: source.content || '',
+  tags: [...(source.tags || [])],
+  city: source.city?.name || '',
+  country: source.city?.country?.name || '',
+  cityId: source.city?.id || '',
+  countryId: source.city?.country?.id || '',
+  starred: source.starred || false,
+  steps: source.steps || 0,
+  trackableProgresses: (source.trackableProgresses || []).flatMap((byType) =>
+    (byType.progresses || []).map((p) => ({
+      trackableItemId: p.trackableItem.id,
+      value: p.value,
+      description: p.description || '',
+    })),
+  ),
+})
 
-      editForm.trackableProgresses = (newVal.trackableProgresses || []).flatMap((byType) =>
-        (byType.progresses || []).map((p) => ({
-          trackableItemId: p.trackableItem.id,
-          value: p.value,
-          description: p.description || '',
-        })),
-      )
-    }
-  },
-  { immediate: true, deep: true },
-)
+const resetEditForm = () => {
+  Object.assign(editForm, formFromDay(day.value))
+}
+
+const isFormDirty = computed(() => {
+  const saved = formFromDay(day.value)
+  return (Object.keys(saved) as (keyof EditForm)[]).some(
+    (key) => JSON.stringify(editForm[key]) !== JSON.stringify(saved[key]),
+  )
+})
+
+watch(() => day.value, resetEditForm, { immediate: true, deep: true })
 
 const date = computed(() => {
   if (!day.value?.timestamp) return ''
@@ -425,8 +432,31 @@ const handleModalOpen = () => {
   onModalOpen()
 }
 
+const isConfirmingDiscard = ref(false)
+
+const discardChanges = () => {
+  resetEditForm()
+  dayDraft.clear()
+  showModal.value = false
+}
+
+const requestDiscard = async () => {
+  if (window.matchMedia('(min-width: 768px)').matches) {
+    isConfirmingDiscard.value = true
+    return
+  }
+  const ok = await uiStore.confirm({
+    title: 'Discard changes?',
+    message: 'Your edits to this day will be reverted to the last saved version.',
+    confirmLabel: 'Discard',
+    cancelLabel: 'Keep editing',
+  })
+  if (ok) discardChanges()
+}
+
 watch(showModal, (open) => {
   if (open) showMoreFields.value = false
+  isConfirmingDiscard.value = false
 })
 
 const moreFieldsSection = ref<HTMLElement | null>(null)
@@ -636,35 +666,7 @@ const loadDay = async () => {
     if (result.data) {
       day.value = result.data
       dayExists.value = true
-
-      // Update form with day data
-      editForm.mainImage = day.value.mainImage || ''
-      editForm.images = [...(day.value.images || [])]
-      editForm.description = day.value.description || ''
-      editForm.content = day.value.content || ''
-      editForm.tags = [...(day.value.tags || [])]
-
-      // Set city and country data
-      if (day.value.city) {
-        editForm.city = day.value.city.name
-        editForm.cityId = day.value.city.id
-
-        if (day.value.city.country) {
-          editForm.country = day.value.city.country.name
-          editForm.countryId = day.value.city.country.id
-        } else {
-          editForm.country = ''
-          editForm.countryId = ''
-        }
-      } else {
-        editForm.city = ''
-        editForm.cityId = ''
-        editForm.country = ''
-        editForm.countryId = ''
-      }
-
-      editForm.starred = day.value.starred || false
-      editForm.steps = day.value.steps || 0
+      resetEditForm()
       return
     }
   } catch {
@@ -1620,25 +1622,52 @@ onUnmounted(() => {
           </template>
 
           <template #footer>
-            <div class="flex gap-2 md:justify-end">
-              <button
-                type="button"
-                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-default disabled:opacity-40 md:flex-none"
-                :disabled="isSaving"
-                @click="handleModalClose"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                class="flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-medium text-[#0b0b0f] transition hover:bg-white/85 disabled:cursor-default disabled:opacity-60 md:flex-none"
-                :disabled="isSaving"
-                @click="saveDay"
-              >
-                <font-awesome-icon v-if="isSaving" icon="spinner" class="animate-spin text-xs" />
-                Save changes
-              </button>
-            </div>
+            <Transition
+              mode="out-in"
+              enter-active-class="transition duration-150 ease-out motion-reduce:transition-none"
+              enter-from-class="translate-y-1 opacity-0"
+              leave-active-class="transition duration-150 ease-in motion-reduce:transition-none"
+              leave-to-class="-translate-y-1 opacity-0"
+            >
+              <div v-if="isConfirmingDiscard" class="flex items-center gap-2 md:justify-end">
+                <span class="mr-auto text-sm text-white/70">
+                  Revert your edits to the last saved version?
+                </span>
+                <button
+                  type="button"
+                  class="flex min-h-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white"
+                  @click="isConfirmingDiscard = false"
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  class="flex min-h-10 cursor-pointer items-center justify-center rounded-lg border border-red-500/40 bg-red-500/25 px-4 text-sm text-red-100 transition hover:bg-red-500/35"
+                  @click="discardChanges"
+                >
+                  Discard
+                </button>
+              </div>
+              <div v-else class="flex gap-2 md:justify-end">
+                <button
+                  type="button"
+                  class="flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-default disabled:opacity-40 md:flex-none"
+                  :disabled="isSaving || !isFormDirty"
+                  @click="requestDiscard"
+                >
+                  Discard changes
+                </button>
+                <button
+                  type="button"
+                  class="flex min-h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-medium text-[#0b0b0f] transition hover:bg-white/85 disabled:cursor-default disabled:opacity-60 md:flex-none"
+                  :disabled="isSaving"
+                  @click="saveDay"
+                >
+                  <font-awesome-icon v-if="isSaving" icon="spinner" class="animate-spin text-xs" />
+                  Save changes
+                </button>
+              </div>
+            </Transition>
           </template>
         </ModalWindow>
       </div>
