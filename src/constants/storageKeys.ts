@@ -13,8 +13,8 @@ export const STORAGE_KEYS = {
     COUNTRIES: 'memoryful:data:countries',
     CITIES: 'memoryful:data:cities',
     YEAR: (year: number) => `memoryful:data:months:${year}`,
-
+    DAY_DRAFT: (timestamp: number) => `memoryful:data:day-draft:${timestamp}`,
   },
-};
+}
 
 export default STORAGE_KEYS

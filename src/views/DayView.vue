@@ -10,7 +10,7 @@ import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
-import { useStorageUpload, useShake } from '@/composables'
+import { useStorageUpload, useShake, useDayDraft } from '@/composables'
 import type {
   DayDetail,
   DayUpdate,
@@ -141,6 +141,8 @@ const editForm = reactive<EditForm>({
   countryId: '',
   trackableProgresses: [],
 })
+
+const dayDraft = useDayDraft(day, editForm)
 
 const trackables = ref<TrackableInDB[]>([])
 const isLoadingTrackables = ref(false)
@@ -535,6 +537,7 @@ const saveDay = async () => {
         })
         dayExists.value = true
       }
+      dayDraft.clear()
 
       const response = await daysApi.getDayDetail(day.value.timestamp)
       const dayData = (response as unknown as ApiResponse<DayDetail>).data
@@ -696,6 +699,11 @@ const loadDay = async () => {
 
 onMounted(async () => {
   await Promise.all([fetchTags(), fetchTrackableTypes(), fetchTrackables(), loadDay()])
+  await nextTick()
+  if (dayDraft.restore()) {
+    handleModalOpen()
+    uiStore.showToast('Restored unsaved changes', 'info')
+  }
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('keydown', handleKeydown)
   handleScroll() // Check initial scroll position

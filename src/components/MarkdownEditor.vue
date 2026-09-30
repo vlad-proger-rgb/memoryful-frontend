@@ -23,8 +23,22 @@ const emit = defineEmits(['update:modelValue'])
 const editorRef = ref<HTMLDivElement>()
 let vditor: Vditor | null = null
 
+// Vditor emits 800ms after typing stops and never mid-composition, so a reload can outrun it.
+const flushValue = () => {
+  if (vditor && vditor.getValue() !== props.modelValue) {
+    emit('update:modelValue', vditor.getValue())
+  }
+}
+
+const flushWhenHidden = () => {
+  if (document.visibilityState === 'hidden') flushValue()
+}
+
 onMounted(() => {
   if (!editorRef.value) return
+
+  document.addEventListener('visibilitychange', flushWhenHidden)
+  window.addEventListener('pagehide', flushValue)
 
   vditor = new Vditor(editorRef.value, {
     height: 'auto',
@@ -81,6 +95,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', flushWhenHidden)
+  window.removeEventListener('pagehide', flushValue)
   if (vditor) {
     vditor.destroy()
     vditor = null
