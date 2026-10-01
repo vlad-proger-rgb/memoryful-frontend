@@ -140,7 +140,7 @@ const handleUpdateProfile = async () => {
       <textarea
         v-model="bioDraft"
         rows="4"
-        class="w-full bg-white/20 rounded-xl px-4 py-2 outline-none resize-none text-base md:text-sm text-white !placeholder-white/80 focus:ring-1 focus:ring-white transition"
+        class="w-full bg-white/20 rounded-xl px-4 py-2 outline-none resize-none text-base md:text-sm text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] !placeholder-white/60 placeholder:[text-shadow:none] focus:ring-1 focus:ring-white transition"
         placeholder="Bio (optional)"
         @input="userStore.errorMessage = ''"
       />

@@ -65,7 +65,7 @@ const containerClass = computed(() => {
       :placeholder="placeholder"
       :inputmode="inputMode"
       :pattern="pattern"
-      class="bg-transparent outline-none !placeholder-white text-white w-full"
+      class="bg-transparent outline-none text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] !placeholder-white/60 placeholder:[text-shadow:none] w-full"
     />
     <font-awesome-icon :icon="icon" class="text-white" />
   </div>

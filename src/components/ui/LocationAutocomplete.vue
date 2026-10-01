@@ -148,7 +148,7 @@ defineExpose({
               ? 'w-full pl-10 pr-4 py-2.5 md:py-2 bg-black/20 border border-white/15 rounded-xl'
               : 'w-full pl-10 pr-4 py-2.5 md:py-2 bg-white/5 border border-white/20 rounded-lg',
           props.variant === 'auth'
-            ? 'text-white !placeholder-white/80 focus:outline-none focus:ring-white'
+            ? 'text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] !placeholder-white/60 placeholder:[text-shadow:none] focus:outline-none focus:ring-white'
             : 'text-white placeholder-white/30 focus:outline-none focus:ring-2',
           props.variant === 'auth' ? '' : 'focus:ring-blue-500 focus:border-transparent',
           { 'pl-10': icon, 'opacity-50': disabled },
