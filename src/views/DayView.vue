@@ -110,6 +110,18 @@ const showTrackables = ref(false)
 const showScrollTop = ref(false)
 const showGoToImages = ref(false)
 const fullscreenImage = ref<string | null>(null)
+const isMainImagePortrait = ref(false)
+
+const onMainImageLoad = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (!img.isConnected) return
+  isMainImagePortrait.value = img.naturalHeight > img.naturalWidth
+}
+
+watch(
+  () => day.value.mainImage,
+  () => (isMainImagePortrait.value = false),
+)
 
 // Form state
 interface EditForm {
@@ -809,8 +821,11 @@ onUnmounted(() => {
         <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
           <div
-            class="relative w-full aspect-video group"
-            :class="{ 'cursor-pointer': day.mainImage }"
+            class="relative w-full group"
+            :class="[
+              isMainImagePortrait ? 'aspect-4/5 max-h-[75vh]' : 'aspect-video',
+              { 'cursor-pointer': day.mainImage },
+            ]"
             :role="day.mainImage ? 'button' : undefined"
             :tabindex="day.mainImage ? 0 : undefined"
             :aria-label="day.mainImage ? 'View image fullscreen' : undefined"
@@ -823,6 +838,7 @@ onUnmounted(() => {
               :src="day.mainImage"
               class="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-102"
               :alt="day.city?.name || 'Day image'"
+              @load="onMainImageLoad"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-white/30">
               <font-awesome-icon icon="image" class="text-4xl" />
