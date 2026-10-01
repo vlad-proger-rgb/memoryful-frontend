@@ -83,15 +83,8 @@ const repoLinks = [
 
         <nav class="flex items-center gap-3">
           <RouterLink
-            v-if="!userStore.isAuthenticated"
-            to="/login/welcome"
-            class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-          >
-            Sign in
-          </RouterLink>
-          <RouterLink
             :to="primaryCtaTarget"
-            class="rounded-full border border-cyan-300/40 bg-cyan-400/90 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_14px_40px_rgba(34,211,238,0.26)] transition hover:bg-cyan-300"
+            class="shrink-0 whitespace-nowrap rounded-full border border-cyan-300/40 bg-cyan-400/90 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_14px_40px_rgba(34,211,238,0.26)] transition hover:bg-cyan-300"
           >
             {{ primaryCtaLabel }}
           </RouterLink>
