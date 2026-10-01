@@ -1722,11 +1722,12 @@ onUnmounted(() => {
       <button
         v-if="showScrollTop"
         @click="scrollToTop"
-        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
+        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 left-1/2 -translate-x-1/2 size-11 md:size-auto flex items-center justify-center md:px-4 md:py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-full md:rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Scroll to top"
+        aria-label="Scroll to top"
       >
-        <font-awesome-icon icon="arrow-up" class="mr-2" />
-        Scroll to top
+        <font-awesome-icon icon="arrow-up" class="md:mr-2" />
+        <span class="hidden md:inline">Scroll to top</span>
       </button>
     </Transition>
 
@@ -1743,11 +1744,13 @@ onUnmounted(() => {
       <button
         v-if="showGoToImages"
         @click="goToImages"
-        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 right-4 md:right-8 px-4 py-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
+        class="fixed bottom-[calc(var(--bottom-nav-total)+1rem)] md:bottom-8 right-4 md:right-8 h-11 md:h-auto px-3.5 md:px-4 md:py-2 flex items-center gap-1.5 md:gap-2 bg-white/10 backdrop-blur-md text-white text-sm font-medium rounded-full md:rounded-lg shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-[0.98] z-50 border border-white/20 cursor-pointer"
         title="Go to images"
+        aria-label="Go to images"
       >
-        <font-awesome-icon icon="images" class="mr-2" />
-        Go to images
+        <font-awesome-icon icon="arrow-down" class="text-xs" />
+        <font-awesome-icon icon="images" />
+        <span class="hidden md:inline">Go to images</span>
       </button>
     </Transition>
 
