@@ -10,7 +10,7 @@ import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
-import { useStorageUpload, useShake, useDayDraft } from '@/composables'
+import { useDeferredUploads, useShake, useDayDraft } from '@/composables'
 import type {
   DayDetail,
   DayUpdate,
@@ -436,6 +436,7 @@ const isConfirmingDiscard = ref(false)
 
 const discardChanges = () => {
   resetEditForm()
+  deferredUploads.release()
   dayDraft.clear()
   showModal.value = false
 }
@@ -535,6 +536,14 @@ const saveDay = async () => {
   isSaving.value = true
 
   try {
+    try {
+      await commitStagedImages()
+    } catch (error) {
+      console.error('Error uploading images:', error)
+      uiStore.showToast(`Could not upload images: ${(error as Error)?.message || error}`, 'error')
+      return
+    }
+
     const dayPayload = {
       mainImage: editForm.mainImage,
       images: editForm.images,
@@ -611,38 +620,41 @@ const triggerImageUpload = () => {
   imageInput.value?.click()
 }
 
-const { uploadToStorage } = useStorageUpload()
+const deferredUploads = useDeferredUploads()
+
+// Written back one by one, so a retry after a partial failure doesn't upload the rest again.
+const commitStagedImages = async () => {
+  if (editForm.mainImage) editForm.mainImage = await deferredUploads.commit(editForm.mainImage)
+
+  const results = await Promise.allSettled(
+    editForm.images.map((src) => deferredUploads.commit(src)),
+  )
+  editForm.images = results.map((result, index) =>
+    result.status === 'fulfilled' ? result.value : editForm.images[index],
+  )
+  const failure = results.find((result) => result.status === 'rejected')
+  if (failure) throw failure.reason
+}
 
 const handleMainImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files || !input.files[0]) return
 
-  const file = input.files[0]
-  uploadToStorage({ file, intent: 'day_main', dayTimestamp: day.value.timestamp })
-    .then((objectKey) => {
-      editForm.mainImage = objectKey
-    })
-    .catch((e) => {
-      console.error('Failed to upload main image:', e)
-      uiStore.showToast(`Failed to upload main image: ${e?.message || e}`, 'error')
-    })
+  editForm.mainImage = deferredUploads.stage({
+    file: input.files[0],
+    intent: 'day_main',
+    dayTimestamp: day.value.timestamp,
+  })
 }
 
 const handleImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
-  if (input.files) {
-    const files = Array.from(input.files)
-    files.forEach((file) => {
-      uploadToStorage({ file, intent: 'day_image', dayTimestamp: day.value.timestamp })
-        .then((objectKey) => {
-          editForm.images = [...editForm.images, objectKey]
-        })
-        .catch((e) => {
-          console.error('Failed to upload image:', e)
-          uiStore.showToast(`Failed to upload image: ${e?.message || e}`, 'error')
-        })
-    })
-  }
+  if (!input.files) return
+
+  const previews = Array.from(input.files).map((file) =>
+    deferredUploads.stage({ file, intent: 'day_image', dayTimestamp: day.value.timestamp }),
+  )
+  editForm.images = [...editForm.images, ...previews]
 }
 
 const removeImage = (index: number) => {

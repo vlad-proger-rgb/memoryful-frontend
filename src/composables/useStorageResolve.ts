@@ -15,7 +15,7 @@ export function useStorageResolve() {
   const resolveStorageSrc = async (src: string | undefined | null): Promise<string | null> => {
     if (!src) return null
 
-    if (src.startsWith('http://') || src.startsWith('https://')) {
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
       return src
     }
 
