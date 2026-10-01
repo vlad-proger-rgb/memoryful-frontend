@@ -78,7 +78,11 @@ const openDay = (date: Date | number) => router.push(dayPath(new Date(date)))
         class="transition-[background-color,box-shadow] duration-250 hover:bg-white/30 hover:shadow-[0_16px_36px_-18px_rgba(0,0,0,0.85)]"
       >
         <template #image>
-          <DayImage :src="day.mainImage" alt="" size="card" />
+          <DayImage
+            :src="day.mainImage"
+            alt=""
+            class="w-24 h-24 md:w-64 md:h-48 object-cover rounded-2xl shrink-0"
+          />
         </template>
         <template #info>
           <DayInfo

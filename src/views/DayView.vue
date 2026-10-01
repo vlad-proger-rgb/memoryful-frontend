@@ -821,7 +821,7 @@ onUnmounted(() => {
             <DayImage
               v-if="day.mainImage"
               :src="day.mainImage"
-              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+              class="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-102"
               :alt="day.city?.name || 'Day image'"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-white/30">
@@ -1193,7 +1193,11 @@ onUnmounted(() => {
                     aria-label="View main image fullscreen"
                     @click="openImageFullscreen(editForm.mainImage)"
                   >
-                    <DayImage :src="editForm.mainImage" alt="Main" size="boxed" />
+                    <DayImage
+                      :src="editForm.mainImage"
+                      alt="Main"
+                      class="w-full h-full object-contain shrink-0"
+                    />
                   </button>
                   <div
                     v-else
@@ -1268,7 +1272,11 @@ onUnmounted(() => {
                       :aria-label="`View image ${index + 1} fullscreen`"
                       @click="openImageFullscreen(image)"
                     >
-                      <DayImage :src="image" :alt="`Image ${index + 1}`" size="column" />
+                      <DayImage
+                        :src="image"
+                        :alt="`Image ${index + 1}`"
+                        class="w-full h-auto shrink-0"
+                      />
                     </button>
                     <button
                       type="button"
@@ -1747,7 +1755,7 @@ onUnmounted(() => {
             <DayImage
               :src="fullscreenImage"
               :alt="day.city?.name || 'Day image'"
-              size="viewport"
+              class="max-w-full max-h-full w-auto h-auto shrink-0"
               @click.stop
             />
             <!-- Close button -->

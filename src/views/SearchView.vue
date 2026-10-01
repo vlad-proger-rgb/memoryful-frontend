@@ -512,7 +512,6 @@ onMounted(async () => {
                 v-if="day.mainImage"
                 :src="day.mainImage"
                 alt="Day thumbnail"
-                size="small"
                 class="result-thumbnail-img"
               />
               <div v-else class="result-thumbnail-placeholder">

@@ -164,7 +164,7 @@ const toggleStarred = async (date: string | number) => {
             <DayImage
               :src="day.mainImage"
               :alt="`Main photo for ${formatDate(day.timestamp)}`"
-              size="card"
+              class="w-24 h-24 md:w-64 md:h-48 object-cover rounded-2xl shrink-0"
             />
           </template>
           <template #info>
