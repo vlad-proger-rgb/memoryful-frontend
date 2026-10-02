@@ -26,8 +26,7 @@
       "Bash(git push:*)",
       "Bash(git * push)",
       "Bash(git * push *)",
-      "Bash(npm install:*)",
-      "Bash(npm run test:e2e:*)"
+      "Bash(npm install:*)"
     ],
 
     "deny": [

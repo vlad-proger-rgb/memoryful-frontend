@@ -10,7 +10,6 @@ npm run type-check   # vue-tsc --build
 npm run lint         # eslint --fix
 npm run format       # prettier over src/
 npm run test:unit    # vitest (watch); add -- --run for one shot
-npm run test:e2e     # playwright, expects the dev server already running
 npm run build        # type-check + vite build
 ```
 
@@ -68,6 +67,3 @@ Phones are a first-class target. **Check every visual change at 375x812 as well 
 - **The vite proxy is an explicit allow-list.** `vite.config.ts` proxies a hard-coded regex
   of path prefixes to `:8000`. A **new top-level API prefix must be added there**, or it
   404s in dev while working perfectly in Swagger.
-- **Playwright is scaffolding, not a suite.** `e2e/vue.spec.ts` is the untouched Vue starter
-  template and its config still points at `:5173` while dev runs on `:3000`. Nothing here is
-  worth trusting yet; fix the `baseURL` first if we write real E2E tests.
