@@ -9,7 +9,7 @@ import { useUserStore } from '@/stores/user'
 
 import './assets/main.css'
 
-import { FontAwesomeIcon } from '@/plugins/fontawesome'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
 const app = createApp(App)
 
@@ -19,7 +19,7 @@ useFeatureFlagsStore().hydrate()
 
 app.use(router)
 
-app.component('font-awesome-icon', FontAwesomeIcon)
+app.component('font-awesome-icon', AppIcon)
 
 const accessToken = sessionStorage.getItem('accessToken')
 if (accessToken) {

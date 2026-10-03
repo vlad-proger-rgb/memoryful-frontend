@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import { fas } from '@fortawesome/free-solid-svg-icons'
-import { far } from '@fortawesome/free-regular-svg-icons'
-import { fab } from '@fortawesome/free-brands-svg-icons'
+import { ref, shallowRef, computed, watch, nextTick } from 'vue'
+import type { IconPack } from '@fortawesome/fontawesome-svg-core'
 import { onKeyStroke, onClickOutside, useDebounceFn } from '@vueuse/core'
 import { useAnchoredPosition } from '@/composables/useAnchoredPosition'
+import { loadIconPack } from '@/plugins/fontawesome'
 import type { IconStyle } from '@/types/fontawesome'
 
 interface IconItem {
@@ -43,56 +42,28 @@ const updateDebouncedSearch = useDebounceFn(() => {
   debouncedSearchQuery.value = searchQuery.value
 }, 150)
 
+const packs = shallowRef<[IconStyle, IconPack][]>([])
+
+const loadPacks = async () => {
+  if (packs.value.length) return
+  const styles = ['fas', 'far', 'fab'] as const
+  const loaded = await Promise.all(styles.map(loadIconPack))
+  packs.value = styles.map((style, i) => [style, loaded[i]])
+}
+
 const allIcons = computed<IconItem[]>(() => {
   const icons: IconItem[] = []
 
-  Object.values(fas).forEach((icon) => {
-    if (
-      icon &&
-      typeof icon === 'object' &&
-      'iconName' in icon &&
-      typeof icon.iconName === 'string'
-    ) {
+  for (const [prefix, pack] of packs.value) {
+    Object.values(pack).forEach((icon) => {
       icons.push({
         name: icon.iconName,
         icon: icon.iconName,
-        prefix: 'fas',
+        prefix,
         displayName: icon.iconName.replace(/-/g, ' '),
       })
-    }
-  })
-
-  Object.values(far).forEach((icon) => {
-    if (
-      icon &&
-      typeof icon === 'object' &&
-      'iconName' in icon &&
-      typeof icon.iconName === 'string'
-    ) {
-      icons.push({
-        name: icon.iconName,
-        icon: icon.iconName,
-        prefix: 'far',
-        displayName: icon.iconName.replace(/-/g, ' '),
-      })
-    }
-  })
-
-  Object.values(fab).forEach((icon) => {
-    if (
-      icon &&
-      typeof icon === 'object' &&
-      'iconName' in icon &&
-      typeof icon.iconName === 'string'
-    ) {
-      icons.push({
-        name: icon.iconName,
-        icon: icon.iconName,
-        prefix: 'fab',
-        displayName: icon.iconName.replace(/-/g, ' '),
-      })
-    }
-  })
+    })
+  }
 
   // Don't deduplicate - keep all icons including brands
   return icons.sort((a, b) => {
@@ -203,6 +174,7 @@ watch(
   () => props.show,
   async (isVisible) => {
     if (isVisible) {
+      loadPacks()
       await nextTick()
       updatePosition()
       selectedIndex.value = -1
