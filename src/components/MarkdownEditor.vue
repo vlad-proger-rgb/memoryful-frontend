@@ -41,6 +41,8 @@ onMounted(() => {
   window.addEventListener('pagehide', flushValue)
 
   vditor = new Vditor(editorRef.value, {
+    cdn: '/vditor',
+    lang: 'en_US',
     height: 'auto',
     minHeight: props.minHeight,
     theme: 'dark',
