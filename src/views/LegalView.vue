@@ -70,7 +70,7 @@ const routeInternalLinks = (event: MouseEvent) => {
 
     <main class="relative z-10 mx-auto max-w-3xl px-6 pb-24 pt-10">
       <article
-        class="prose rounded-[2rem] border border-white/10 bg-slate-950/50 p-6 shadow-[0_34px_120px_rgba(2,6,23,0.32)] backdrop-blur-2xl md:p-10"
+        class="prose prose-invert max-w-none rounded-[2rem] border border-white/10 bg-slate-950/50 p-6 shadow-[0_34px_120px_rgba(2,6,23,0.32)] backdrop-blur-2xl md:p-10"
         v-html="renderedDocument"
         @click="routeInternalLinks"
       ></article>

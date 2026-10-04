@@ -935,7 +935,7 @@ onUnmounted(() => {
               class="-my-2 md:-my-1"
             />
           </div>
-          <div class="prose prose-invert max-w-none">
+          <div class="prose prose-invert max-w-none leading-normal">
             <div v-if="day.content" v-html="renderMarkdown(day.content)"></div>
             <p v-else class="text-white/50">No content</p>
           </div>
@@ -1792,71 +1792,3 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
-
-<style>
-/* Markdown content styling */
-.prose ul {
-  list-style-type: disc !important;
-  padding-left: 1.5rem !important;
-  margin: 1em 0 !important;
-}
-
-.prose ol {
-  list-style-type: decimal !important;
-  padding-left: 1.5rem !important;
-  margin: 1em 0 !important;
-}
-
-.prose li {
-  margin: 0.5em 0 !important;
-  padding-left: 0.25rem !important;
-}
-
-.prose ul ul,
-.prose ol ul {
-  list-style-type: circle !important;
-  margin: 0.5em 0 !important;
-}
-
-.prose ul ul ul,
-.prose ol ul ul,
-.prose ol ol ul {
-  list-style-type: square !important;
-}
-
-.prose ol ol {
-  list-style-type: lower-alpha !important;
-}
-
-.prose p {
-  margin: 1em 0 !important;
-}
-
-.prose blockquote {
-  border-left: 4px solid rgba(255, 255, 255, 0.3) !important;
-  padding-left: 1rem !important;
-  margin: 1em 0 !important;
-  font-style: italic !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.prose code {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  padding: 0.2em 0.4em !important;
-  border-radius: 0.25rem !important;
-  font-size: 0.9em !important;
-}
-
-.prose pre {
-  background-color: rgba(0, 0, 0, 0.3) !important;
-  padding: 1rem !important;
-  border-radius: 0.5rem !important;
-  overflow-x: auto !important;
-  margin: 1em 0 !important;
-}
-
-.prose pre code {
-  background-color: transparent !important;
-  padding: 0 !important;
-}
-</style>
