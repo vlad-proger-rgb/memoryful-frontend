@@ -23,11 +23,16 @@ const emit = defineEmits(['update:modelValue'])
 const editorRef = ref<HTMLDivElement>()
 let vditor: Vditor | null = null
 
+// Vditor always ends its markdown with "\n"; that alone is not an edit.
+const emitIfChanged = (value: string) => {
+  if (value.replace(/\n$/, '') !== props.modelValue.replace(/\n$/, '')) {
+    emit('update:modelValue', value)
+  }
+}
+
 // Vditor emits 800ms after typing stops and never mid-composition, so a reload can outrun it.
 const flushValue = () => {
-  if (vditor && vditor.getValue() !== props.modelValue) {
-    emit('update:modelValue', vditor.getValue())
-  }
+  if (vditor) emitIfChanged(vditor.getValue())
 }
 
 const flushWhenHidden = () => {
@@ -81,9 +86,7 @@ onMounted(() => {
         vditor.setValue(props.modelValue)
       }
     },
-    input: (value: string) => {
-      emit('update:modelValue', value)
-    },
+    input: emitIfChanged,
   })
 })
 
