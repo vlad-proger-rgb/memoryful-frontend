@@ -68,3 +68,7 @@ export const latestFinishedWeek = (from = new Date()): DigestWeek => {
   monday.setDate(monday.getDate() - 7)
   return weekOf(monday)
 }
+
+/** The API timestamp, in seconds, of the day a `/calendar/:year/:month/:day` route points at. */
+export const dayTimestamp = (year: number, month: number, day: number) =>
+  new Date(year, month - 1, day + 1).setUTCHours(0, 0, 0, 0) / 1000

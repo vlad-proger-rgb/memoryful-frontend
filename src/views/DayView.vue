@@ -10,7 +10,7 @@ import trackableTypesApi from '@/api/trackable-types'
 import { useUserStore } from '@/stores/user'
 import { useUiStore } from '@/stores/ui'
 import useWorkspaceStore from '@/stores/workspace'
-import { useDeferredUploads, useShake, useDayDraft } from '@/composables'
+import { useAdjacentDays, useDeferredUploads, useShake, useDayDraft } from '@/composables'
 import type {
   DayDetail,
   DayUpdate,
@@ -23,6 +23,7 @@ import type {
 } from '@/types'
 import type { DayTrackableProgressUpdate } from '@/types/day-trackable-progress'
 import { getIcon } from '@/plugins/fontawesome'
+import { dayTimestamp } from '@/utils/dates'
 import { useLocation } from '@/composables'
 
 import BaseBox from '@/components/ui/BaseBox.vue'
@@ -77,6 +78,8 @@ const goBack = () => {
 }
 
 const background = computed(() => workspaceStore.backgrounds.day)
+
+const { steps: daySteps } = useAdjacentDays()
 
 uiStore.disableScroll = false
 
@@ -674,18 +677,16 @@ const removeImage = (index: number) => {
 }
 
 // Load day data
-const loadDay = async () => {
-  const [year_, month_, dayDate] = route.path.split('/').slice(2)
+const routeTimestamp = () =>
+  dayTimestamp(Number(route.params.year), Number(route.params.month), Number(route.params.day))
 
-  const timestamp = new Date(Number(year_), Number(month_) - 1, Number(dayDate) + 1).setUTCHours(
-    0,
-    0,
-    0,
-    0,
-  )
+const loadDay = async () => {
+  const timestamp = routeTimestamp()
 
   try {
-    const result = await daysApi.getDayDetail(timestamp / 1000)
+    const result = await daysApi.getDayDetail(timestamp)
+    // Stepping through days quickly can land an older response last.
+    if (routeTimestamp() !== timestamp) return
 
     if (result.data) {
       day.value = result.data
@@ -694,10 +695,11 @@ const loadDay = async () => {
       return
     }
   } catch {
+    if (routeTimestamp() !== timestamp) return
     const defaultCity = userStore.homeCity
 
     day.value = {
-      timestamp: timestamp / 1000,
+      timestamp,
       description: '',
       mainImage: '',
       city: defaultCity,
@@ -723,13 +725,29 @@ const loadDay = async () => {
   }
 }
 
-onMounted(async () => {
-  await Promise.all([fetchTags(), fetchTrackableTypes(), fetchTrackables(), loadDay()])
+const restoreDraft = async () => {
   await nextTick()
   if (dayDraft.restore()) {
     handleModalOpen()
     uiStore.showToast('Restored unsaved changes', 'info')
   }
+}
+
+// The route reuses this component when only the date changes, as the day arrows do.
+watch(
+  () => (route.name === 'day' ? routeTimestamp() : null),
+  async (timestamp, previous) => {
+    if (timestamp == null || previous == null) return
+    showModal.value = false
+    fullscreenImage.value = null
+    await loadDay()
+    await restoreDraft()
+  },
+)
+
+onMounted(async () => {
+  await Promise.all([fetchTags(), fetchTrackableTypes(), fetchTrackables(), loadDay()])
+  await restoreDraft()
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('keydown', handleKeydown)
   handleScroll() // Check initial scroll position
@@ -755,7 +773,21 @@ onUnmounted(() => {
     <!-- Main content -->
     <div class="relative z-10 pt-24 pb-24 px-4 max-w-2xl mx-auto w-full space-y-6">
       <!-- Header with date and actions -->
-      <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-3 mb-6">
+      <div class="relative flex flex-wrap md:flex-nowrap items-center justify-between gap-3 mb-6">
+        <!-- Outside the column, level with the header; the bottom nav carries these on mobile -->
+        <button
+          v-for="step in daySteps"
+          :key="step.key"
+          type="button"
+          class="hidden md:flex absolute top-1/2 -translate-y-1/2 size-9 lg:size-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors enabled:hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          :class="step.key === 'previous' ? 'right-full mr-2 lg:mr-3' : 'left-full ml-2 lg:ml-3'"
+          :disabled="!step.to"
+          :aria-label="step.label"
+          :title="step.to ? step.label : `No ${step.label.toLowerCase()} written`"
+          @click="step.to && router.push(step.to)"
+        >
+          <font-awesome-icon :icon="step.icon" class="text-lg" />
+        </button>
         <h1 class="basis-full md:basis-auto text-2xl font-bold text-white min-w-0">
           {{ day.timestamp ? date : 'Loading...' }}
         </h1>
