@@ -1,123 +1,113 @@
 <template>
-  <div class="image-gallery">
-    <div v-if="images?.length" class="grid grid-cols-2 gap-4">
-      <div
-        v-for="(image, index) in images"
-        :key="index"
-        class="cursor-pointer hover:opacity-90 transition-all duration-300 transform hover:scale-105"
-        :style="`animation: fadeInUp 0.5s ease-out ${index * 0.1}s both`"
-        @click="openModal(index)"
-      >
-        <img
-          :src="getImageUrl(image)"
-          :alt="alt"
-          class="w-full h-48 object-cover rounded-2xl shadow-lg"
-        />
+  <div>
+    <div v-if="images.length" class="flex flex-col gap-3 md:flex-row">
+      <div class="relative min-w-0 flex-1 overflow-hidden rounded-xl py-6">
+        <Transition name="backdrop-fade">
+          <img
+            v-if="urls[index]"
+            :key="urls[index]!"
+            :src="urls[index]!"
+            alt=""
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl"
+          />
+        </Transition>
+
+        <div
+          class="mask-[linear-gradient(to_right,transparent,#000_12%,#000_88%,transparent)]"
+        >
+          <div
+            class="stage relative mx-auto aspect-square w-[70%] max-w-sm outline-none md:w-[55%]"
+            :class="{ 'is-jumping': isJumping }"
+            tabindex="0"
+            role="group"
+            aria-roledescription="carousel"
+            :aria-label="`Image ${index + 1} of ${images.length}`"
+            @keydown="onKeydown"
+            @pointerdown="onPointerdown"
+            @pointermove="onPointermove"
+            @pointerup="onPointerup"
+            @pointerleave="resetTilt"
+            @pointercancel="onPointercancel"
+          >
+            <div
+              v-for="(url, i) in urls"
+              :key="i"
+              class="slide absolute inset-0"
+              :data-active="i === index || undefined"
+              :style="slideStyle(i)"
+              @click="onSlideClick(i)"
+            >
+              <img
+                v-if="url"
+                :ref="(el) => (slideImages[i] = el as HTMLImageElement | null)"
+                :src="url"
+                :alt="alt"
+                draggable="false"
+                class="h-full w-full rounded-2xl object-cover shadow-[0_20px_40px_-12px_rgba(0,0,0,0.8)] select-none"
+              />
+              <div v-else class="h-full w-full animate-pulse rounded-2xl bg-white/10" />
+            </div>
+          </div>
+        </div>
+
+        <template v-if="images.length > 1">
+          <button
+            v-show="index > 0"
+            type="button"
+            class="absolute top-1/2 left-2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+            aria-label="Previous image"
+            @click="goTo(index - 1)"
+          >
+            <font-awesome-icon icon="chevron-left" />
+          </button>
+          <button
+            v-show="index < images.length - 1"
+            type="button"
+            class="absolute top-1/2 right-2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+            aria-label="Next image"
+            @click="goTo(index + 1)"
+          >
+            <font-awesome-icon icon="chevron-right" />
+          </button>
+        </template>
+      </div>
+
+      <div v-if="images.length > 1" class="relative shrink-0 md:w-14">
+        <div
+          ref="rail"
+          class="relative flex gap-2.5 overflow-x-auto p-1.5 scrollbar-none md:absolute md:inset-0 md:flex-col md:overflow-x-hidden md:overflow-y-auto"
+        >
+          <button
+            v-for="(url, i) in urls"
+            :key="i"
+            type="button"
+            class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:scale-110"
+            :class="i === index ? 'ring-[3px] ring-white' : 'opacity-80 hover:opacity-100'"
+            :aria-label="`Show image ${i + 1}`"
+            :aria-current="i === index || undefined"
+            @click="goTo(i)"
+          >
+            <img v-if="url" :src="url" alt="" class="h-full w-full object-cover" />
+          </button>
+        </div>
       </div>
     </div>
-    <div v-else class="text-center py-4 text-white/50 text-sm">No images to display</div>
+    <div v-else class="py-4 text-center text-sm text-white/50">No images to display</div>
 
-    <!-- Modal -->
-    <ModalWindow
-      v-model="isOpen"
-      :close-on-click-outside="true"
-      :close-on-esc="true"
-      :max-width="'7xl'"
-      class="bg-black/90"
-      title="Image gallery"
-      @close="closeModal"
-    >
-      <template #default>
-        <div class="relative w-full h-full flex items-center justify-center">
-          <div class="relative w-full h-full flex items-center justify-center group">
-            <div class="relative max-w-full max-h-full">
-              <Transition name="fade" mode="out-in">
-                <div v-if="!isTransitioning" class="relative" :key="currentImage">
-                  <img
-                    :src="currentImage"
-                    :alt="alt"
-                    class="max-h-[70dvh] max-w-[90vw] w-auto h-auto object-contain transition-all duration-300"
-                    @click.stop
-                  />
-                </div>
-                <div
-                  v-else
-                  class="max-h-[70dvh] max-w-[90vw] w-auto h-auto flex items-center justify-center min-h-[400px]"
-                >
-                  <div class="animate-pulse text-white/50 flex flex-col items-center">
-                    <font-awesome-icon icon="spinner" spin class="text-4xl mb-2" />
-                    <div>Loading...</div>
-                  </div>
-                </div>
-              </Transition>
-            </div>
-
-            <!-- Left side navigation button -->
-            <button
-              v-if="images.length > 1"
-              @click.stop="previousImage"
-              class="absolute left-0 top-0 h-full w-24 flex items-center justify-start pl-4 bg-gradient-to-r from-black/30 to-transparent hover:from-black/40 z-20"
-              style="transform: translateX(-16px)"
-              aria-label="Previous image"
-            >
-              <div
-                class="h-24 w-10 flex items-center justify-center rounded-r-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 touch:opacity-100 scale-110 group-hover:scale-110"
-              >
-                <font-awesome-icon icon="chevron-left" class="h-7 w-7 text-white" />
-              </div>
-            </button>
-
-            <!-- Right side navigation button -->
-            <button
-              v-if="images.length > 1"
-              @click.stop="nextImage"
-              class="absolute right-0 top-0 h-full w-24 flex items-center justify-end pr-4 bg-gradient-to-l from-black/30 to-transparent hover:from-black/40 z-20"
-              style="transform: translateX(16px)"
-              aria-label="Next image"
-            >
-              <div
-                class="h-24 w-10 flex items-center justify-center rounded-l-full bg-black/50 hover:bg-black/70 transition-all duration-200 opacity-0 group-hover:opacity-100 touch:opacity-100 scale-110 group-hover:scale-110"
-              >
-                <font-awesome-icon icon="chevron-right" class="h-7 w-7 text-white" />
-              </div>
-            </button>
-          </div>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex items-center justify-between w-full text-sm">
-          <div class="text-white/70">{{ selectedIndex + 1 }} of {{ images.length }}</div>
-          <div class="flex items-center space-x-2">
-            <button
-              v-if="images.length > 1"
-              @click="previousImage"
-              class="px-3 py-1 bg-white/10 text-white rounded hover:bg-white/20 transition-colors"
-              :disabled="selectedIndex === 0"
-              :class="{ 'opacity-50 cursor-not-allowed': selectedIndex === 0 }"
-            >
-              Previous
-            </button>
-            <button
-              v-if="images.length > 1"
-              @click="nextImage"
-              class="px-3 py-1 bg-white/10 text-white rounded hover:bg-white/20 transition-colors"
-              :disabled="selectedIndex === images.length - 1"
-              :class="{ 'opacity-50 cursor-not-allowed': selectedIndex === images.length - 1 }"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </template>
-    </ModalWindow>
+    <ImageLightbox v-model="lightboxSrc" :origin="() => slideImages[index] ?? null" :alt="alt" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import ModalWindow from '@/components/ModalWindow.vue'
-import storageApi from '@/api/storage'
+import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { usePreferredReducedMotion } from '@vueuse/core'
+import ImageLightbox from '@/components/ui/ImageLightbox.vue'
+import { useStorageResolve } from '@/composables'
+
+const STEP_MS = 90
+const SWIPE_DISTANCE = 40
+const CLICK_SLOP = 6
 
 const props = withDefaults(
   defineProps<{
@@ -132,162 +122,190 @@ const props = withDefaults(
   },
 )
 
-const isOpen = ref(false)
-const selectedIndex = ref(0)
-const isTransitioning = ref(false)
-const currentImage = ref('')
+const { resolveStorageSrc } = useStorageResolve()
+const reducedMotion = usePreferredReducedMotion()
 
-const resolvedCache = ref<Record<string, string>>({})
+const urls = ref<(string | null)[]>([])
+const index = ref(0)
+const isJumping = ref(false)
+const tilt = ref({ x: 0, y: 0 })
+const lightboxSrc = ref<string | null>(null)
+const slideImages = ref<(HTMLImageElement | null)[]>([])
+const rail = ref<HTMLElement | null>(null)
 
-const getImageUrl = (imagePath: string) => {
-  if (!imagePath) return imagePath
+let stepTimer: number | undefined
+let pointerStart: { x: number; y: number } | null = null
+let suppressClick = false
 
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath
-  }
-
-  if (imagePath.startsWith('users/')) {
-    return resolvedCache.value[imagePath] || ''
-  }
-
-  return props.basePath ? `${props.basePath}${imagePath}` : imagePath
-}
-
-const ensureResolved = async (imagePath: string) => {
-  if (!imagePath) return
-  if (!imagePath.startsWith('users/')) return
-  if (resolvedCache.value[imagePath]) return
-
+const resolveUrl = async (path: string) => {
   try {
-    const res = await storageApi.presignGet({ objectKey: imagePath })
-    const url = res.data?.downloadUrl
-    if (url) {
-      resolvedCache.value = { ...resolvedCache.value, [imagePath]: url }
-    }
+    return (await resolveStorageSrc(path)) ?? `${props.basePath}${path}`
   } catch {
-    // ignore
+    return null
   }
 }
 
-// Watch for image changes to trigger transition
-watch(
-  () => selectedIndex.value,
-  async (newIndex, oldIndex) => {
-    if (newIndex !== oldIndex) {
-      isTransitioning.value = true
-      await nextTick()
-      // Small delay to allow the fade-out to be visible
-      await new Promise((resolve) => setTimeout(resolve, 150))
-      await ensureResolved(props.images[newIndex])
-      currentImage.value = getImageUrl(props.images[newIndex])
-      isTransitioning.value = false
-    }
-  },
-  { immediate: true },
-)
+const slideStyle = (i: number) => {
+  const offset = i - index.value
+  return {
+    '--offset': offset,
+    '--dir': Math.sign(offset),
+    '--tilt-x': tilt.value.x,
+    '--tilt-y': tilt.value.y,
+    zIndex: 10 - Math.abs(offset),
+  }
+}
 
-const openModal = (index: number) => {
-  selectedIndex.value = index
-  void ensureResolved(props.images[index])
-  currentImage.value = getImageUrl(props.images[index])
-  isOpen.value = true
+const stopJump = () => {
+  window.clearInterval(stepTimer)
+  isJumping.value = false
+}
+
+// A far jump walks through every photo in between, so the flow never teleports.
+const goTo = (target: number) => {
+  const clamped = Math.max(0, Math.min(props.images.length - 1, target))
+  stopJump()
+  if (Math.abs(clamped - index.value) <= 1 || reducedMotion.value === 'reduce') {
+    index.value = clamped
+    return
+  }
+  isJumping.value = true
+  const step = () => {
+    index.value += Math.sign(clamped - index.value)
+    if (index.value === clamped) stopJump()
+  }
+  step()
+  stepTimer = window.setInterval(step, STEP_MS)
 }
 
 watch(
   () => props.images,
-  async (imgs) => {
-    for (const img of imgs) {
-      await ensureResolved(img)
-    }
+  async (images) => {
+    stopJump()
+    index.value = 0
+    urls.value = images.map(() => null)
+    const resolved = await Promise.all(images.map(resolveUrl))
+    if (images === props.images) urls.value = resolved
   },
   { immediate: true },
 )
 
-const closeModal = () => {
-  isOpen.value = false
+const openLightbox = () => {
+  const url = urls.value[index.value]
+  if (!url) return
+  resetTilt()
+  lightboxSrc.value = url
 }
 
-const nextImage = () => {
-  if (isTransitioning.value) return
-  selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+const onSlideClick = (i: number) => {
+  if (suppressClick) return
+  if (i === index.value) openLightbox()
+  else goTo(i)
 }
 
-const previousImage = () => {
-  if (isTransitioning.value) return
-  selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowLeft') goTo(index.value - 1)
+  else if (event.key === 'ArrowRight') goTo(index.value + 1)
+  else if (event.key === 'Enter') openLightbox()
+  else return
+  event.preventDefault()
 }
 
-// Handle keyboard navigation
-const onKeydown = (e: KeyboardEvent) => {
-  if (!isOpen.value) return
+const onPointerdown = (event: PointerEvent) => {
+  if (!event.isPrimary) return
+  pointerStart = { x: event.clientX, y: event.clientY }
+  suppressClick = false
+}
 
-  switch (e.key) {
-    case 'Escape':
-      closeModal()
-      break
-    case 'ArrowLeft':
-      previousImage()
-      break
-    case 'ArrowRight':
-      nextImage()
-      break
+const onPointermove = (event: PointerEvent) => {
+  if (event.pointerType !== 'mouse' || isJumping.value) return
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  tilt.value = {
+    x: (event.clientX - rect.left) / rect.width - 0.5,
+    y: (event.clientY - rect.top) / rect.height - 0.5,
   }
 }
 
-// Add keyboard event listeners
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
+const onPointerup = (event: PointerEvent) => {
+  if (!pointerStart) return
+  const dx = event.clientX - pointerStart.x
+  const dy = event.clientY - pointerStart.y
+  pointerStart = null
+  suppressClick = Math.hypot(dx, dy) > CLICK_SLOP
+  if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy)) {
+    goTo(index.value + (dx < 0 ? 1 : -1))
+  }
+}
+
+const onPointercancel = () => {
+  pointerStart = null
+}
+
+const resetTilt = () => {
+  tilt.value = { x: 0, y: 0 }
+}
+
+watch(index, async (i) => {
+  await nextTick()
+  const el = rail.value
+  const item = el?.children[i] as HTMLElement | undefined
+  if (!el || !item) return
+  el.scrollTo({
+    left: item.offsetLeft - (el.clientWidth - item.offsetWidth) / 2,
+    top: item.offsetTop - (el.clientHeight - item.offsetHeight) / 2,
+    behavior: 'smooth',
+  })
 })
 
-onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown)
-})
+onUnmounted(stopJump)
 </script>
 
 <style scoped>
-.image-gallery {
-  width: 100%;
+.stage {
+  touch-action: pan-y;
 }
 
-/* FadeInUp animation */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+.slide {
+  cursor: pointer;
+  filter: brightness(0.4);
+  transform: perspective(1000px) translateX(calc(100% * var(--offset)))
+    rotateY(calc(-45deg * var(--dir)));
+  transition:
+    transform 0.5s ease-in-out,
+    filter 0.5s ease-in-out;
+}
+
+.slide[data-active] {
+  cursor: zoom-in;
+  filter: none;
+  transform: perspective(1000px) rotateY(calc(var(--tilt-x) * 4deg))
+    rotateX(calc(var(--tilt-y) * -4deg));
+}
+
+.stage:hover .slide[data-active] {
+  transition-duration: 0.15s, 0.5s;
+}
+
+.stage.is-jumping .slide {
+  transition-duration: 0.2s;
+  transition-timing-function: linear;
+}
+
+.backdrop-fade-enter-active,
+.backdrop-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.backdrop-fade-enter-from,
+.backdrop-fade-leave-to {
+  opacity: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide,
+  .backdrop-fade-enter-active,
+  .backdrop-fade-leave-active {
+    transition-duration: 1ms;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Fade transition */
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
-}
-
-.fade-enter-to,
-.fade-leave-from {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* Button hover effects */
-button:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-button:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 </style>
