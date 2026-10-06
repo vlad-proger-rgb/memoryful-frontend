@@ -651,25 +651,37 @@ const commitStagedImages = async () => {
   if (failure) throw failure.reason
 }
 
-const handleMainImageUpload = (event: Event) => {
+const handleMainImageUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files || !input.files[0]) return
 
-  editForm.mainImage = deferredUploads.stage({
-    file: input.files[0],
-    intent: 'day_main',
-    dayTimestamp: day.value.timestamp,
-  })
+  try {
+    editForm.mainImage = await deferredUploads.stage({
+      file: input.files[0],
+      intent: 'day_main',
+      dayTimestamp: day.value.timestamp,
+    })
+  } catch (error) {
+    uiStore.showToast((error as Error).message, 'error')
+  }
 }
 
-const handleImageUpload = (event: Event) => {
+const handleImageUpload = async (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files) return
 
-  const previews = Array.from(input.files).map((file) =>
-    deferredUploads.stage({ file, intent: 'day_image', dayTimestamp: day.value.timestamp }),
+  const results = await Promise.allSettled(
+    Array.from(input.files).map((file) =>
+      deferredUploads.stage({ file, intent: 'day_image', dayTimestamp: day.value.timestamp }),
+    ),
+  )
+  const previews = results.flatMap((result) =>
+    result.status === 'fulfilled' ? [result.value] : [],
   )
   editForm.images = [...editForm.images, ...previews]
+
+  const failure = results.find((result) => result.status === 'rejected')
+  if (failure) uiStore.showToast((failure.reason as Error).message, 'error')
 }
 
 const removeImage = (index: number) => {
