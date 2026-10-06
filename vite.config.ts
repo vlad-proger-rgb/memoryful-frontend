@@ -28,7 +28,7 @@ export default defineConfig({
           target: 'http://localhost:8000',
           changeOrigin: true,
         },
-      // The local MinIO bucket, so default workspace assets are same-origin in dev. Without
+      // The local SeaweedFS bucket, so default workspace assets are same-origin in dev. Without
       // this they resolve to localhost:9000, which on a phone is the phone itself.
       '^/memoryful/': {
         target: 'http://localhost:9000',

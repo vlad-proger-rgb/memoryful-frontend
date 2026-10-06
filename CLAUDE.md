@@ -59,7 +59,7 @@ Phones are a first-class target. **Check every visual change at 375x812 as well 
 - Text inputs need 16px (`text-base`) below `md`, or iOS Safari zooms the page on focus.
 - Open gaps are tagged **`mobile`** on the TickTick board; check it before re-diagnosing.
 
-`npm run dev` binds the LAN for real-device testing and proxies the MinIO bucket
+`npm run dev` binds the LAN for real-device testing and proxies the SeaweedFS bucket
 (`^/memoryful/`) so asset URLs stay relative and same-origin.
 
 ## Things that will bite you
