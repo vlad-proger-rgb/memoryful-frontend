@@ -157,7 +157,8 @@ const editForm = reactive<EditForm>({
   trackableProgresses: [],
 })
 
-const dayDraft = useDayDraft(day, editForm)
+const deferredUploads = useDeferredUploads()
+const dayDraft = useDayDraft(day, editForm, deferredUploads)
 
 const trackables = ref<TrackableInDB[]>([])
 const isLoadingTrackables = ref(false)
@@ -635,8 +636,6 @@ const triggerImageUpload = () => {
   imageInput.value?.click()
 }
 
-const deferredUploads = useDeferredUploads()
-
 // Written back one by one, so a retry after a partial failure doesn't upload the rest again.
 const commitStagedImages = async () => {
   if (editForm.mainImage) editForm.mainImage = await deferredUploads.commit(editForm.mainImage)
@@ -739,7 +738,7 @@ const loadDay = async () => {
 
 const restoreDraft = async () => {
   await nextTick()
-  if (dayDraft.restore()) {
+  if (await dayDraft.restore()) {
     handleModalOpen()
     uiStore.showToast('Restored unsaved changes', 'info')
   }
@@ -1249,7 +1248,7 @@ onUnmounted(() => {
                   <button
                     v-if="editForm.mainImage"
                     type="button"
-                    class="w-full h-56 md:h-72 cursor-pointer rounded-lg overflow-hidden bg-white/5 border border-white/10"
+                    class="relative w-full h-56 md:h-72 cursor-pointer rounded-lg overflow-hidden bg-white/5 border border-white/10"
                     aria-label="View main image fullscreen"
                     @click="openImageFullscreen(editForm.mainImage)"
                   >
@@ -1258,6 +1257,12 @@ onUnmounted(() => {
                       alt="Main"
                       class="w-full h-full object-contain shrink-0"
                     />
+                    <span
+                      v-if="deferredUploads.isStaged(editForm.mainImage)"
+                      class="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/85 px-2 py-0.5 text-xs font-medium text-white"
+                    >
+                      New
+                    </span>
                   </button>
                   <div
                     v-else
@@ -1338,6 +1343,12 @@ onUnmounted(() => {
                         class="w-full h-auto shrink-0"
                       />
                     </button>
+                    <span
+                      v-if="deferredUploads.isStaged(image)"
+                      class="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-emerald-500/85 px-2 py-0.5 text-xs font-medium text-white"
+                    >
+                      New
+                    </span>
                     <button
                       type="button"
                       @click="removeImage(index)"
