@@ -41,6 +41,9 @@ The backend must be up in Docker first — see the workspace root `CLAUDE.md`.
   can't express it — deep selectors into a third-party widget, keyframes, scrollbars
   (`ui/BaseAutocomplete.vue` is an example). Don't add one to restate a utility, and don't
   rewrite an existing block without checking why it exists.
+- `YearView`, `MonthView` and `SearchView` are legacy: still routed so the maintainer can
+  open them by URL, but nothing links to them. Don't unroute them, and send any default or
+  parent destination for a day to `/dashboard`.
 
 ## Mobile
 
@@ -67,3 +70,10 @@ Phones are a first-class target. **Check every visual change at 375x812 as well 
 - **The vite proxy is an explicit allow-list.** `vite.config.ts` proxies a hard-coded regex
   of path prefixes to `:8000`. A **new top-level API prefix must be added there**, or it
   404s in dev while working perfectly in Swagger.
+- **`src/` is not prettier-clean**, so `npm run format` and `npm run lint` rewrite unrelated
+  files. Run `npx prettier --write <files>` / `npx eslint <files>` on the touched files only.
+  The format-on-edit hook reformats the whole file it touched; if that drags in unrelated
+  churn, restore the file and re-apply the change through Bash.
+- **The Browser pane barely renders frames while hidden or idle.** Transitions sit at
+  `currentTime: 0`, `scroll` events arrive late and smooth scrolls don't move. When a visual
+  check disagrees with the code, take a screenshot to force a frame and re-check first.
