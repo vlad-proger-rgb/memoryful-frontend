@@ -90,7 +90,7 @@ const handleConfirm = async () => {
       </AuthButton>
 
       <div class="flex justify-between w-full mt-2">
-        <AuthButton variant="link" @click="router.push('/login')"> Back </AuthButton>
+        <AuthButton variant="link" @click="router.push('/login')">Back</AuthButton>
 
         <AuthButton
           variant="link"

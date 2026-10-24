@@ -8,7 +8,10 @@ import type {
 } from '@/types'
 
 export const trackablesApi = {
-  getTrackables(params?: { typeId?: string; search?: string }): Promise<ApiResponse<TrackableInDB[]>> {
+  getTrackables(params?: {
+    typeId?: string
+    search?: string
+  }): Promise<ApiResponse<TrackableInDB[]>> {
     return axios.get('/trackables/', { params })
   },
   getTrackableById(id: string): Promise<ApiResponse<TrackableDetail>> {

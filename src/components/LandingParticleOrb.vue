@@ -53,7 +53,13 @@ const particles = Array.from({ length: totalParticles }, (_, index) => index + 1
   border-radius: inherit;
   pointer-events: none;
   z-index: 4;
-  background: radial-gradient(circle, transparent 0 67%, rgba(15, 23, 42, 0.04) 74%, rgba(15, 23, 42, 0.18) 84%, rgba(15, 23, 42, 0.48) 100%);
+  background: radial-gradient(
+    circle,
+    transparent 0 67%,
+    rgba(15, 23, 42, 0.04) 74%,
+    rgba(15, 23, 42, 0.18) 84%,
+    rgba(15, 23, 42, 0.48) 100%
+  );
 }
 
 .orb-core {
@@ -63,7 +69,13 @@ const particles = Array.from({ length: totalParticles }, (_, index) => index + 1
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 24%),
     radial-gradient(circle at 68% 68%, rgba(34, 211, 238, 0.12), transparent 28%),
-    radial-gradient(circle, rgba(15, 23, 42, 0.72) 0%, rgba(8, 15, 32, 0.42) 55%, rgba(2, 6, 23, 0.08) 78%, transparent 86%);
+    radial-gradient(
+      circle,
+      rgba(15, 23, 42, 0.72) 0%,
+      rgba(8, 15, 32, 0.42) 55%,
+      rgba(2, 6, 23, 0.08) 78%,
+      transparent 86%
+    );
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(22px);
   box-shadow:
@@ -88,13 +100,8 @@ const particles = Array.from({ length: totalParticles }, (_, index) => index + 1
   object-position: center;
   transform: scale(1.02);
   opacity: 0.26;
-  filter:
-    saturate(0.88)
-    brightness(0.96)
-    contrast(1.05)
-    blur(0.6px)
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.05))
-    drop-shadow(0 0 20px rgba(103, 232, 249, 0.06));
+  filter: saturate(0.88) brightness(0.96) contrast(1.05) blur(0.6px)
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.05)) drop-shadow(0 0 20px rgba(103, 232, 249, 0.06));
   mix-blend-mode: screen;
 }
 
@@ -154,7 +161,9 @@ const particles = Array.from({ length: totalParticles }, (_, index) => index + 1
   height: calc(var(--size) * 0.14vmin);
   border-radius: 9999px;
   background: currentColor;
-  color: oklch(75% 0.3 calc(sin(var(--hue-angle) * var(--index)) * var(--hue-range) + var(--hue-start)));
+  color: oklch(
+    75% 0.3 calc(sin(var(--hue-angle) * var(--index)) * var(--hue-range) + var(--hue-start))
+  );
   transform: translate3d(var(--x), var(--y), 0);
   opacity: 0.18;
   animation: particle-shift var(--speed) ease-in-out infinite alternate var(--delay);

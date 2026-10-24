@@ -4,7 +4,7 @@ import type { ApiResponse, City } from '@/types'
 export const citiesApi = {
   getCities(country_id: string, query: string): Promise<ApiResponse<City[]>> {
     return axios.get(`/cities/by-country/${country_id}`, {
-      params: { query }
+      params: { query },
     })
   },
   getCityById(id: string): Promise<ApiResponse<City>> {

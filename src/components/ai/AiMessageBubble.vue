@@ -49,7 +49,10 @@ const timeLabel = computed(() => {
           : 'bg-gradient-to-br from-indigo-500/20 via-slate-900/50 to-fuchsia-500/15 border border-indigo-300/10 rounded-bl-md shadow-lg shadow-indigo-950/30'
       "
     >
-      <div v-if="!isUser" class="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium text-fuchsia-300/90">
+      <div
+        v-if="!isUser"
+        class="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium text-fuchsia-300/90"
+      >
         <font-awesome-icon icon="wand-magic-sparkles" class="text-[10px]" />
         MemoryfulAI
       </div>
@@ -78,10 +81,9 @@ const timeLabel = computed(() => {
         </div>
       </div>
 
-      <div
-        v-if="isUser"
-        class="text-sm text-white whitespace-pre-wrap break-words leading-relaxed"
-      >{{ message.content }}</div>
+      <div v-if="isUser" class="text-sm text-white whitespace-pre-wrap break-words leading-relaxed">
+        {{ message.content }}
+      </div>
       <BoxyLoader
         v-else-if="showThinking"
         variant="bars"

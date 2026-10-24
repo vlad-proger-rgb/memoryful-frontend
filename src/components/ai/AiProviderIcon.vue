@@ -38,11 +38,7 @@ const fallbackIcon = computed(() => getIcon({ name: 'robot' }))
     :class="['ai-provider-icon shrink-0 inline-flex', props.class]"
     v-html="svg"
   />
-  <font-awesome-icon
-    v-else
-    :icon="fallbackIcon"
-    :class="['shrink-0', props.class]"
-  />
+  <font-awesome-icon v-else :icon="fallbackIcon" :class="['shrink-0', props.class]" />
 </template>
 
 <style scoped>

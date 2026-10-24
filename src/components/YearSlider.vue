@@ -8,7 +8,6 @@ defineProps({
 })
 
 defineEmits(['prev', 'next'])
-
 </script>
 
 <template>

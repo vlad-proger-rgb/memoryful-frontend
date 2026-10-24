@@ -70,7 +70,11 @@ function dispatch(event: Record<string, unknown>, handlers: StreamHandlers) {
 }
 
 export const aiApi = {
-  getChats(params?: { limit?: number; offset?: number; query?: string }): Promise<ApiResponse<ChatListItem[]>> {
+  getChats(params?: {
+    limit?: number
+    offset?: number
+    query?: string
+  }): Promise<ApiResponse<ChatListItem[]>> {
     return axios.get('/ai/chats/', { params })
   },
   getChat(id: string): Promise<ApiResponse<ChatDetail>> {

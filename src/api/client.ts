@@ -43,7 +43,8 @@ const setHeader = (headers: unknown, key: string, value: string): unknown => {
 export const refreshAccessToken = async (): Promise<string> => {
   const response = await axios.get('/auth/refresh')
 
-  const accessToken = (response as unknown as ApiResponse<{ accessToken: string }>).data?.accessToken
+  const accessToken = (response as unknown as ApiResponse<{ accessToken: string }>).data
+    ?.accessToken
 
   if (!accessToken || typeof accessToken !== 'string') {
     throw new Error('Refresh succeeded but no access token was returned')
@@ -88,7 +89,11 @@ axios.interceptors.response.use(
         }
 
         const newAccessToken = await refreshPromise
-        originalRequest.headers = setHeader(originalRequest.headers, 'Authorization', `Bearer ${newAccessToken}`) as unknown as AxiosRequestHeaders
+        originalRequest.headers = setHeader(
+          originalRequest.headers,
+          'Authorization',
+          `Bearer ${newAccessToken}`,
+        ) as unknown as AxiosRequestHeaders
         return axios(originalRequest)
       } catch {
         clearAuthStorage()
@@ -99,7 +104,8 @@ axios.interceptors.response.use(
     console.error('axios.interceptors.response.use - error: ', error)
     const errorResponse: ApiResponse = {
       code: status || 500,
-      msg: (error.response?.data as { detail?: string; message?: string } | undefined)?.detail ||
+      msg:
+        (error.response?.data as { detail?: string; message?: string } | undefined)?.detail ||
         (error.response?.data as { detail?: string; message?: string } | undefined)?.message ||
         'Unknown error occurred',
     }

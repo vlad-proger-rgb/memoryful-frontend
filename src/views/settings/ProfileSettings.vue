@@ -11,12 +11,7 @@ import SettingsTextarea from '@/components/ui/SettingsTextarea.vue'
 const userStore = useUserStore()
 const uiStore = useUiStore()
 
-const {
-  selectedCountry,
-  selectedCity,
-  setSelectedCountry,
-  setSelectedCity,
-} = useLocation()
+const { selectedCountry, selectedCity, setSelectedCountry, setSelectedCity } = useLocation()
 
 const countryInputId = 'settings-country-input'
 const cityInputId = 'settings-city-input'
@@ -48,11 +43,7 @@ const hydrateDraftsFromUser = () => {
 }
 
 watch(
-  [
-    () => userStore.user.id,
-    () => userStore.user.city?.id,
-    () => userStore.user.country?.id,
-  ],
+  [() => userStore.user.id, () => userStore.user.city?.id, () => userStore.user.country?.id],
   () => {
     hydrateDraftsFromUser()
     hydrateLocationFromUser()
@@ -107,7 +98,13 @@ const saveProfile = async () => {
 
       <div>
         <p class="text-sm mb-2 opacity-80">Age</p>
-        <SettingsInput v-model.number="ageDraft" type="number" min="0" max="130" placeholder="Your age" />
+        <SettingsInput
+          v-model.number="ageDraft"
+          type="number"
+          min="0"
+          max="130"
+          placeholder="Your age"
+        />
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,15 +114,19 @@ const saveProfile = async () => {
           :country-input-id="countryInputId"
           :city-input-id="cityInputId"
           variant="settings"
-          @update:country="(val) => {
-            setSelectedCountry(val)
-            setSelectedCity(null)
-            userStore.errorMessage = ''
-          }"
-          @update:city="(val) => {
-            setSelectedCity(val)
-            userStore.errorMessage = ''
-          }"
+          @update:country="
+            (val) => {
+              setSelectedCountry(val)
+              setSelectedCity(null)
+              userStore.errorMessage = ''
+            }
+          "
+          @update:city="
+            (val) => {
+              setSelectedCity(val)
+              userStore.errorMessage = ''
+            }
+          "
         />
       </div>
 

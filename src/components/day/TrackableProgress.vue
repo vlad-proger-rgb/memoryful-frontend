@@ -50,10 +50,16 @@ const getProgressWidth = (value: number, type: string) => {
                 />
                 {{ progressItem.trackableItem.title || 'Untitled' }}
               </div>
-              <div v-if="progressItem.trackableItem.description" class="text-xs text-white/40 truncate">
+              <div
+                v-if="progressItem.trackableItem.description"
+                class="text-xs text-white/40 truncate"
+              >
                 {{ progressItem.trackableItem.description }}
               </div>
-              <div v-if="progressItem.description" class="text-xs text-white/50 break-words whitespace-normal">
+              <div
+                v-if="progressItem.description"
+                class="text-xs text-white/50 break-words whitespace-normal"
+              >
                 {{ progressItem.description }}
               </div>
             </div>

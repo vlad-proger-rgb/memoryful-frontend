@@ -1,18 +1,18 @@
 <!-- Legacy: only the legacy YearView uses this. -->
 <script setup lang="ts">
 const romanNumbers: Record<number, string> = {
-  1: "I",
-  2: "II",
-  3: "III",
-  4: "IV",
-  5: "V",
-  6: "VI",
-  7: "VII",
-  8: "VIII",
-  9: "IX",
-  10: "X",
-  11: "XI",
-  12: "XII",
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+  6: 'VI',
+  7: 'VII',
+  8: 'VIII',
+  9: 'IX',
+  10: 'X',
+  11: 'XI',
+  12: 'XII',
 }
 
 defineProps<{
@@ -20,7 +20,6 @@ defineProps<{
 }>()
 
 defineEmits(['click'])
-
 </script>
 
 <template>
@@ -30,7 +29,7 @@ defineEmits(['click'])
       :key="number"
       class="text-white text-xl font-semibold px-3 py-1.5 rounded-xl transition hover:bg-white/20 cursor-pointer"
       :class="{
-        'bg-white/20': selectedMonth === Number(number)
+        'bg-white/20': selectedMonth === Number(number),
       }"
       @click="$emit('click', Number(number))"
     >

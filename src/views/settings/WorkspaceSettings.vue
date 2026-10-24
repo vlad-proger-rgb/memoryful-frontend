@@ -118,9 +118,7 @@ const shownUrl = (page: WorkspacePageKey) =>
 
 const shownIsVideo = (page: WorkspacePageKey) =>
   Boolean(
-    previewUrls.value[page]
-      ? previewIsVideo.value[page]
-      : workspaceStore.backgrounds[page].isVideo,
+    previewUrls.value[page] ? previewIsVideo.value[page] : workspaceStore.backgrounds[page].isVideo,
   )
 
 onMounted(async () => {

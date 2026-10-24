@@ -11,12 +11,7 @@ import LocationFlow from '@/components/ui/LocationFlow.vue'
 const userStore = useUserStore()
 const router = useRouter()
 
-const {
-  selectedCountry,
-  selectedCity,
-  setSelectedCountry,
-  setSelectedCity,
-} = useLocation()
+const { selectedCountry, selectedCity, setSelectedCountry, setSelectedCity } = useLocation()
 
 const { shakeElement } = useShake()
 

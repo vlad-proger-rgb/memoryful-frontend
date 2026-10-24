@@ -8,7 +8,7 @@ export function useApiError() {
   const uiStore = useUiStore()
 
   const handleApiError = (error: ApiResponse | unknown): string => {
-    console.error("handleApiError error: ", error)
+    console.error('handleApiError error: ', error)
     let message = 'Something went wrong. Please try again'
     let code: number | undefined
 
@@ -16,10 +16,9 @@ export function useApiError() {
       const apiError = error as ApiResponse
       message = apiError.msg || 'Server error'
       code = typeof apiError.code === 'number' ? apiError.code : undefined
-    }
-
-    else if (typeof error === 'object' && error !== null && 'response' in error) {
-      const response = (error as { response?: { data?: { msg?: string }; status?: number } }).response
+    } else if (typeof error === 'object' && error !== null && 'response' in error) {
+      const response = (error as { response?: { data?: { msg?: string }; status?: number } })
+        .response
       message = response?.data?.msg || 'Server error. Please try again'
       code = typeof response?.status === 'number' ? response.status : undefined
     } else if (typeof error === 'object' && error !== null && 'request' in error) {
@@ -45,7 +44,7 @@ export function useApiError() {
     try {
       return await fn()
     } catch (e: unknown) {
-      console.error("withLoading e:", e)
+      console.error('withLoading e:', e)
       handleApiError(e)
       return false
     } finally {

@@ -5,20 +5,20 @@ import { computed } from 'vue'
 const props = defineProps({
   loading: {
     type: Boolean,
-    default: false
+    default: false,
   },
   hasError: {
     type: Boolean,
-    default: false
+    default: false,
   },
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   variant: {
     type: String,
-    default: 'primary'
-  }
+    default: 'primary',
+  },
 })
 
 const emit = defineEmits(['click'])

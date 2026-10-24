@@ -13,9 +13,7 @@
           />
         </Transition>
 
-        <div
-          class="mask-[linear-gradient(to_right,transparent,#000_12%,#000_88%,transparent)]"
-        >
+        <div class="mask-[linear-gradient(to_right,transparent,#000_12%,#000_88%,transparent)]">
           <div
             class="stage relative mx-auto aspect-square w-[70%] max-w-sm outline-none md:w-[55%]"
             :class="{ 'is-jumping': isJumping }"

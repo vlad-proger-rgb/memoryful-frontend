@@ -19,8 +19,7 @@ const props = withDefaults(
 const layer = 'absolute inset-0 w-full h-full object-cover'
 
 const prefersReducedMotion =
-  typeof window !== 'undefined' &&
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // Reduced motion prefers the poster still, which also skips the video download.
 // Without a poster we mount the video anyway but leave it paused, so its first

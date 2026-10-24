@@ -5,6 +5,6 @@ export function useAuthUtils() {
   }
 
   return {
-    isValidEmail
+    isValidEmail,
   }
 }

@@ -56,25 +56,63 @@ const px = computed(() => `${props.size}px`)
     </defs>
 
     <template v-if="variant === 'squares'">
-      <g v-for="(fill, i) in [colorFrom, colorTo]" :key="i" :fill="fill" :mask="i ? `url(#${maskId})` : undefined">
-        <rect class="boxy3__rect" rx="8" ry="8" width="64" height="64" transform="translate(64,0)" />
+      <g
+        v-for="(fill, i) in [colorFrom, colorTo]"
+        :key="i"
+        :fill="fill"
+        :mask="i ? `url(#${maskId})` : undefined"
+      >
+        <rect
+          class="boxy3__rect"
+          rx="8"
+          ry="8"
+          width="64"
+          height="64"
+          transform="translate(64,0)"
+        />
         <g class="boxy3__rect-g" transform="scale(-1,-1)">
-          <rect class="boxy3__rect" rx="8" ry="8" width="64" height="64" transform="translate(64,0)" />
+          <rect
+            class="boxy3__rect"
+            rx="8"
+            ry="8"
+            width="64"
+            height="64"
+            transform="translate(64,0)"
+          />
         </g>
       </g>
     </template>
 
     <template v-else-if="variant === 'grid'">
-      <g v-for="(fill, i) in [colorFrom, colorTo]" :key="i" :fill="fill" :mask="i ? `url(#${maskId})` : undefined">
+      <g
+        v-for="(fill, i) in [colorFrom, colorTo]"
+        :key="i"
+        :fill="fill"
+        :mask="i ? `url(#${maskId})` : undefined"
+      >
         <g class="boxy1__g">
           <g transform="translate(20,20) rotate(0,44,44)">
             <g class="boxy1__rect-g">
               <rect class="boxy1__rect" rx="8" ry="8" width="40" height="40" />
-              <rect class="boxy1__rect" rx="8" ry="8" width="40" height="40" transform="translate(0,48)" />
+              <rect
+                class="boxy1__rect"
+                rx="8"
+                ry="8"
+                width="40"
+                height="40"
+                transform="translate(0,48)"
+              />
             </g>
             <g class="boxy1__rect-g" transform="rotate(180,44,44)">
               <rect class="boxy1__rect" rx="8" ry="8" width="40" height="40" />
-              <rect class="boxy1__rect" rx="8" ry="8" width="40" height="40" transform="translate(0,48)" />
+              <rect
+                class="boxy1__rect"
+                rx="8"
+                ry="8"
+                width="40"
+                height="40"
+                transform="translate(0,48)"
+              />
             </g>
           </g>
         </g>
@@ -82,15 +120,47 @@ const px = computed(() => `${props.size}px`)
     </template>
 
     <template v-else>
-      <g v-for="(fill, i) in [colorFrom, colorTo]" :key="i" :fill="fill" :mask="i ? `url(#${maskId})` : undefined">
+      <g
+        v-for="(fill, i) in [colorFrom, colorTo]"
+        :key="i"
+        :fill="fill"
+        :mask="i ? `url(#${maskId})` : undefined"
+      >
         <g class="boxy2__rect-g">
-          <rect class="boxy2__rect" rx="8" ry="8" x="0" y="128" width="40" height="24" transform="rotate(180)" />
+          <rect
+            class="boxy2__rect"
+            rx="8"
+            ry="8"
+            x="0"
+            y="128"
+            width="40"
+            height="24"
+            transform="rotate(180)"
+          />
         </g>
         <g class="boxy2__rect-g">
-          <rect class="boxy2__rect" rx="8" ry="8" x="44" y="128" width="40" height="24" transform="rotate(180)" />
+          <rect
+            class="boxy2__rect"
+            rx="8"
+            ry="8"
+            x="44"
+            y="128"
+            width="40"
+            height="24"
+            transform="rotate(180)"
+          />
         </g>
         <g class="boxy2__rect-g">
-          <rect class="boxy2__rect" rx="8" ry="8" x="88" y="128" width="40" height="24" transform="rotate(180)" />
+          <rect
+            class="boxy2__rect"
+            rx="8"
+            ry="8"
+            x="88"
+            y="128"
+            width="40"
+            height="24"
+            transform="rotate(180)"
+          />
         </g>
       </g>
     </template>
