@@ -60,7 +60,6 @@ const { items, isLoading, search, query } = useAutocomplete<Country | City>({
   debounce: 300,
 })
 
-// Initialize query with modelValue
 onMounted(() => {
   if (props.modelValue) {
     query.value = props.modelValue
@@ -93,7 +92,6 @@ const handleFocus = () => {
   }
 }
 
-// Watch for modelValue changes from parent
 watch(
   () => props.modelValue,
   (newVal) => {
@@ -104,12 +102,10 @@ watch(
   { immediate: true },
 )
 
-// Update parent when query changes
 watch(query, (newVal) => {
   emit('update:modelValue', newVal)
 })
 
-// Handle click outside to close the dropdown
 const handleClickOutside = (e: MouseEvent) => {
   if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
     showAutocomplete.value = false

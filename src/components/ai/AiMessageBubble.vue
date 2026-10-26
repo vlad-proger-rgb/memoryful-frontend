@@ -27,7 +27,6 @@ const toolLabel = (name: string) => {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-// Stored tools carry no status — they finished long ago.
 const isRunning = (status?: string) => status === 'running'
 
 const timeLabel = computed(() => {

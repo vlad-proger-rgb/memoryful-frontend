@@ -1,4 +1,3 @@
-<!-- src/components/auth/AuthButton.vue -->
 <script setup lang="ts">
 import { computed } from 'vue'
 

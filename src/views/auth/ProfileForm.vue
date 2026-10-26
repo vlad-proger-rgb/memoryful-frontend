@@ -23,13 +23,11 @@ const ageInputId = ref('profile-age-input')
 const ageDraft = ref<number | undefined>(undefined)
 const bioDraft = ref('')
 
-// Initialize form with user data if available
 onMounted(() => {
   if (userStore.isProfileComplete) {
     router.push('/dashboard')
   }
 
-  // Initialize with user's current location if available
   if (userStore.user.city?.id) {
     setSelectedCity(userStore.homeCity)
   }

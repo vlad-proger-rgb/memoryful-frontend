@@ -32,9 +32,7 @@ function formatDate(timestamp: number) {
 }
 
 function getDaysInMonth(year: number, month: number) {
-  // Note: month is 0-indexed (0 = January, 11 = December)
-  // Passing 0 as the day parameter gets the last day of the previous month
-  // So we use month + 1 to get the last day of the current month
+  // Day 0 of the next month is the last day of this one.
   return new Date(year, month + 1, 0).getDate()
 }
 
@@ -68,15 +66,12 @@ async function fetchMonthBackground() {
 }
 
 async function fetchDaysForMonth() {
-  // Get year and month from route params or use current date
   const year = Number(route.params.year) || new Date().getFullYear()
   const month = Number(route.params.month) - 1 || new Date().getMonth()
 
-  // Create dates in local timezone
   const startOfMonth = new Date(year, month, 1)
   const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999)
 
-  // Convert to UTC timestamps (in seconds) for the API
   const startTimestamp = Math.floor(startOfMonth.getTime() / 1000)
   const endTimestamp = Math.floor(endOfMonth.getTime() / 1000)
 
@@ -92,10 +87,8 @@ async function fetchDaysForMonth() {
   const fetchedDays: DayListItem[] = response.data || []
   console.log('Fetched days:', fetchedDays)
 
-  // Create a map of day numbers to day items
   const dayMap = new Map<number, DayListItem>()
   for (const day of fetchedDays) {
-    // Convert API timestamp (seconds) to milliseconds for frontend
     const timestampMs = day.timestamp * 1000
     const date = new Date(timestampMs)
 

@@ -56,9 +56,6 @@ export const daysApi = {
   completeDay(timestamp: number): Promise<ApiResponse<null>> {
     return axios.post(`/days/${timestamp}/complete`)
   },
-  // deleteDay(timestamp: number): Promise<ApiResponse<null>> {
-  //   return axios.delete(`/days/${timestamp}`)
-  // },
 }
 
 export default daysApi

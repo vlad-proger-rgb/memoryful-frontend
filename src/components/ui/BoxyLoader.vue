@@ -2,14 +2,8 @@
 import { computed } from 'vue'
 
 /**
- * Animated box preloaders (adapted from the "boxy-preloaders" pack).
- *
- * - `squares` two squares trading place and shape — used for running tools
- * - `grid`    four squares rotating as a block
- * - `bars`    three bars hopping
- *
- * Each instance mints its own gradient/mask ids: the source markup shares one
- * global id, which breaks the two-tone fill as soon as two loaders are on screen.
+ * Box preloaders adapted from the "boxy-preloaders" pack. Each instance mints its own
+ * gradient/mask ids: the source shares one global id, which breaks the fill with two on screen.
  */
 const props = withDefaults(
   defineProps<{

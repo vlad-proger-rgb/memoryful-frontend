@@ -1,11 +1,8 @@
 import storageApi from '@/api/storage'
 
-// Module-level so every component shares one cache: re-mounting for the same key
-// (a thumbnail then its fullscreen viewer) reuses the URL, and `inFlight` collapses
-// the burst of identical requests when a list mounts many items at once.
-//
-// Entries expire well inside the presigned URL's own lifetime, so a long-lived tab
-// can't keep serving one that has since expired.
+// Module-level so every component shares one cache, and `inFlight` collapses identical
+// requests when a list mounts many items at once. Entries expire well inside the presigned
+// URL's lifetime, so a long-lived tab never serves an expired one.
 const CACHE_TTL_MS = 60 * 60 * 1000
 
 const cache = new Map<string, { url: string; expiresAt: number }>()

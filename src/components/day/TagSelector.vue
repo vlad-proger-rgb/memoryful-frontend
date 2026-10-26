@@ -142,7 +142,6 @@ const handleEnter = (e?: Event) => {
 
 const handleBackspace = () => {
   if (!searchQuery.value && selectedTags.value.length > 0) {
-    // Remove the last tag when backspace is pressed with empty input
     const newTags = [...selectedTags.value]
     newTags.pop()
     emit('update:modelValue', newTags)

@@ -41,12 +41,10 @@ import CopyButton from '@/components/ui/CopyButton.vue'
 
 const { fetchCountries, fetchCities } = useLocation()
 
-// Tags state
 const tags = ref<Tag[]>([])
 const isLoadingTags = ref(false)
 const tagsError = ref<string | null>(null)
 
-// Fetch tags from API
 const fetchTags = async () => {
   isLoadingTags.value = true
   tagsError.value = null
@@ -126,7 +124,6 @@ watch(
   () => (isMainImagePortrait.value = false),
 )
 
-// Form state
 interface EditForm {
   mainImage: string
   images: string[]
@@ -484,7 +481,6 @@ const scrollToMoreFields = () => {
 
 const handleDiscuss = (item: InsightInDB, type: 'insight' | 'suggestion') => {
   console.log(`Discuss ${type}:`, item)
-  // TODO: Implement discuss functionality
   uiStore.showToast(`Discuss feature coming soon for ${type}`, 'info')
 }
 
@@ -523,7 +519,6 @@ const closeImageFullscreen = () => {
   fullscreenImage.value = null
 }
 
-// Handle keyboard events
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && fullscreenImage.value) {
     closeImageFullscreen()
@@ -622,7 +617,6 @@ const adjustTextareaHeight = (eventOrElement: Event | HTMLTextAreaElement) => {
   textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
 }
 
-// Initialize textarea height when modal opens
 const onModalOpen = () => {
   nextTick(() => {
     const textarea = document.querySelector('.content-textarea') as HTMLTextAreaElement
@@ -687,7 +681,6 @@ const removeImage = (index: number) => {
   editForm.images.splice(index, 1)
 }
 
-// Load day data
 const routeTimestamp = () =>
   dayTimestamp(Number(route.params.year), Number(route.params.month), Number(route.params.day))
 
@@ -726,7 +719,6 @@ const loadDay = async () => {
     }
     dayExists.value = false
 
-    // Initialize form with default values
     editForm.city = defaultCity.name
     editForm.cityId = defaultCity.id
     editForm.country = defaultCity.country.name
@@ -772,7 +764,6 @@ onUnmounted(() => {
 
 <template>
   <div class="relative min-h-dvh w-full overflow-x-hidden">
-    <!-- Background image -->
     <MediaBackground
       :src="background.url ?? null"
       :is-video="background.isVideo"
@@ -781,9 +772,7 @@ onUnmounted(() => {
       container-class="fixed inset-0 z-0 brightness-75"
     />
 
-    <!-- Main content -->
     <div class="relative z-10 pt-24 pb-24 px-4 max-w-2xl mx-auto w-full space-y-6">
-      <!-- Header with date and actions -->
       <div class="relative flex flex-wrap md:flex-nowrap items-center justify-between gap-3 mb-6">
         <!-- Outside the column, level with the header; the bottom nav carries these on mobile -->
         <button
@@ -846,22 +835,10 @@ onUnmounted(() => {
             <font-awesome-icon icon="pen" class="mr-2" />
             Edit Day
           </MainButton>
-
-          <!-- <MainButton
-            type="button"
-            variant="secondary"
-            size="sm"
-            :loading="isCompletingDay"
-            @click="completeDay"
-          >
-            <font-awesome-icon icon="check" class="mr-2" />
-            Day Completed
-          </MainButton> -->
         </div>
       </div>
 
       <div class="space-y-6">
-        <!-- Main image -->
         <BaseBox class="p-0 overflow-hidden">
           <div
             class="relative w-full group"
@@ -887,7 +864,6 @@ onUnmounted(() => {
               <font-awesome-icon icon="image" class="text-4xl" />
             </div>
 
-            <!-- Fullscreen overlay -->
             <div
               v-if="day.mainImage"
               class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
@@ -902,14 +878,12 @@ onUnmounted(() => {
           </div>
         </BaseBox>
 
-        <!-- Tags -->
         <div v-if="day.tags?.length" class="flex flex-wrap justify-center gap-4">
           <span
             v-for="tag in day.tags"
             :key="tag.id"
             class="text-white backdrop-blur-lg px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2"
             :style="{
-              // backgroundColor: tag.color ? `${tag.color}33` : undefined,
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               border: '1px solid rgba(255,255,255,0.2)',
             }"
@@ -923,7 +897,6 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <!-- Location -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div
             class="backdrop-blur-lg bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
@@ -961,13 +934,11 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Description -->
         <BaseBox>
           <h3 class="text-white/70 text-sm font-medium mb-3">Description</h3>
           <p class="text-white">{{ day.description || 'No description' }}</p>
         </BaseBox>
 
-        <!-- Content -->
         <BaseBox>
           <div class="flex items-center justify-between gap-3 mb-3">
             <h3 class="text-white/70 text-sm font-medium">Content</h3>
@@ -984,7 +955,6 @@ onUnmounted(() => {
           </div>
         </BaseBox>
 
-        <!-- Trackable Progress -->
         <BaseBox class="mb-8">
           <button
             @click="showTrackables = !showTrackables"
@@ -1031,7 +1001,6 @@ onUnmounted(() => {
           </Transition>
         </BaseBox>
 
-        <!-- Insights -->
         <BaseBox class="mb-8">
           <button
             @click="showInsights = !showInsights"
@@ -1065,7 +1034,6 @@ onUnmounted(() => {
             leave-to-class="max-h-0 opacity-0 overflow-hidden"
           >
             <div v-show="showInsights" class="mt-6 space-y-6">
-              <!-- Insights Section -->
               <div v-if="dayObservations.length">
                 <h4
                   class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
@@ -1113,7 +1081,6 @@ onUnmounted(() => {
               </div>
               <div v-else class="text-white/50 text-sm">No insights available for this day</div>
 
-              <!-- Suggestions Section -->
               <div v-if="daySuggestions.length">
                 <h4
                   class="text-white/80 text-lg font-medium mb-3 flex items-center gap-2 justify-center"
@@ -1161,7 +1128,6 @@ onUnmounted(() => {
               </div>
               <div v-else class="text-white/50 text-sm">No suggestions available for this day</div>
 
-              <!-- Collapse Button -->
               <div class="flex justify-center mt-6 pt-4 border-t border-white/10">
                 <button
                   @click="showInsights = false"
@@ -1175,7 +1141,6 @@ onUnmounted(() => {
           </Transition>
         </BaseBox>
 
-        <!-- Images -->
         <div id="images-section">
           <h3 class="text-white/70 text-sm font-medium">Images</h3>
           <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
@@ -1187,7 +1152,6 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Modal window -->
         <ModalWindow
           v-model="showModal"
           maxWidth="2xl"
@@ -1199,7 +1163,6 @@ onUnmounted(() => {
         >
           <template #default>
             <form @submit.prevent="saveDay" class="space-y-4">
-              <!-- Starred Toggle -->
               <div
                 class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
               >
@@ -1227,7 +1190,6 @@ onUnmounted(() => {
                 </button>
               </div>
 
-              <!-- Content -->
               <div>
                 <label for="content-input" class="block text-sm font-medium text-white/70 mb-1">
                   Content
@@ -1239,7 +1201,6 @@ onUnmounted(() => {
                 />
               </div>
 
-              <!-- Main Image -->
               <div>
                 <label for="main-image-input" class="block text-sm font-medium text-white/70 mb-1">
                   Main Image
@@ -1317,7 +1278,6 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Additional Images -->
               <div>
                 <label
                   for="additional-images-input"
@@ -1421,7 +1381,6 @@ onUnmounted(() => {
                   <div v-show="showMoreFields" id="day-more-fields" class="grid">
                     <div class="min-h-0">
                       <div class="pt-4 space-y-4">
-                        <!-- Description -->
                         <div>
                           <label
                             for="description-input"
@@ -1437,7 +1396,6 @@ onUnmounted(() => {
                           />
                         </div>
 
-                        <!-- City and Country -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div id="country-input-container">
                             <label
@@ -1458,7 +1416,6 @@ onUnmounted(() => {
                                 (item) => {
                                   editForm.country = item.name
                                   editForm.countryId = item.id
-                                  // Clear city when country changes
                                   editForm.city = ''
                                   editForm.cityId = ''
                                 }
@@ -1496,7 +1453,6 @@ onUnmounted(() => {
                           </div>
                         </div>
 
-                        <!-- Tags -->
                         <div>
                           <label
                             for="tags-input"
@@ -1515,7 +1471,6 @@ onUnmounted(() => {
                           />
                         </div>
 
-                        <!-- Trackables -->
                         <div>
                           <label class="block text-sm font-medium text-white/70 mb-1">
                             Trackables
@@ -1764,7 +1719,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Scroll to Top Button -->
     <Transition
       name="fade"
       enter-active-class="transition-opacity duration-300"
@@ -1786,7 +1740,6 @@ onUnmounted(() => {
       </button>
     </Transition>
 
-    <!-- Go to Images Button -->
     <Transition
       name="fade"
       enter-active-class="transition-opacity duration-300"
@@ -1809,7 +1762,6 @@ onUnmounted(() => {
       </button>
     </Transition>
 
-    <!-- Image Fullscreen Overlay -->
     <Teleport to="#modal">
       <Transition
         name="fade"
@@ -1832,7 +1784,6 @@ onUnmounted(() => {
               class="max-w-full max-h-full w-auto h-auto shrink-0"
               @click.stop
             />
-            <!-- Close button -->
             <button
               @click="closeImageFullscreen"
               class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors bg-black/50 p-2 rounded-full"

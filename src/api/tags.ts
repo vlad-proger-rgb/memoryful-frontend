@@ -8,7 +8,6 @@ export const tagsApi = {
     return axios.get('/tags/')
   },
   getTagById(id: string): Promise<ApiResponse<Tag>> {
-    // ???
     return axios.get(`/tags/${id}`)
   },
   createTag(tag: TagPayload): Promise<ApiResponse<string>> {

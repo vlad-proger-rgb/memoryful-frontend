@@ -120,7 +120,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* Dark theme customization */
 .vditor {
   background-color: rgba(255, 255, 255, 0.05) !important;
   border: none !important;
@@ -153,12 +152,10 @@ onBeforeUnmount(() => {
   color: #e5e7eb !important;
 }
 
-/* Placeholder styling */
 .vditor-ir .vditor-reset:empty::before {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Panel backgrounds */
 .vditor-panel {
   background-color: #1f2937 !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -168,7 +165,6 @@ onBeforeUnmount(() => {
   border-bottom-color: #1f2937 !important;
 }
 
-/* Tooltips */
 .vditor-hint {
   background-color: #1f2937 !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -182,12 +178,10 @@ onBeforeUnmount(() => {
   background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
-/* Resize handle */
 .vditor-resize {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Scrollbar styling for dark theme */
 .vditor-ir::-webkit-scrollbar {
   width: 8px;
 }

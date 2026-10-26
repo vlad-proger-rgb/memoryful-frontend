@@ -67,7 +67,6 @@ const allIcons = computed<IconItem[]>(() => {
 
   // Don't deduplicate - keep all icons including brands
   return icons.sort((a, b) => {
-    // Sort by name, then by prefix (fas, far, fab)
     const nameCompare = a.name.localeCompare(b.name)
     if (nameCompare !== 0) return nameCompare
     return a.prefix.localeCompare(b.prefix)

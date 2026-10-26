@@ -109,10 +109,8 @@ export const useAiChatStore = defineStore('aiChat', () => {
       const res = await aiApi.getChat(id)
       if (res.code === 200 && res.data) {
         currentChat.value = res.data
-        // Show the model this chat actually uses. The backend always answers an
-        // existing chat with the model it was created with and ignores whatever
-        // is selected, so the picker must follow the chat, not the other way
-        // round. Deliberately not persisted — that stays the new-chat default.
+        // The backend answers an existing chat with the model it was created with, so the
+        // picker follows the chat. Not persisted: that stays the new-chat default.
         const chatModelId = res.data.chatModel?.id || res.data.modelId
         if (chatModelId) selectedModelId.value = chatModelId
       }

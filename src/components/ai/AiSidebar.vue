@@ -73,8 +73,7 @@ watch(editingId, async (id) => {
   renameInput.value?.select()
 })
 
-// Belt and braces: if the open chat changes while a row is being renamed
-// (blur normally commits first), never leave the edit box stranded.
+// Blur normally commits first; this catches a chat switch that skips it.
 watch(
   () => store.currentChat?.id,
   () => {
@@ -107,7 +106,6 @@ const commitRename = (chat: ChatListItem) => {
   if (editingId.value !== chat.id) return
   const title = draftTitle.value.trim()
   editingId.value = null
-  // Nothing to do for an empty or unchanged title.
   if (!title || title === chat.title) return
   store.renameChat(chat.id, title)
 }

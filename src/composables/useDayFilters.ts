@@ -136,7 +136,7 @@ export function useDayFilters(apply: () => Promise<void>) {
         const response = await countriesApi.getCountryById(String(q.countryId))
         if (response.data) country.value = response.data
       } catch {
-        // Same as above.
+        // A stale country id in the URL just leaves the filter unset.
       }
     }
 

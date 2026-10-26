@@ -28,12 +28,10 @@ const workspaceStore = useWorkspaceStore()
 
 const background = computed(() => workspaceStore.backgrounds.search)
 
-// Search state
 const query = ref('')
 const selectedTags = ref<Tag[]>([])
 const availableTags = ref<Tag[]>([])
 
-// Settings panel state
 const showSettings = ref(false)
 const similaritySearch = ref(false)
 const starredOnly = ref(false)
@@ -42,7 +40,6 @@ const endDate = ref<Date | null>(null)
 const selectedCountry = ref<Country | null>(null)
 const selectedCity = ref<CityDetail | null>(null)
 
-// Results state
 const days = ref<DayListItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -168,7 +165,6 @@ const formatDate = (timestamp: number) => {
   })
 }
 
-// Build query params from current filters
 const buildQueryParams = () => {
   const params: Record<string, string> = {}
   if (query.value.trim()) params.q = query.value.trim()
@@ -188,7 +184,6 @@ const updateUrlParams = () => {
   router.replace({ query: params })
 }
 
-// Restore filters from URL query params
 const restoreFiltersFromUrl = async () => {
   const q = route.query
 
@@ -213,7 +208,6 @@ const restoreFiltersFromUrl = async () => {
     }
   }
 
-  // Restore country
   if (q.countryId && !selectedCountry.value) {
     const countryId = String(q.countryId)
     try {
@@ -235,7 +229,6 @@ const restoreFiltersFromUrl = async () => {
     selectedTags.value = availableTags.value.filter((t) => tagNames.includes(t.name))
   }
 
-  // If any filters were present, show settings and trigger search
   const hasFilters =
     q.q ||
     q.similarity ||
@@ -246,7 +239,6 @@ const restoreFiltersFromUrl = async () => {
     q.cityId ||
     q.tags
   if (hasFilters) {
-    // Show settings if advanced filters are used
     if (
       q.similarity ||
       q.starred ||
@@ -262,7 +254,6 @@ const restoreFiltersFromUrl = async () => {
   }
 }
 
-// Watch filters and update URL
 watch(
   [
     query,
@@ -299,15 +290,12 @@ onMounted(async () => {
       container-class="fixed inset-0 z-0 brightness-75"
     />
 
-    <!-- Content -->
     <div class="relative z-10 flex flex-col items-center pt-28 pb-12 px-4 max-w-4xl mx-auto">
-      <!-- Search Box -->
       <div class="w-full max-w-3xl mb-6">
         <div
           class="glass-pill flex items-center gap-2 px-3 py-1 cursor-text"
           @click="($refs.searchInput as HTMLInputElement)?.focus()"
         >
-          <!-- Settings Gear -->
           <button
             type="button"
             class="shrink-0 size-11 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -318,7 +306,6 @@ onMounted(async () => {
             <font-awesome-icon icon="gear" class="text-2xl" />
           </button>
 
-          <!-- Search Input -->
           <input
             ref="searchInput"
             v-model="query"
@@ -328,7 +315,6 @@ onMounted(async () => {
             @keyup.enter="handleSubmit"
           />
 
-          <!-- Search Button -->
           <button
             type="button"
             class="shrink-0 size-11 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -340,11 +326,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Settings Panel (slides down) -->
       <Transition name="settings-slide">
         <div v-if="showSettings" class="w-full max-w-3xl mb-6">
           <div class="glass-pill-lg flex flex-col gap-3 p-4">
-            <!-- Similarity Search Toggle -->
             <div
               class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
             >
@@ -359,7 +343,6 @@ onMounted(async () => {
               </button>
             </div>
 
-            <!-- Starred Filter -->
             <div
               class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
             >
@@ -374,7 +357,6 @@ onMounted(async () => {
               </button>
             </div>
 
-            <!-- Start Date -->
             <div
               class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
             >
@@ -392,7 +374,6 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- End Date -->
             <div
               class="flex flex-wrap items-center justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
             >
@@ -410,7 +391,6 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Location -->
             <div
               class="flex flex-wrap items-start justify-between gap-5 p-2.5 max-md:flex-col max-md:items-stretch max-md:gap-2.5"
             >
@@ -445,12 +425,10 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Tags -->
             <div class="glass-inner p-3 rounded-[50px] relative z-[100]">
               <TagSelector v-model="selectedTags" :available-tags="availableTags" />
             </div>
 
-            <!-- Clear Filters Button -->
             <div class="flex justify-center mt-2">
               <button
                 type="button"
@@ -465,20 +443,16 @@ onMounted(async () => {
         </div>
       </Transition>
 
-      <!-- Results Section -->
       <div class="w-full max-w-4xl flex flex-col gap-6">
-        <!-- Error -->
         <div v-if="error" class="glass-pill px-5 py-4 border border-red-400/40">
           <span class="text-white/90">{{ error }}</span>
         </div>
 
-        <!-- Loading -->
         <div v-if="loading" class="text-center py-12">
           <font-awesome-icon icon="spinner" class="text-4xl text-white/80 animate-spin" />
           <p class="mt-4 text-white/70 text-lg">Searching your memories...</p>
         </div>
 
-        <!-- No Results -->
         <div
           v-else-if="!days.length && hasSearched"
           class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm"
@@ -488,7 +462,6 @@ onMounted(async () => {
           <p class="text-white/50">Try adjusting your search or filters</p>
         </div>
 
-        <!-- Initial State -->
         <div
           v-else-if="!hasSearched"
           class="text-center py-12 px-6 bg-black/50 rounded-xl backdrop-blur-sm"
@@ -498,7 +471,6 @@ onMounted(async () => {
           <p class="text-white/50">Use keywords, tags, or filters to find specific days</p>
         </div>
 
-        <!-- Results List -->
         <div v-else class="flex flex-col gap-6">
           <RouterLink
             v-for="(day, idx) in days"
@@ -506,7 +478,6 @@ onMounted(async () => {
             :to="getDayUrl(day.timestamp)"
             class="result-card text-left"
           >
-            <!-- Thumbnail -->
             <div class="result-thumbnail">
               <DayImage
                 v-if="day.mainImage"
@@ -519,9 +490,7 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Content -->
             <div class="result-content">
-              <!-- Header row: date + starred -->
               <div class="result-header">
                 <p class="result-date">{{ formatDate(day.timestamp) }}</p>
                 <font-awesome-icon v-if="day.starred" icon="star" class="result-star" />
@@ -531,7 +500,6 @@ onMounted(async () => {
                 {{ day.description || 'No description' }}
               </p>
 
-              <!-- Meta row: city + steps -->
               <div class="result-meta">
                 <span v-if="day.city?.name" class="result-meta-item">
                   <font-awesome-icon icon="location-dot" class="result-meta-icon" />
@@ -543,7 +511,6 @@ onMounted(async () => {
                 </span>
               </div>
 
-              <!-- Trackable progresses -->
               <div v-if="day.trackableProgresses?.length" class="result-trackables">
                 <span
                   v-for="progress in day.trackableProgresses.slice(0, 4)"
@@ -571,7 +538,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Glass morphism base styles */
 .glass-pill {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(17.5px);
@@ -593,7 +559,6 @@ onMounted(async () => {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Settings panel animation */
 .settings-slide-enter-active,
 .settings-slide-leave-active {
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -614,7 +579,6 @@ onMounted(async () => {
   max-height: 800px;
 }
 
-/* Entry field (date, country, city inputs) */
 .entry-field {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(17.5px);
@@ -652,7 +616,6 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
-/* Date picker wrapper */
 .date-picker-wrapper {
   min-width: 280px;
   max-width: 400px;
@@ -728,7 +691,6 @@ onMounted(async () => {
   margin-left: 10px;
 }
 
-/* Dropdown menu */
 .dropdown-menu {
   position: absolute;
   top: 100%;
@@ -791,7 +753,6 @@ onMounted(async () => {
 </style>
 
 <style scoped>
-/* Result card */
 .result-card {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(17.5px);
@@ -930,7 +891,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .entry-field {
     min-width: 100%;

@@ -59,17 +59,11 @@ export interface DayUpdate {
   starred?: boolean
   mainImage?: string
   images?: string[]
-  tags?: string[] // Array of tag IDs
+  tags?: string[]
   trackableProgresses?: DayTrackableProgressUpdate[]
 }
 
-/**
- * Advanced filters for days querying.
- */
 export interface DayFilters {
-  /**
-   * Filter by steps. Operators: gt, lt, gte, lte, eq, ne. Example: {gt: 5000}
-   */
   steps?: {
     gt?: number
     lt?: number
@@ -78,38 +72,14 @@ export interface DayFilters {
     eq?: number
     ne?: number
   }
-
-  /**
-   * Filter by description. Operators: like, eq, ne. Example: {like: 'park'}
-   */
   description?: {
     like?: string
     eq?: string
     ne?: string
   }
-
-  /**
-   * Filter by starred status
-   */
   starred?: boolean
-
-  /**
-   * Filter by city ID
-   */
   cityId?: string
-
-  /**
-   * Filter by country ID
-   */
   countryId?: string
-
-  /**
-   * Filter by creation timestamp (after)
-   */
   createdAfter?: number
-
-  /**
-   * Filter by creation timestamp (before)
-   */
   createdBefore?: number
 }

@@ -20,7 +20,6 @@ const onSuggestion = (text: string) => {
 }
 
 const onAttach = () => {
-  // Placeholder for attachments/mentions (photos, days, insights, etc.)
   uiStore.showToast('Attachments and mentions coming soon', 'info')
 }
 </script>

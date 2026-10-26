@@ -13,8 +13,7 @@ const props = withDefaults(
   }>(),
   {
     size: 60,
-    // How far the halo reaches past the logo. The header default keeps it inside the bar;
-    // the bottom bar passes a wider one so the rotation is actually readable.
+    // Halo diameter as a multiple of `size`; the default fits inside the header bar.
     ringSpread: 1.2333,
     // A second, wider and fainter ring set. 0 leaves the orb single-ringed; anything above
     // 1 also grows the button itself, so the outer ring is part of the target.

@@ -109,7 +109,7 @@ const monthDescriptionInputId = ref('month-description-input')
 const topDayInputId = ref('top-day-input')
 
 let scrollTimeout: number | null = null
-const scrollThreshold = 50 // Adjust this value to control sensitivity
+const scrollThreshold = 50
 const isScrolling = ref(false)
 
 const backgroundGradient = (monthNumber: number) => {

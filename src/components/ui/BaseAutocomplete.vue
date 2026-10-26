@@ -118,7 +118,6 @@ const onMouseEnterItem = (index: number) => {
   selectedIndex.value = index
 }
 
-// Close dropdown when clicking outside
 const onClickOutside = (event: MouseEvent) => {
   const targetNode = event.target as Node
   const attachTarget = props.attachTo instanceof HTMLElement ? props.attachTo : null
@@ -281,7 +280,6 @@ defineExpose({
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Custom scrollbar */
 .autocomplete-menu::-webkit-scrollbar {
   width: 0.375rem;
 }

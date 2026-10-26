@@ -74,9 +74,6 @@ const setTagIcon = (tag: Tag, iconName: string, iconStyle: IconStyle = 'fas') =>
   }
 }
 
-// -----------------------
-// Tags
-// -----------------------
 const tags = ref<Tag[]>([])
 const tagsLoading = ref(false)
 
@@ -177,9 +174,6 @@ const deleteTag = async (tag: Tag) => {
   }
 }
 
-// -----------------------
-// Trackables
-// -----------------------
 const trackables = ref<TrackableInDB[]>([])
 const trackablesLoading = ref(false)
 
@@ -447,7 +441,6 @@ onMounted(async () => {
       <p class="text-sm opacity-80">Create and manage reusable tags and trackables.</p>
     </div>
 
-    <!-- Tags -->
     <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl px-6 py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
         <div>
@@ -636,7 +629,6 @@ onMounted(async () => {
       </div>
     </section>
 
-    <!-- Trackable types -->
     <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl px-6 py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
         <div>
@@ -804,7 +796,6 @@ onMounted(async () => {
       </div>
     </section>
 
-    <!-- Trackables -->
     <section class="backdrop-blur-[17.5px] bg-white/10 rounded-2xl px-6 py-4 flex flex-col gap-4">
       <div class="flex items-center justify-between gap-3">
         <div>

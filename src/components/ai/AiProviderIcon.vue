@@ -9,7 +9,6 @@ const props = defineProps<{
   class?: string
 }>()
 
-// Backend `provider` enum value -> icon key in aiProviderIcons.
 // Prefer the recognizable model glyph where it differs from the vendor mark.
 const PROVIDER_TO_ICON: Record<string, string> = {
   openai: 'openai',
