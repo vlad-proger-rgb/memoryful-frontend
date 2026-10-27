@@ -45,6 +45,22 @@ The backend must be up in Docker first — see the workspace root `CLAUDE.md`.
   open them by URL, but nothing links to them. Don't unroute them, and send any default or
   parent destination for a day to `/dashboard`.
 
+## Data fetching
+
+Axios only sends requests; nothing on top of it caches responses or de-duplicates them (there
+is no TanStack Query or Pinia Colada). Where that matters it is hand-rolled — `useStorageResolve`
+and `useAdjacentDays` share in-flight promises — so every fetch needs an owner:
+
+- **One fetch, one owner.** A piece of server data is fetched in one place — a store or a
+  composable — and read from there. Sibling components never fetch the same resource.
+- **Share in-flight requests.** When several callers can ask for the same key at once, key the
+  promise in a module-level map so the second call joins the first.
+- **Debounce input-driven fetches** (typing, scrolling, resizing); never one request per event.
+- **Fetch independent data in parallel** with `Promise.all`, not one `await` after another.
+- **Don't re-fetch on Back** what was loaded moments ago; reuse it until a write invalidates it.
+
+Verify in the network panel: one user action, no two identical requests.
+
 ## Mobile
 
 Phones are a first-class target. **Check every visual change at 375x812 as well as desktop.**
