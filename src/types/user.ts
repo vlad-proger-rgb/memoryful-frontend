@@ -7,7 +7,6 @@ export interface User {
   city?: City
   email: string
   firstName?: string
-  lastName?: string
   age?: number
   bio?: string
   photo?: string
