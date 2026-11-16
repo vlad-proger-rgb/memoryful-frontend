@@ -10,7 +10,6 @@ export interface ChatModelOption {
   label: string
   name: string
   provider: string
-  supportsTools: boolean
 }
 
 export type ChatRole = 'system' | 'user' | 'assistant'
